@@ -22,9 +22,9 @@ import time
 import fnmatch
 import inspect
 import logging
+from multiprocessing import Process, Manager
 import argparse
 import platform
-import threading
 import traceback
 import unittest2 as unittest
 from datetime import datetime
@@ -54,7 +54,10 @@ class _WritelnDecorator:
     """Used to decorate file-like objects with a handy 'writeln' method""" 
     
     def __init__(self,stream): 
-        self.stream = stream 
+        self.stream = stream
+
+    def __setstate__(self, data):
+        self.__dict__.update(data)
    
     def __getattr__(self, attr): 
         return getattr(self.stream,attr) 
@@ -913,15 +916,17 @@ class CCRunner(object):
             
             if cl_args.parallel:
                 unittest.installHandler()
-                threads = []
-                results = []
+                processes = []
+                manager = Manager()
+                results = manager.list()
                 start = time.time()
                 for test in test_classes:
-                    t = ThreadedRunner(test_runner, test, results)
-                    t.start()
-                    threads.append(t)
-                for t in threads:
-                    t.join()
+                    p = Process(target=execute_test, args=(test_runner,
+                                                           test, results))
+                    processes.append(p)
+                    p.start()
+                for p in processes:
+                    p.join()
                 finish = time.time()
                 print '=' * 71
                 print 'Tests Complete.'
@@ -959,16 +964,10 @@ class CCRunner(object):
                 if not result.wasSuccessful():
                     exit(1)
 
-                
-class ThreadedRunner(threading.Thread):
-    def __init__(self, runner, test, results):
-        super(ThreadedRunner, self).__init__()
-        self.runner = runner
-        self.test = test
-        self.results = results
 
-    def run(self):
-        self.results.append(self.runner.run(self.test))
+def execute_test(runner, test, results):
+    result = runner.run(test)
+    results.append(result)
 
 
 def entry_point():
