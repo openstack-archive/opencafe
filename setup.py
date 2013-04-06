@@ -16,9 +16,13 @@ limitations under the License.
 
 import os
 import sys
-import pwd
-import grp
 import cafe
+import platform
+
+# These imports are only possible on Linux/OSX
+if platform.system().lower() != 'windows':
+    import pwd
+    import grp
 
 try:
     from setuptools import setup, find_packages
@@ -102,27 +106,28 @@ else:
     temp = open("~install", "w")
     temp.close()
 
-    ''' todo: This is MAC/Linux Only '''
-    # get who really executed this
-    sudo_user = os.getenv("SUDO_USER")
-    uid = pwd.getpwnam(sudo_user).pw_uid
-    gid = pwd.getpwnam(sudo_user).pw_gid
-    
     # Build Default directories
     if not os.path.exists(root_dir):
         os.makedirs(root_dir)
-        os.chown(root_dir, uid, gid)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
-        os.chown(log_dir, uid, gid)
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
-        os.chown(data_dir, uid, gid)
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir)
-        os.chown(temp_dir, uid, gid)
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
+
+    # Get uid and gid of the current user to set permissions (Linux/OSX only)
+    if platform.system().lower() != 'windows':
+        sudo_user = os.getenv("SUDO_USER")
+        uid = pwd.getpwnam(sudo_user).pw_uid
+        gid = pwd.getpwnam(sudo_user).pw_gid
+
+        os.chown(root_dir, uid, gid)
+        os.chown(log_dir, uid, gid)
+        os.chown(data_dir, uid, gid)
+        os.chown(temp_dir, uid, gid)
         os.chown(config_dir, uid, gid)
     
     # Build the default configuration file
@@ -134,5 +139,7 @@ else:
         config.write("temp_directory={0}\n".format(temp_dir))
         config.write("use_verbose_logging={0}\n".format(use_verbose_logging))
         config.close()
-        os.chown("{0}/engine.config".format(config_dir), uid, gid)
-        
+
+        if platform.system().lower() != 'windows':
+            os.chown("{0}/engine.config".format(config_dir), uid, gid)
+
