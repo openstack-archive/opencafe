@@ -28,10 +28,11 @@ from cloudcafe.compute.common.exceptions import FileNotFoundException, ServerUnr
 
 class LinuxClient(BasePersistentLinuxClient):
 
-    def __init__(self, ip_address, server_id, os_distro, username, password):
+    def __init__(self, ip_address=None, server_id=None, username=None,
+                 password=None, config=None, os_distro=None):
         self.client_log = cclogging.getLogger \
                 (cclogging.get_object_namespace(self.__class__))
-        ssh_timeout = 600
+        ssh_timeout = config.connection_timeout
         if ip_address is None:
             raise ServerUnreachable("None")
         self.ip_address = ip_address
@@ -40,6 +41,15 @@ class LinuxClient(BasePersistentLinuxClient):
             self.username = 'root'
         self.password = password
         self.server_id = server_id
+
+        start = int(time.time())
+        reachable = False
+        while not reachable:
+            reachable = PingClient.ping(ip_address,
+                                        config.ip_address_version_for_ssh)
+            time.sleep(config.connection_retry_interval)
+            if int(time.time()) - start >= config.connection_timeout:
+                raise ServerUnreachable(ip_address)
 
         self.ssh_client = SSHBaseClient(self.ip_address,
                                         self.username,

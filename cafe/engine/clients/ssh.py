@@ -59,13 +59,13 @@ class SSHBaseClient(BaseClient):
             try:
                 if not log_attempted:
                     self._log.debug('Attempting to SSH connect to: ')
-                    self._log.debug('host: %s, username: %s' %
-                                    (self.host, self.username))
+                    self._log.debug('host: %s, username: %s, password: %s' %
+                                    (self.host, self.username, self.password))
                     log_attempted = True
                 ssh.connect(hostname=self.host,
                             username=self.username,
                             password=self.password,
-                            timeout=self.timeout,
+                            timeout=20,
                             key_filename=[],
                             look_for_keys=False,
                             allow_agent=False)
