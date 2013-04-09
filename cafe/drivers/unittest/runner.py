@@ -50,6 +50,7 @@ RED = '\033[0;31m'
 HIGHLIGHTED_RED = '\033[1;41m'
 END = '\033[1;m'
 
+
 class _WritelnDecorator: 
     """Used to decorate file-like objects with a handy 'writeln' method""" 
     
@@ -60,7 +61,8 @@ class _WritelnDecorator:
         return getattr(self.stream,attr) 
 
     def writeln(self, arg=None): 
-        if arg: self.write(arg) 
+        if arg:
+            self.write(arg)
         self.write('\n') 
 
 
@@ -72,7 +74,7 @@ class CCParallelTextTestRunner(unittest.TextTestRunner):
         self.verbosity = verbosity
         
     def run(self, test): 
-        "Run the given test case or test suite." 
+        """Run the given test case or test suite."""
         result = self._makeResult() 
         startTime = time.time() 
         test(result) 
@@ -344,7 +346,7 @@ class CCRunner(object):
 
     def set_env(self, config_path, log_path, data_dir):
         '''
-        sets an environment var so the tests can find thier respective
+        sets an environment var so the tests can find their respective
         product config path
         '''
         os.environ['CCTNG_CONFIG_FILE'] = "{0}{1}configs{1}engine.config".format(BASE_DIR, DIR_SEPR)
@@ -367,7 +369,7 @@ class CCRunner(object):
         @return: The safely formatted datetime string
         @rtype: C{str}
         '''
-        return(str(datetime.now()).replace(' ', '_').replace(':', '_'))
+        return str(datetime.now()).replace(' ', '_').replace(':', '_')
 
     def get_repo_path(self, product):
         '''
@@ -406,8 +408,8 @@ class CCRunner(object):
         '''
         try:
             position = len(path.split(split_token)) - 1
-            temp_path = "{0}{1}".format(split_token, path.
-                                         split(split_token)[position])
+            temp_path = "{0}{1}".format(split_token,
+                                        path.split(split_token)[position])
             split_path = temp_path.split(DIR_SEPR)
             dotted_path = '.'.join(split_path)
 
@@ -529,7 +531,7 @@ class CCRunner(object):
         for _, obj in inspect.getmembers(loaded_module, inspect.isclass):
             temp_obj = obj
             try:
-                while(temp_obj.__base__ != object):
+                while temp_obj.__base__ != object:
                     if temp_obj.__base__ == unittest.TestCase \
                         or temp_obj.__base__ == BaseTestFixture \
                         and temp_obj != obj.__base__:
@@ -643,7 +645,6 @@ class CCRunner(object):
 
         module_path = os.path.dirname(loaded_module.__file__)
         module_name = loaded_module.__name__.split('.')[1]
-#        base_dotted_path = self.get_dotted_path(module_path, test_repo.__path__[0])
         base_dotted_path = self.get_dotted_path(module_path, test_repo.__name__)
 
         if cl_tags is not None:
@@ -704,7 +705,7 @@ class CCRunner(object):
                                                     test_class_name,
                                                     method_name])
                             suite.addTest(loader.loadTestsFromName(
-                                                             dotted_path))
+                                dotted_path))
                         except ImportError:
                             raise
                         except AttributeError:
@@ -738,7 +739,7 @@ class CCRunner(object):
         cl_args = self.get_cl_args()
         module_regex = None
 
-        if(os.path.exists(BASE_DIR) == False):
+        if os.path.exists(BASE_DIR) is False:
             err_msg = self.error_msg("{0} does not exist - Exiting".
                                         format(BASE_DIR))
             print self.colorize(err_msg, HIGHLIGHTED_RED)
@@ -770,8 +771,8 @@ class CCRunner(object):
 
         if os.path.exists(repo_path) is False:
             err_msg = self.error_msg('Repo', ' '.join([cl_args.product,
-                                    repo_path,
-                                    'does not exist - Exiting']))
+                                     repo_path,
+                                     'does not exist - Exiting']))
             print self.colorize(err_msg, HIGHLIGHTED_RED)
             exit(1)
 
@@ -910,7 +911,6 @@ class CCRunner(object):
                             self.print_traceback()
                             continue
 
-            
             if cl_args.parallel:
                 unittest.installHandler()
                 threads = []

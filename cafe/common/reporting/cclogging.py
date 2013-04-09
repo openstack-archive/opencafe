@@ -31,7 +31,7 @@ def get_object_namespace(obj):
     they originate from.
 
     So that logging doesn't cause exceptions, if the namespace cannot be
-    extracted from the object's mro atribute, the actual name returned is set
+    extracted from the object's mro attribute, the actual name returned is set
     to a probably-unique string, the id() of the object passed,
     and is then further improved by a series of functions until
     one of them fails.

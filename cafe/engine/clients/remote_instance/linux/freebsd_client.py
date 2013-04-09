@@ -31,7 +31,7 @@ class FreeBSDClient(LinuxClient):
         uptime_string = self.ssh_client.exec_command('uptime')
         uptime = uptime_string.replace('\n', '').split(',')[0].split()[2]
         uptime_unit = uptime_string.replace('\n', '').split(',')[0].split()[3]
-        if (uptime_unit == 'mins'):
+        if uptime_unit == 'mins':
             uptime_unit_format = 'M'
         else:
             uptime_unit_format = 'S'

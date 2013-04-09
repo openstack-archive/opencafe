@@ -30,20 +30,25 @@ class BasePersistentLinuxClient(object):
 
     def format_disk_device(self, device, fstype):
         '''Formats entire device, does not create partitions'''
-        return self.ssh_client.exec_command("mkfs.%s %s\n" % (str(fstype).lower(), str(device)))
+        return self.ssh_client.exec_command(
+            "mkfs.%s %s\n" % (str(fstype).lower(), str(device)))
 
     def mount_disk_device(self, device, mountpoint, fstype, create_mountpoint=True):
         '''
-            Mounts a disk at a specified mountpoint.  performs 'touch mountpoint' before executing
+        Mounts a disk at a specified mountpoint.
+        Performs 'touch mountpoint' before executing
         '''
         self.ssh_client.exec_command("mkdir %s" % str(mountpoint))
-        return self.ssh_client.exec_command("mount -t %s %s %s\n" % (str(fstype).lower(), str(device), str(mountpoint)))
+        return self.ssh_client.exec_command(
+            "mount -t %s %s %s\n" % (str(fstype).lower(),
+                                     str(device), str(mountpoint)))
 
     def unmount_disk_device(self, mountpoint):
         '''
-            Forces unmounts (umount -f) a disk at a specified mountpoint.
+        Forces unmounts (umount -f) a disk at a specified mountpoint.
         '''
-        return self.ssh_client.exec_command("umount -f %s\n" % (str(mountpoint)))
+        return self.ssh_client.exec_command(
+            "umount -f %s\n" % (str(mountpoint)))
 
     def write_random_data_to_disk(self, dir_path, filename, blocksize=1024,
                                   count=1024):
@@ -62,7 +67,8 @@ class BasePersistentLinuxClient(object):
             "dd if=/dev/urandom of=%s bs=%s count=%s\n" %
             (str(dd_of), str(blocksize), str(count)))
 
-    def write_zeroes_data_to_disk(self, disk_mountpoint, filename, blocksize=1024, count=1024):
+    def write_zeroes_data_to_disk(self, disk_mountpoint, filename,
+                                  blocksize=1024, count=1024):
         '''By default writes one mebibyte (2^20 bytes)'''
 
         of = '%s/%s' % (disk_mountpoint, str(filename))
