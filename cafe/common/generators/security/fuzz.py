@@ -24,7 +24,7 @@ class SecDataGeneratorString(BaseDataGenerator):
         @type filename: string
         @return: None
         @note: ints are stored in twos compliment so negative numbers return
-               positive numbers with unexpected results (-1,0) reutrns 255
+               positive numbers with unexpected results (-1,0) returns 255
         '''
         #Tests to ensure inputs are correct
         try:

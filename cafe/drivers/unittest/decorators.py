@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+
 def tags(*tags, **attrs):
     def _decorator(func):
         setattr(func, '__test_tags__', [])

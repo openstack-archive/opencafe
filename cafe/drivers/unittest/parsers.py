@@ -20,7 +20,8 @@ import xml.etree.ElementTree as ET
 
 class ParseResult(object):
 
-    def __init__(self, result_dict, master_testsuite, xml_path, execution_time):
+    def __init__(self, result_dict, master_testsuite,
+                 xml_path, execution_time):
         for keys, values in result_dict.items():
             setattr(self, keys, values)
         self.master_testsuite = master_testsuite
@@ -46,7 +47,8 @@ class ParseResult(object):
             if errored_test[0].__class__.__name__ != '_ErrorHolder':
                 errored_tests.append(errored_test[0])
             else:
-                setup_errored_classes.append(str(errored_test[0]).split(".")[-1].rstrip(')'))
+                setup_errored_classes.append(
+                    str(errored_test[0]).split(".")[-1].rstrip(')'))
         if len(setup_errored_classes) != 0:
             for item_1 in all_tests:
                 for item_2 in setup_errored_classes:
@@ -71,7 +73,7 @@ class ParseResult(object):
     def get_errored_tests(self):
         errored_obj_list = []
         for item in self.errors:
-            if (item[0].__class__.__name__ is not '_ErrorHolder'):
+            if item[0].__class__.__name__ is not '_ErrorHolder':
                 errored_obj = Result(item[0].__class__.__name__, vars(item[0]).get('_testMethodName'), error_trace=item[1])
             else:
                 errored_obj = Result(str(item[0]).split(" ")[0], str(item[0]).split(".")[-1].rstrip(')'), error_trace=item[1])
@@ -88,7 +90,10 @@ class ParseResult(object):
 
     def summary_result(self):
         summary_res = {}
-        summary_res = {'tests': str(self.testsRun), 'errors': str(len(self.errors)), 'failures': str(len(self.failures)), 'skipped': str(len(self.skipped))}
+        summary_res = {'tests': str(self.testsRun),
+                       'errors': str(len(self.errors)),
+                       'failures': str(len(self.failures)),
+                       'skipped': str(len(self.skipped))}
         return summary_res
 
     def generate_xml_report(self):

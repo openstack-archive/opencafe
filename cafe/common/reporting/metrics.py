@@ -127,13 +127,13 @@ class PBStatisticsLog(object):
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
             self.File = os.path.normpath(os.path.join(log_dir, fileName))
-            if startClean == True and os.path.exists(self.File) == True:
+            if startClean is True and os.path.exists(self.File) == True:
                 ''' Force the file to be overwritten before any writing '''
                 os.remove(self.File)
         else:
             self.File = None
             
-        if(os.path.exists(self.File) == False):
+        if os.path.exists(self.File) is False:
             ''' Write out the header to the stats log '''
             self.__write("Elapsed Time,Start Time,Stop Time,Result,Errors,Warnings")
         

@@ -30,6 +30,7 @@ from cafe.common.reporting.metrics import PBStatisticsLog
 
 engine_config = EngineConfig()
 
+
 class BaseTestFixture(unittest.TestCase):
     '''
     @summary: Foundation for TestRepo Test Fixture.
@@ -59,11 +60,11 @@ class BaseTestFixture(unittest.TestCase):
         '''
         @summary: Returns a one-line description of the test 
         '''
-        if(self._testMethodDoc != None):
-            if(self._testMethodDoc.startswith("\n") == True):
-                self._testMethodDoc = " ".join(self._testMethodDoc.
-                        splitlines()).strip()
-        return (unittest.TestCase.shortDescription(self))
+        if self._testMethodDoc is not None:
+            if self._testMethodDoc.startswith("\n") is True:
+                self._testMethodDoc = " ".join(
+                    self._testMethodDoc.splitlines()).strip()
+        return unittest.TestCase.shortDescription(self)
 
     @classmethod
     def setUpClass(cls):
@@ -146,7 +147,7 @@ class BaseTestFixture(unittest.TestCase):
         self.fixture_log.info("Test Case.: {0}".format(self._testMethodName))
         self.fixture_log.info("Created.At: {0}".format(self.test_metrics.timer.
                                                        start_time))
-        if (self.shortDescription()): 
+        if self.shortDescription():
             self.fixture_log.info("{0}".format(self.shortDescription()))
         self.fixture_log.info("{0}".format('=' * 56))
         
@@ -167,7 +168,7 @@ class BaseTestFixture(unittest.TestCase):
                This is related to the todo in L{TestRunMetrics}
         '''
         # Build metrics
-        if(self._resultForDoCleanups.wasSuccessful()):
+        if self._resultForDoCleanups.wasSuccessful():
             self.fixture_metrics.total_passed += 1
             self.test_metrics.result = TestResultTypes.PASSED
         else:
@@ -232,5 +233,5 @@ class BaseBurnInTestFixture(BaseTestFixture):
         super(BaseBurnInTestFixture, self).setUp()
         
     def tearDown(self):
-        # Let the base handle whatever goodoo it needs
+        # Let the base handle whatever hoodoo it needs
         super(BaseBurnInTestFixture, self).tearDown()

@@ -90,7 +90,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 log.exception(exception)
 
             logline = ''.join([
-                '\n{0}\nRESPONSE RECIEVED\n{0}\n'.format('-' * 17),
+                '\n{0}\nRESPONSE RECEIVED\n{0}\n'.format('-' * 17),
                 'response status..: {0}\n'.format(response),
                 'response time....: {0}\n'.format(elapsed),
                 'response headers.: {0}\n'.format(response.headers),
@@ -142,7 +142,7 @@ class BaseRestClient(BaseClient):
     @_inject_exception(_exception_handlers)
     @_log_transaction(log=_log)
     def request(self, method, url, **kwargs):
-        """ Performs <method> HTTP request to <url>  using the requests lib"""
+        """ Performs <method> HTTP request to <url> using the requests lib"""
         return requests.request(method, url, **kwargs)
 
     def put(self, url, **kwargs):
@@ -197,13 +197,13 @@ class BaseRestClient(BaseClient):
 
 class RestClient(BaseRestClient):
     """
-    @summary: Allows clients to inherit all requests-defined RESTfull
+    @summary: Allows clients to inherit all requests-defined RESTful
               verbs. Redefines request() so that keyword args are passed
               through a named dictionary instead of kwargs.
-              Client methods can then take paramaters that may overload
-              request paramaters, which allows client method calls to
-              override parts of the request with paramters sent directly
-              to requests, overiding the client method logic either in
+              Client methods can then take parameters that may overload
+              request parameters, which allows client method calls to
+              override parts of the request with parameters sent directly
+              to requests, overriding the client method logic either in
               part or whole on the fly.
 
     @see: http://docs.python-requests.org/en/latest/api/#configurations
@@ -244,8 +244,8 @@ class RestClient(BaseRestClient):
             if requestslib_kwargs[key] is None:
                 del requestslib_kwargs[key]
 
-        #Create the final paramaters for the call to the base request()
-        #Wherever a paramater is provided both by the calling method AND
+        #Create the final parameters for the call to the base request()
+        #Wherever a parameter is provided both by the calling method AND
         #the requests_lib kwargs dictionary, requestslib_kwargs "wins"
         requestslib_kwargs = dict({'headers': headers,
                                    'params': params,
@@ -275,7 +275,7 @@ class AutoMarshallingRestClient(RestClient):
         requestslib_kwargs = requestslib_kwargs if (requestslib_kwargs is not
                                                     None) else {}
 
-        #set the 'data' paramater of the request to either what's already in
+        #set the 'data' parameter of the request to either what's already in
         #requestslib_kwargs, or the deserialized output of the request_entity
         if request_entity is not None:
             requestslib_kwargs = dict(

@@ -69,7 +69,7 @@ class EngineConfig(object):
             print ("Unexpected exception while attempting to access '{0}' "
                    "environment variable.".format(_ENGINE_CONFIG_FILE_ENV_VAR))
             raise exception
-        return(engine_config_file_path)
+        return engine_config_file_path
     
     def get(self, item_name, default=None):
 
@@ -81,7 +81,8 @@ class EngineConfig(object):
             return default
 
     def get_raw(self, item_name, default=None):
-        '''Performs a get() on SafeConfigParser object without interpolation
+        '''
+        Performs a get() on SafeConfigParser object without interpolation
         '''
 
         try:
