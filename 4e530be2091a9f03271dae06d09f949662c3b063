@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Sam Danes <sam.danes@rackspace.com>
+Code-Review+2: Sam Danes <sam.danes@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 12 Apr 2013 15:27:03 +0000
+Reviewed-on: https://review.openstack.org/26243
+Project: stackforge/opencafe
+Branch: refs/heads/master
