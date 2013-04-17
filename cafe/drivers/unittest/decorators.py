@@ -15,12 +15,12 @@ limitations under the License.
 """
 
 
-def tags(*tags, **attrs):
-    def _decorator(func):
-        setattr(func, '__test_tags__', [])
-        setattr(func, '__test_attrs__', {})
-        func.__test_tags__.extend(tags)
-        func.__test_attrs__.update(attrs)
+def tags(*args, **kwargs):
+    def wrap(func):
+        setattr(func, 'decorated', 1)
+        for name in args:
+            setattr(func, name, 1)
+        func.__dict__.update(kwargs)
         return func
-    return _decorator
+    return wrap
 
