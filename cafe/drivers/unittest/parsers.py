@@ -58,7 +58,8 @@ class ParseResult(object):
             actual_number_of_tests_run = all_tests
 
         for passed_test in list(set(all_tests) - set(failed_tests) - set(skipped_tests) - set(errored_tests) - set(setup_errored_tests)):
-            passed_obj = Result(passed_test.__class__.__name__, vars(passed_test).get('_testMethodName'))
+            passed_obj = Result(passed_test.__class__.__name__,
+                                vars(passed_test).get('_testMethodName'))
             passed_obj_list.append(passed_obj)
 
         return passed_obj_list
@@ -66,7 +67,9 @@ class ParseResult(object):
     def get_skipped_tests(self):
         skipped_obj_list = []
         for item in self.skipped:
-            skipped_obj = Result(item[0].__class__.__name__, vars(item[0]).get('_testMethodName'), skipped_msg=item[1])
+            skipped_obj = Result(item[0].__class__.__name__,
+                                 vars(item[0]).get('_testMethodName'),
+                                 skipped_msg=item[1])
             skipped_obj_list.append(skipped_obj)
         return skipped_obj_list
 
@@ -74,16 +77,22 @@ class ParseResult(object):
         errored_obj_list = []
         for item in self.errors:
             if item[0].__class__.__name__ is not '_ErrorHolder':
-                errored_obj = Result(item[0].__class__.__name__, vars(item[0]).get('_testMethodName'), error_trace=item[1])
+                errored_obj = Result(item[0].__class__.__name__,
+                                     vars(item[0]).get('_testMethodName'),
+                                     error_trace=item[1])
             else:
-                errored_obj = Result(str(item[0]).split(" ")[0], str(item[0]).split(".")[-1].rstrip(')'), error_trace=item[1])
+                errored_obj = Result(str(item[0]).split(" ")[0],
+                                     str(item[0]).split(".")[-1].rstrip(')'),
+                                     error_trace=item[1])
             errored_obj_list.append(errored_obj)
         return errored_obj_list
 
     def parse_failures(self):
         failure_obj_list = []
         for failure in self.failures:
-            failure_obj = Result(failure[0].__class__.__name__, vars(failure[0]).get('_testMethodName'), failure[1])
+            failure_obj = Result(failure[0].__class__.__name__,
+                                 vars(failure[0]).get('_testMethodName'),
+                                 failure[1])
             failure_obj_list.append(failure_obj)
 
         return failure_obj_list
@@ -138,7 +147,8 @@ class ParseResult(object):
 
 
 class Result(object):
-    def __init__(self, test_class_name, test_method_name, failure_trace=None, skipped_msg=None, error_trace=None):
+    def __init__(self, test_class_name, test_method_name, failure_trace=None,
+                 skipped_msg=None, error_trace=None):
         self.test_class_name = test_class_name
         self.test_method_name = test_method_name
         self.failure_trace = failure_trace

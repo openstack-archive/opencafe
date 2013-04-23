@@ -22,8 +22,10 @@ from cafe.engine.clients.ssh import SSHBaseClient
 
 class BasePersistentLinuxClient(object):
 
-    def __init__(self, ip_address, username, password, ssh_timeout=600, prompt=None):
-        self.ssh_client = SSHBaseClient(ip_address, username, password, ssh_timeout)
+    def __init__(self, ip_address, username, password,
+                 ssh_timeout=600, prompt=None):
+        self.ssh_client = SSHBaseClient(ip_address, username,
+                                        password, ssh_timeout)
         self.prompt = prompt
         if not self.ssh_client.test_connection_auth():
             raise
@@ -33,7 +35,8 @@ class BasePersistentLinuxClient(object):
         return self.ssh_client.exec_command(
             "mkfs.%s %s\n" % (str(fstype).lower(), str(device)))
 
-    def mount_disk_device(self, device, mountpoint, fstype, create_mountpoint=True):
+    def mount_disk_device(self, device, mountpoint, fstype,
+                          create_mountpoint=True):
         '''
         Mounts a disk at a specified mountpoint.
         Performs 'touch mountpoint' before executing
@@ -82,7 +85,7 @@ class BasePersistentLinuxClient(object):
 
     def stat_file(self, filepath):
         sshresp = self.ssh_client.exec_command("stat %s\n" % str(filepath))
-        return  sshresp
+        return sshresp
 
     def get_file_size_bytes(self, filepath):
         '''
@@ -101,7 +104,8 @@ class BasePersistentLinuxClient(object):
             Performs binary mode md5sum of file and returns hash.
             (md5sum -b <file>)
         '''
-        sshresp = self.ssh_client.exec_command("md5sum -b %s\n" % str(filepath))
+        sshresp = self.ssh_client.exec_command("md5sum -b %s\n"
+                                               % str(filepath))
         result = re.search('^(.*)\s', sshresp)
         try:
             return result.groups()[0]

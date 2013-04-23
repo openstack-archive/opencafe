@@ -22,16 +22,18 @@ from cafe.common.reporting import cclogging
 from cafe.engine.clients.ping import PingClient
 from cloudcafe.compute.common.models.file_details import FileDetails
 from cloudcafe.compute.common.models.partition import Partition, DiskSize
-from cafe.engine.clients.remote_instance.linux.base_client import BasePersistentLinuxClient
-from cloudcafe.compute.common.exceptions import FileNotFoundException, ServerUnreachable, SshConnectionException
+from cafe.engine.clients.remote_instance.linux.base_client import \
+    BasePersistentLinuxClient
+from cloudcafe.compute.common.exceptions import FileNotFoundException, \
+    ServerUnreachable, SshConnectionException
 
 
 class LinuxClient(BasePersistentLinuxClient):
 
     def __init__(self, ip_address=None, server_id=None, username=None,
                  password=None, config=None, os_distro=None):
-        self.client_log = cclogging.getLogger \
-                (cclogging.get_object_namespace(self.__class__))
+        self.client_log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
         ssh_timeout = config.connection_timeout
         if ip_address is None:
             raise ServerUnreachable("None")
@@ -58,7 +60,8 @@ class LinuxClient(BasePersistentLinuxClient):
         if not self.ssh_client.test_connection_auth():
             self.client_log.error("Ssh connection failed for: IP:{0} \
                     Username:{1} Password: {2}".format(self.ip_address,
-                                                       self.username, self.password))
+                                                       self.username,
+                                                       self.password))
             raise SshConnectionException("ssh connection failed")
 
     def can_connect_to_public_ip(self):
@@ -81,7 +84,8 @@ class LinuxClient(BasePersistentLinuxClient):
         @rtype: bool
         """
         for public_address in public_addresses:
-            if public_address.version == 4 and not PingClient.ping(public_address.addr, ip_address_version_for_ssh):
+            if public_address.version == 4 and not PingClient.ping(public_address.addr,
+                                                                   ip_address_version_for_ssh):
                 return False
         return True
 
@@ -128,7 +132,8 @@ class LinuxClient(BasePersistentLinuxClient):
         @rtype: bool
         """
         for private_address in private_addresses:
-            if private_address.version == 4 and not PingClient.ping_using_remote_machine(self.ssh_client, private_address.addr):
+            if private_address.version == 4 and not PingClient.ping_using_remote_machine(self.ssh_client,
+                                                                                         private_address.addr):
                 return False
         return True
 
@@ -298,7 +303,8 @@ class LinuxClient(BasePersistentLinuxClient):
                 Partition(partition_name, partition_size, partition_type))
         return partitions
 
-    def verify_partitions(self, expected_disk_size, expected_swap_size, server_status, actual_partitions):
+    def verify_partitions(self, expected_disk_size, expected_swap_size,
+                          server_status, actual_partitions):
         """
         @summary: Verify the partition details of the server
         @param expected_disk_size: The expected value of the Disk size in GB
@@ -319,10 +325,12 @@ class LinuxClient(BasePersistentLinuxClient):
 
         for partition in expected_partitions:
             if partition not in actual_partitions:
-                return False, self._construct_partition_mismatch_message(expected_partitions, actual_partitions)
+                return False, self._construct_partition_mismatch_message(expected_partitions,
+                                                                         actual_partitions)
         return True, "Partitions Matched"
 
-    def _get_expected_partitions(self, expected_disk_size, expected_swap_size, server_status):
+    def _get_expected_partitions(self, expected_disk_size, expected_swap_size,
+                                 server_status):
         """
         @summary: Returns the expected partitions for a server based on server status
         @param expected_disk_size: The Expected disk size of the server in GB
@@ -336,9 +344,12 @@ class LinuxClient(BasePersistentLinuxClient):
         """
         # ignoring swap untill the rescue functionality is clarified
 
-        expected_partitions = [Partition(
-            '/dev/xvda1', DiskSize(expected_disk_size, 'GB'), 'ext3'),
-                               Partition('/dev/xvdc1', DiskSize(expected_swap_size, 'MB'), 'swap')]
+        expected_partitions = [Partition('/dev/xvda1',
+                                         DiskSize(expected_disk_size, 'GB'),
+                                         'ext3'),
+                               Partition('/dev/xvdc1',
+                                         DiskSize(expected_swap_size, 'MB'),
+                                         'swap')]
         if str.upper(server_status) == 'RESCUE':
             expected_partitions = [Partition(
                 '/dev/xvdb1', DiskSize(expected_disk_size, 'GB'), 'ext3')]
@@ -346,9 +357,11 @@ class LinuxClient(BasePersistentLinuxClient):
             # DiskSize(expected_swap_size, 'MB'), 'swap'))
         return expected_partitions
 
-    def _construct_partition_mismatch_message(self, expected_partitions, actual_partitions):
+    def _construct_partition_mismatch_message(self, expected_partitions,
+                                              actual_partitions):
         """
-        @summary: Constructs the partition mismatch message based on expected_partitions and actual_partitions
+        @summary: Constructs the partition mismatch message based on
+                  expected_partitions and actual_partitions
         @param expected_partitions: Expected partitions of the server
         @type expected_partitions: Partition List
         @param actual_partitions: Actual Partitions of the server
@@ -364,7 +377,8 @@ class LinuxClient(BasePersistentLinuxClient):
             message += str(partition) + '\n'
         return message
 
-    def mount_file_to_destination_directory(self, source_path, destination_path):
+    def mount_file_to_destination_directory(self, source_path,
+                                            destination_path):
         '''
         @summary: Mounts the file to destination directory
         @param source_path: Path to file source

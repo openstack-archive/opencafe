@@ -35,7 +35,7 @@ if sys.argv[-1] == 'publish':
 
 requires = open('pip-requires').readlines()
 
-''' @todo: entry point should be read from a configuration and not hard coded 
+''' @todo: entry point should be read from a configuration and not hard coded
            to the unittest driver's runner '''
 setup(
     name='cafe',
@@ -54,7 +54,6 @@ setup(
     install_requires=requires,
     license=open('LICENSE').read(),
     zip_safe=False,
-    #https://the-hitchhikers-guide-to-packaging.readthedocs.org/en/latest/specification.html
     classifiers=(
         'Development Status :: 1 - Planning',
         'Intended Audience :: Developers',
@@ -129,9 +128,9 @@ else:
         os.chown(data_dir, uid, gid)
         os.chown(temp_dir, uid, gid)
         os.chown(config_dir, uid, gid)
-    
+
     # Build the default configuration file
-    if(os.path.exists("{0}/engine.config".format(config_dir)) == False):
+    if os.path.exists("{0}/engine.config".format(config_dir)) is False:
         config = open("{0}/engine.config".format(config_dir), "w")
         config.write("[CCTNG_ENGINE]\n")
         config.write("log_directory={0}\n".format(log_dir))
@@ -142,4 +141,3 @@ else:
 
         if platform.system().lower() != 'windows':
             os.chown("{0}/engine.config".format(config_dir), uid, gid)
-

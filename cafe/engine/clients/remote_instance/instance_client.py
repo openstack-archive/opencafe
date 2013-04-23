@@ -15,8 +15,10 @@ limitations under the License.
 """
 
 from cafe.common.reporting import cclogging
-from cafe.engine.clients.remote_instance.linux.linux_instance_client import LinuxClient
-from cafe.engine.clients.remote_instance.windows.windows_instance_client import WindowsClient
+from cafe.engine.clients.remote_instance.linux.linux_instance_client \
+    import LinuxClient
+from cafe.engine.clients.remote_instance.windows.windows_instance_client \
+    import WindowsClient
 
 
 class InstanceClientFactory(object):
@@ -24,8 +26,9 @@ class InstanceClientFactory(object):
     @summary: Factory class which will create appropriate utility object
     based on the operating system of the server.
     """
-    clientList = {'windows': 'WindowsClient', 'linux': 'LinuxClient', 'gentoo': 'LinuxClient',
-                  'arch': 'LinuxClient', 'freebsd': 'FreeBSDClient'}
+    clientList = {'windows': 'WindowsClient', 'linux': 'LinuxClient',
+                  'gentoo': 'LinuxClient', 'arch': 'LinuxClient',
+                  'freebsd': 'FreeBSDClient'}
 
     @classmethod
     def get_instance_client(cls, ip_address=None, username=None, password=None,
@@ -61,13 +64,11 @@ class InstanceClient(object):
 
     def __init__(self, ip_address=None, password=None, os_distro=None,
                  config=None, username=None, server_id=None):
-        self._client = InstanceClientFactory.get_instance_client(ip_address=ip_address,
-                                                                 password=password,
-                                                                 os_distro=os_distro,
-                                                                 username=username,
-                                                                 server_id=server_id,
-                                                                 config=config)
-        self.client_log = cclogging.getLogger(cclogging.get_object_namespace(self.__class__))
+        self._client = InstanceClientFactory.get_instance_client(
+            ip_address=ip_address, password=password, os_distro=os_distro,
+            username=username, server_id=server_id, config=config)
+        self.client_log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
 
     def can_authenticate(self):
         """

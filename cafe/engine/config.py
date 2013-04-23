@@ -20,12 +20,14 @@ import ConfigParser
 
 _ENGINE_CONFIG_FILE_ENV_VAR = 'CCTNG_CONFIG_FILE'
 
+
 class NonExistentConfigPathError(Exception):
     pass
 
 
 class ConfigEnvironmentVariableError(Exception):
     pass
+
 
 class EngineConfig(object):
     '''
@@ -70,7 +72,7 @@ class EngineConfig(object):
                    "environment variable.".format(_ENGINE_CONFIG_FILE_ENV_VAR))
             raise exception
         return engine_config_file_path
-    
+
     def get(self, item_name, default=None):
 
         try:
@@ -116,7 +118,8 @@ class EngineConfig(object):
     #Used by the engine for the output of engine and implementation logs
     @property
     def log_directory(self):
-        return os.getenv("CLOUDCAFE_LOG_PATH", self.get_raw("log_directory", default="."))
+        return os.getenv("CLOUDCAFE_LOG_PATH",
+                         self.get_raw("log_directory", default="."))
 
     #Used by the engine for the output of engine and implementation logs
     @property

@@ -75,4 +75,3 @@ class SecDataGeneratorCount(BaseDataGenerator):
         self.test_records = []
         for i in range(start, stop):
             self.test_records.append({"fuzz_data": i})
-

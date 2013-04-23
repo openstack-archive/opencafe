@@ -17,10 +17,11 @@ limitations under the License.
 from unittest2.suite import TestSuite
 
 
-class BaseParameterizedLoader(object):    
+class BaseParameterizedLoader(object):
     '''
     Instantiate this class with a data generator object(DataGenerator subclass)
-    Then use that instance to add your tests like you add your tests into the suite.
+    Then use that instance to add your tests like you add your
+    tests into the suite.
     e.g. data_generator = LavaAPIDataGenerator()
          custom_loader =  BaseParameterizedLoader(data_generator)
          custom_loader.addTest(TestClass("test-1"))
@@ -31,18 +32,18 @@ class BaseParameterizedLoader(object):
     def __init__(self, data_provider):
         self.data_provider = data_provider
         self.tests = []
-    
-    def addTest(self,testcase):
+
+    def addTest(self, testcase):
         '''
         Add tests to this loader. This takes a test case object as a parameter
         See e.g. above
         '''
         self.tests.append(testcase)
-    
+
     def getSuite(self):
         '''
         returns a test suite used by the unittest to run packages.
-        load_tests function can return this. 
+        load_tests function can return this.
         '''
         if len(self.tests) != 0:
             '''
@@ -62,6 +63,4 @@ class BaseParameterizedLoader(object):
                     suite.addTest(test_to_be_mod)
             return suite
         else:
-            raise Exception,"No tests added to the parameterized loader"
-                    
-        
+            raise Exception, "No tests added to the parameterized loader"

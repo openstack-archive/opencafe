@@ -21,6 +21,7 @@ import os
 from datetime import datetime
 from unittest2.result import TestResult
 
+
 class TestRunMetrics(object):
     '''
     @summary: Generic Timer used to track any time span
@@ -31,7 +32,7 @@ class TestRunMetrics(object):
     @todo: This is a stop gap. It will be necessary to override large portions
            of the runner and the default unittest.TestCase architecture to make
            this auto-magically work with unittest properly.
-           This should be a child of unittest.TestResult  
+           This should be a child of unittest.TestResult
     '''
     def __init__(self):
         self.total_tests = 0
@@ -39,6 +40,7 @@ class TestRunMetrics(object):
         self.total_failed = 0
         self.timer = TestTimer()
         self.result = TestResultTypes.UNKNOWN
+
 
 class TestResultTypes(object):
     '''
@@ -49,15 +51,16 @@ class TestResultTypes(object):
     @type FAILED: C{str}
     @cvar SKIPPED: Test was skipped
     @type SKIPPED: C{str}
-    @cvar TIMEDOUT: Test exceeded pre-defined execution time limit   
+    @cvar TIMEDOUT: Test exceeded pre-defined execution time limit
     @type TIMEDOUT: C{str}
     @note: This is essentially an Enumerated Type
     '''
     PASSED = "Passed"
     FAILED = "Failed"
-    SKIPPED = "Skipped"    #Not Supported Yet
-    TIMEDOUT = "Timedout"  #Not Supported Yet
+    SKIPPED = "Skipped"    # Not Supported Yet
+    TIMEDOUT = "Timedout"  # Not Supported Yet
     UNKNOWN = "UNKNOWN"
+
 
 class TestTimer(object):
     '''
@@ -78,7 +81,7 @@ class TestTimer(object):
         @rtype: None
         '''
         self.start_time = datetime.now()
-        
+
     def stop(self):
         '''
         @summary: Stops this timer
@@ -86,7 +89,7 @@ class TestTimer(object):
         @rtype: None
         '''
         self.stop_time = datetime.now()
-        
+
     def get_elapsed_time(self):
         '''
         @summary: Convenience method for total elapsed time
@@ -94,8 +97,8 @@ class TestTimer(object):
         @return: Elapsed time for this timer. C{None} if timer has not started
         '''
         elapsedTime = None
-        if (self.start_time != None):
-            if (self.stop_time != None):
+        if self.start_time is not None:
+            if self.stop_time is not None:
                 elapsedTime = (self.stop_time - self.start_time)
             else:
                 elapsedTime = (datetime.now() - self.start_time)
@@ -104,6 +107,7 @@ class TestTimer(object):
             rightNow = datetime.now()
             elapsedTime = (rightNow - rightNow)
         return(elapsedTime)
+
 
 class PBStatisticsLog(object):
     '''
@@ -118,8 +122,10 @@ class PBStatisticsLog(object):
     @type Warnings:  C{list}
     @ivar: IsDebugMode: Flag to turn Debug logging on and off
     @type IsDebugMode:  C{bool}
-    @todo: Upgrade this astoundingly basic logger to Python or Twisted logger framework
-    @attention: THIS LOGGER IS DESIGNED TO BE TEMPORARY. It will be replaced in the matured framework
+    @todo: Upgrade this astoundingly basic logger to
+           Python or Twisted logger framework
+    @attention: THIS LOGGER IS DESIGNED TO BE TEMPORARY.
+                It will be replaced in the matured framework
     '''
     def __init__(self, fileName=None, log_dir='.', startClean=False):
         self.FileMode = 'a'
@@ -127,21 +133,22 @@ class PBStatisticsLog(object):
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
             self.File = os.path.normpath(os.path.join(log_dir, fileName))
-            if startClean is True and os.path.exists(self.File) == True:
+            if startClean and os.path.exists(self.File):
                 ''' Force the file to be overwritten before any writing '''
                 os.remove(self.File)
         else:
             self.File = None
-            
+
         if os.path.exists(self.File) is False:
             ''' Write out the header to the stats log '''
-            self.__write("Elapsed Time,Start Time,Stop Time,Result,Errors,Warnings")
-        
+            self.__write(
+                "Elapsed Time,Start Time,Stop Time,Result,Errors,Warnings")
+
     def __write(self, message):
         '''
         @summary: Writes a message to this log file
         @param formatted: Indicates if message applies standard formatting
-        @type formatted: C{bool}  
+        @type formatted: C{bool}
         @return: None
         @rtype: None
         '''
@@ -152,7 +159,8 @@ class PBStatisticsLog(object):
         return
 
     def report(self, test_result=TestRunMetrics()):
-        self.__write("{0},{1},{2},{3}".format(test_result.timer.get_elapsed_time(), 
+        self.__write("{0},{1},{2},{3}".format(
+            test_result.timer.get_elapsed_time(),
             test_result.timer.start_time,
             test_result.timer.stop_time,
             test_result.result))

@@ -17,7 +17,8 @@ limitations under the License.
 import time
 import re
 
-from cafe.engine.clients.remote_instance.linux.linux_instance_client import LinuxClient
+from cafe.engine.clients.remote_instance.linux.linux_instance_client \
+    import LinuxClient
 from cloudcafe.common.constants import InstanceClientConstants
 
 
@@ -38,7 +39,8 @@ class FreeBSDClient(LinuxClient):
 
         reboot_time = self.ssh_client.exec_command('date -v -' + uptime + uptime_unit_format + ' "+%Y-%m-%d %H:%M"').replace('\n', '')
 
-        return time.strptime(reboot_time, InstanceClientConstants.LAST_REBOOT_TIME_FORMAT)
+        return time.strptime(reboot_time,
+                             InstanceClientConstants.LAST_REBOOT_TIME_FORMAT)
 
     def get_disk_size_in_gb(self):
         """
@@ -46,6 +48,7 @@ class FreeBSDClient(LinuxClient):
         @return: The disk size in GB
         @rtype: int
         """
-        output = self.ssh_client.exec_command('gpart show -p | grep "GPT"').replace('\n', '')
+        output = self.ssh_client.exec_command(
+            'gpart show -p | grep "GPT"').replace('\n', '')
         disk_size = re.search(r'([0-9]+)G', output).group(1)
         return int(disk_size)

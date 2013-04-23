@@ -243,7 +243,8 @@ class SSHBaseClient(BaseClient):
         try:
             sftp.listdir()
         except IOError, exception:
-            self._log.warning("Exception in browsing folder file: %s" % exception)
+            self._log.warning("Exception in browsing folder file: %s"
+                              % exception)
             return False
         else:
             sftp.close()
@@ -252,7 +253,7 @@ class SSHBaseClient(BaseClient):
 
     def upload_a_file(self, server_file_path, client_file_path):
         self._log.info("uploading file from %s to %s"
-                                % (client_file_path, server_file_path))
+                       % (client_file_path, server_file_path))
         transport = paramiko.Transport((self.host, self.port))
         transport.connect(username=self.username, password=self.password)
         sftp = paramiko.SFTPClient.from_transport(transport)

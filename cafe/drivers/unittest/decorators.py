@@ -23,4 +23,3 @@ def tags(*args, **kwargs):
         func.__dict__.update(kwargs)
         return func
     return wrap
-
