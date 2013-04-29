@@ -57,7 +57,10 @@ class ParseResult(object):
         else:
             actual_number_of_tests_run = all_tests
 
-        for passed_test in list(set(all_tests) - set(failed_tests) - set(skipped_tests) - set(errored_tests) - set(setup_errored_tests)):
+        passed_tests = list(set(all_tests) - set(failed_tests)
+                            - set(skipped_tests) - set(errored_tests)
+                            - set(setup_errored_tests))
+        for passed_test in passed_tests:
             passed_obj = Result(passed_test.__class__.__name__,
                                 vars(passed_test).get('_testMethodName'))
             passed_obj_list.append(passed_obj)
@@ -107,11 +110,14 @@ class ParseResult(object):
 
     def generate_xml_report(self):
         executed_tests = []
-        executed_tests = self.get_passed_tests() + self.parse_failures() + self.get_errored_tests() + self.get_skipped_tests()
+        executed_tests = (self.get_passed_tests() + self.parse_failures() +
+                          self.get_errored_tests() + self.get_skipped_tests())
         summary_result = self.summary_result()
+        number_of_tests = len(vars(self.master_testsuite).get('_tests'))
+
         root = ET.Element("testsuite")
         root.attrib['name'] = ''
-        root.attrib['tests'] = str(len(vars(self.master_testsuite).get('_tests')))
+        root.attrib['tests'] = str(number_of_tests)
         root.attrib['errors'] = summary_result['errors']
         root.attrib['failures'] = summary_result['failures']
         root.attrib['skips'] = summary_result['skipped']
@@ -122,21 +128,24 @@ class ParseResult(object):
             testcase_tag.attrib['classname'] = testcase.test_class_name
             testcase_tag.attrib['name'] = testcase.test_method_name
             if testcase.failure_trace is not None:
+                trace = testcase.failure_trace
                 testcase_tag.attrib['result'] = "FAILED"
                 error_tag = ET.SubElement(testcase_tag, 'failure')
-                error_tag.attrib['type'] = testcase.failure_trace.split(":")[1].split()[-1]
-                error_tag.attrib['message'] = testcase.failure_trace.split(":")[-1].strip()
+                error_tag.attrib['type'] = trace.split(":")[1].split()[-1]
+                error_tag.attrib['message'] = trace.split(":")[-1].strip()
                 error_tag.text = testcase.failure_trace
             else:
                 if testcase.skipped_msg is not None:
+                    message = testcase.skipped_msg.strip()
                     skipped_tag = ET.SubElement(testcase_tag, 'skipped')
                     testcase_tag.attrib['result'] = "SKIPPED"
-                    skipped_tag.attrib['message'] = testcase.skipped_msg.strip()
+                    skipped_tag.attrib['message'] = message
                 elif testcase.error_trace is not None:
+                    trace = testcase.error_trace
                     testcase_tag.attrib['result'] = "ERROR"
                     error_tag = ET.SubElement(testcase_tag, 'error')
-                    error_tag.attrib['type'] = testcase.error_trace.split(":")[1].split()[-1]
-                    error_tag.attrib['message'] = testcase.error_trace.split(":")[-1].strip()
+                    error_tag.attrib['type'] = trace.split(":")[1].split()[-1]
+                    error_tag.attrib['message'] = trace.split(":")[-1].strip()
                     error_tag.text = testcase.error_trace
                 else:
                     testcase_tag.attrib['result'] = "PASSED"

@@ -94,7 +94,8 @@ class SSHBaseClient(BaseClient):
                 #Wait 2 seconds otherwise
             time.sleep(2)
         if _timeout:
-            self._log.error('SSHConnector timed out while trying to establish a connection')
+            self._log.error('SSHConnector timed out while trying to establish'
+                            ' a connection')
             raise saved_exception
 
         #This MUST be done because the transport gets garbage collected if it
@@ -210,8 +211,8 @@ class SSHBaseClient(BaseClient):
                 self._log.debug('SHELL-PROMPT-FOUND: %s' % prompt)
                 break
             self._log.debug('Current response: %s' % current)
-            self._log.debug('Looking for prompt: %s. Time remaining until timeout: %s'
-                            % (prompt, max_time - time.time()))
+            self._log.debug('Looking for prompt: %s. Time remaining until '
+                            'timeout: %s' % (prompt, max_time - time.time()))
             while not self._chan.recv_ready() and time.time() < max_time:
                 time.sleep(5)
             self._chan.get_transport().set_keepalive(1000)
@@ -228,7 +229,8 @@ class SSHBaseClient(BaseClient):
         try:
             sftp.mkdir(directory_name)
         except IOError, exception:
-            self._log.warning("Exception in making a directory: %s" % exception)
+            self._log.warning('Exception in making a directory: '
+                              '%s' % exception)
             return False
         else:
             sftp.close()

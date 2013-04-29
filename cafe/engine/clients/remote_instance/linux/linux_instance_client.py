@@ -84,8 +84,8 @@ class LinuxClient(BasePersistentLinuxClient):
         @rtype: bool
         """
         for public_address in public_addresses:
-            if public_address.version == 4 and not PingClient.ping(public_address.addr,
-                                                                   ip_address_version_for_ssh):
+            if public_address.version == 4 and not PingClient.ping(
+                    public_address.addr, ip_address_version_for_ssh):
                 return False
         return True
 
@@ -132,8 +132,9 @@ class LinuxClient(BasePersistentLinuxClient):
         @rtype: bool
         """
         for private_address in private_addresses:
-            if private_address.version == 4 and not PingClient.ping_using_remote_machine(self.ssh_client,
-                                                                                         private_address.addr):
+            remote = PingClient.ping_using_remote_machine(self.ssh_client,
+                                                          private_address.addr)
+            if private_address.version == 4 and not remote:
                 return False
         return True
 
@@ -166,7 +167,8 @@ class LinuxClient(BasePersistentLinuxClient):
         @rtype: int
         """
         output = self.ssh_client.exec_command(
-            'fdisk -l /dev/xvdc1 2>/dev/null | grep "Disk.*bytes"').rstrip('\n')
+            'fdisk -l /dev/xvdc1 2>/dev/null | grep '
+            '"Disk.*bytes"').rstrip('\n')
         if output:
             return int(output.split()[2])
 
@@ -238,8 +240,9 @@ class LinuxClient(BasePersistentLinuxClient):
         @return: File details including permissions and content
         @rtype: FileDetails
         """
-        output = self.ssh_client.exec_command(
-            '[ -f ' + filepath + ' ] && echo "File exists" || echo "File does not exist"')
+        command = ('[ -f ' + filepath + ' ] && echo "File exists" || '
+                                        'echo "File does not exist"')
+        output = self.ssh_client.exec_command(command)
         if not output.rstrip('\n') == 'File exists':
             raise FileNotFoundException(
                 "File:" + filepath + " not found on instance.")
@@ -256,8 +259,9 @@ class LinuxClient(BasePersistentLinuxClient):
         @type filepath: string
         @return: True if File exists, False otherwise
         """
-        output = self.ssh_client.exec_command(
-            '[ -f ' + filepath + ' ] && echo "File exists" || echo "File does not exist"')
+        command = ('[ -f ' + filepath + ' ] && echo "File exists" || '
+                                        'echo "File does not exist"')
+        output = self.ssh_client.exec_command(command)
         return output.rstrip('\n') == 'File exists'
 
     def get_partition_types(self):
@@ -287,7 +291,8 @@ class LinuxClient(BasePersistentLinuxClient):
         partition_names = ' '.join(partition_types.keys())
 
         partition_size_output = self.ssh_client.exec_command(
-            'fdisk -l %s 2>/dev/null | grep "Disk.*bytes"' % (partition_names)).rstrip('\n').split('\n')
+            'fdisk -l %s 2>/dev/null | '
+            'grep "Disk.*bytes"' % partition_names).rstrip('\n').split('\n')
         partitions = []
         for row in partition_size_output:
             row_details = row.split()
@@ -325,14 +330,14 @@ class LinuxClient(BasePersistentLinuxClient):
 
         for partition in expected_partitions:
             if partition not in actual_partitions:
-                return False, self._construct_partition_mismatch_message(expected_partitions,
-                                                                         actual_partitions)
+                return False, self._construct_partition_mismatch_message(
+                    expected_partitions, actual_partitions)
         return True, "Partitions Matched"
 
     def _get_expected_partitions(self, expected_disk_size, expected_swap_size,
                                  server_status):
         """
-        @summary: Returns the expected partitions for a server based on server status
+        @summary: Returns the expected partitions for a server based on status
         @param expected_disk_size: The Expected disk size of the server in GB
         @type expected_disk_size: string
         @param expected_swap_size: The Expected swap size of the server in MB
