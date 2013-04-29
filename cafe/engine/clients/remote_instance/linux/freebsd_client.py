@@ -37,7 +37,9 @@ class FreeBSDClient(LinuxClient):
         else:
             uptime_unit_format = 'S'
 
-        reboot_time = self.ssh_client.exec_command('date -v -' + uptime + uptime_unit_format + ' "+%Y-%m-%d %H:%M"').replace('\n', '')
+        command = 'date -v -{uptime}{unit_format} "+%Y-%m-%d %H:%M"'.format(
+            uptime=uptime, uptime_unit_format=uptime_unit_format)
+        reboot_time = self.ssh_client.exec_command(command).replace('\n', '')
 
         return time.strptime(reboot_time,
                              InstanceClientConstants.LAST_REBOOT_TIME_FORMAT)
