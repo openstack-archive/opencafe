@@ -938,10 +938,11 @@ class CCRunner(object):
                         all_results += result_parser.gather_results()
 
                     # Convert Result objects to dicts for serialization
+                    json_filename = os.path.join(os.getcwd(), 'result.json')
                     json_results = []
                     for r in all_results:
                         json_results.append(r.__dict__)
-                    with open(os.getcwd() + "/result.json", 'wb') as result_file:
+                    with open(json_filename, 'wb') as result_file:
                         json.dump(json_results, result_file)
 
                 fail = ''
@@ -964,15 +965,17 @@ class CCRunner(object):
                 total_execution_time = time.time() - start_time
 
                 if cl_args.json_result is not None:
-                    result_parser = SummarizeResults(vars(result), master_suite,
+                    result_parser = SummarizeResults(vars(result),
+                                                     master_suite,
                                                      total_execution_time)
                     all_results = result_parser.gather_results()
 
                     # Convert Result objects to dicts for serialization
+                    json_filename = os.path.join(os.getcwd(), 'results.json')
                     json_results = []
                     for r in all_results:
                         json_results.append(r.__dict__)
-                    with open(os.getcwd() + "/results.json", 'wb') as result_file:
+                    with open(json_filename, 'wb') as result_file:
                         json.dump(json_results, result_file)
 
                 log_results(result)

@@ -16,7 +16,8 @@ limitations under the License.
 
 import time
 
-from cafe.engine.clients.remote_instance.linux.linux_instance_client import LinuxClient
+from cafe.engine.clients.remote_instance.linux.linux_instance_client \
+    import LinuxClient
 from cloudcafe.common.constants import InstanceClientConstants
 
 
@@ -33,4 +34,5 @@ class GentooArchClient(LinuxClient):
             'date | grep -o "[0-9]\{4\}$"').replace('\n', '')
         boot_time = boot_time_string + year
 
-        return time.strptime(boot_time, InstanceClientConstants.LAST_REBOOT_TIME_FORMAT_GENTOO)
+        time_format = InstanceClientConstants.LAST_REBOOT_TIME_FORMAT_GENTOO
+        return time.strptime(boot_time, time_format)

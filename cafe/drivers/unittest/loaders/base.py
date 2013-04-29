@@ -53,7 +53,7 @@ class BaseParameterizedLoader(object):
             for test_record in self.data_provider.generate_test_records():
                 for test in self.tests:
                     test_to_be_mod = test
-                    if test.__dict__.has_key(test_record.keys()[0]):
+                    if test_record.keys()[0] in test:
                         test_to_be_mod = test.__copy__()
                     else:
                         test_to_be_mod = test
@@ -63,4 +63,4 @@ class BaseParameterizedLoader(object):
                     suite.addTest(test_to_be_mod)
             return suite
         else:
-            raise Exception, "No tests added to the parameterized loader"
+            raise Exception("No tests added to the parameterized loader")
