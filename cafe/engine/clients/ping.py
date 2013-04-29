@@ -36,13 +36,16 @@ class PingClient(object):
         '''
         Porting only Linux OS
         '''
-        ping_command = InstanceClientConstants.PING_IPV6_COMMAND_LINUX if ip_address_version_for_ssh == 6 else InstanceClientConstants.PING_IPV4_COMMAND_LINUX
+        ipv4 = InstanceClientConstants.PING_IPV4_COMMAND_LINUX
+        ipv6 = InstanceClientConstants.PING_IPV6_COMMAND_LINUX
+        ping_command = ipv6 if ip_address_version_for_ssh == 6 else ipv4
         command = ping_command + ip
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         process.wait()
         try:
-            packet_loss_percent = re.search(InstanceClientConstants.PING_PACKET_LOSS_REGEX,
-                                            process.stdout.read()).group(1)
+            packet_loss_percent = re.search(
+                InstanceClientConstants.PING_PACKET_LOSS_REGEX,
+                process.stdout.read()).group(1)
         except:
             # If there is no match, fail
             return False
@@ -60,5 +63,7 @@ class PingClient(object):
         """
         command = InstanceClientConstants.PING_IPV4_COMMAND_LINUX
         ping_response = remote_client.exec_command(command + ping_ip_address)
-        packet_loss_percent = re.search(InstanceClientConstants.PING_PACKET_LOSS_REGEX, ping_response).group(1)
+        packet_loss_percent = re.search(
+            InstanceClientConstants.PING_PACKET_LOSS_REGEX,
+            ping_response).group(1)
         return packet_loss_percent != '100'

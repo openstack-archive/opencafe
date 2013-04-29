@@ -142,17 +142,17 @@ class CCRunner(object):
         runner.py <product> <config> -p [package package...]
 
         **run all modules in a package(s) for a product matching a name pattern
-        runner.py <product> <config> -p [package package...] -m <module pattern>
+        runner.py <product> <config> -p [package package...] -m <pattern>
 
-        **run all modules in a package(s) for a product with matching the method
-        name pattern
+        **run all modules in a package(s) for a product with matching the
+        method name pattern
         %s
 
         **run all modules in a package(s) for a product with matching tag(s)
         runner.py <product> <config> -p [package package...] -t [tag tag...]
 
-        **run all modules in a package(s) for a product with matching the method
-        name pattern and matching tag(s)
+        **run all modules in a package(s) for a product with matching the
+        method name pattern and matching tag(s)
         %s
 
         **run all modules in a package(s) for a product with matching module
@@ -363,10 +363,14 @@ class CCRunner(object):
         print self.colorize('=', WHITE) * 150
         print(self.colorize("Percolated Configuration", WHITE))
         print self.colorize('-', WHITE) * 150
-        print(self.colorize("CCTNG_CONFIG_FILE.......: {0}{1}configs{1}engine.config".format(BASE_DIR, DIR_SEPR), WHITE))
-        print(self.colorize("OSTNG_CONFIG_FILE.......: {0}".format(config_path), WHITE))
-        print(self.colorize("CLOUDCAFE_DATA_DIRECTORY: {0}".format(data_dir), WHITE))
-        print(self.colorize("CLOUDCAFE_LOG_PATH......: {0}".format(log_path), WHITE))
+        print(self.colorize("CCTNG_CONFIG_FILE.......: {0}{1}configs{1}engine"
+                            ".config".format(BASE_DIR, DIR_SEPR), WHITE))
+        print(self.colorize("OSTNG_CONFIG_FILE.......: {0}".format(
+            config_path), WHITE))
+        print(self.colorize("CLOUDCAFE_DATA_DIRECTORY: {0}".format(
+            data_dir), WHITE))
+        print(self.colorize("CLOUDCAFE_LOG_PATH......: {0}".format(
+            log_path), WHITE))
         print self.colorize('=', WHITE) * 150
 
     def get_safe_file_date(self):
@@ -580,7 +584,7 @@ class CCRunner(object):
         '''
         truth_values = []
         for attr_key in attr_keys:
-            if method.__dict__.has_key(attr_key):
+            if attr_key in method:
                 method_val = method.__dict__[attr_key]
                 attr_val = attrs[attr_key]
                 truth_values[len(truth_values):] = [method_val == attr_val]
@@ -730,8 +734,8 @@ class CCRunner(object):
         err_msg = self.error_msg(excp_type.__name__,
                                  excp_value)
         print self.colorize(err_msg, HIGHLIGHTED_RED)
-        for file_name, lineno, function, text in \
-            traceback.extract_tb(info[2]):
+        trace_info = traceback.extract_tb(info[2])
+        for file_name, lineno, function, text in trace_info:
             print ">>>", file_name
             print "  > line", lineno, "in", function, \
                 repr(text)
