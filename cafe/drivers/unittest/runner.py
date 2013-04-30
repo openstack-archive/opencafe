@@ -30,6 +30,8 @@ import unittest2 as unittest
 from datetime import datetime
 
 from cafe.drivers.unittest.parsers import ParseResult
+from cafe.drivers.unittest.decorators import (
+    TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME)
 
 '''@todo: This needs to be configurable/dealt with by the install '''
 import test_repo
@@ -579,9 +581,10 @@ class CCRunner(object):
         foo and bar will be match
         '''
         truth_values = []
+        method_attrs = getattr(method, TAGS_DECORATOR_ATTR_DICT_NAME)
         for attr_key in attr_keys:
-            if method.__dict__.has_key(attr_key):
-                method_val = method.__dict__[attr_key]
+            if attr_key in method_attrs:
+                method_val = method_attrs[attr_key]
                 attr_val = attrs[attr_key]
                 truth_values[len(truth_values):] = [method_val == attr_val]
             else:
@@ -602,8 +605,9 @@ class CCRunner(object):
         foo and bar will be match
         '''
         truth_values = []
+        method_tags = getattr(method, TAGS_DECORATOR_TAG_LIST_NAME)
         for tag in tags:
-            if hasattr(method, tag):
+            if tag in method_tags:
                 truth_values[len(truth_values):] = [True]
             else:
                 truth_values[len(truth_values):] = [False]
@@ -681,29 +685,31 @@ class CCRunner(object):
                         load_test_flag = True
                     else:
                         method = getattr(class_, method_name)
-                        if dict(method.__dict__):
-                            if t_len != 0 and a_len == 0:
-                                tag_flag = self.check_tags(method,
-                                                           tag_list,
-                                                           token)
-                                load_test_flag = tag_flag
-                            elif t_len == 0 and a_len != 0:
-                                attr_flag = self.check_attrs(method,
-                                                             attrs,
-                                                             attr_keys,
-                                                             token)
-                                load_test_flag = attr_flag
-                            elif t_len != 0 and a_len != 0:
-                                tag_flag = self.check_tags(method,
-                                                           tag_list,
-                                                           token)
-                                attr_flag = self.check_attrs(method,
-                                                             attrs,
-                                                             attr_keys,
-                                                             token)
-                                load_test_flag = attr_flag and tag_flag
-                        else:
-                            continue
+                        if t_len != 0 and a_len == 0 and \
+                                hasattr(method, TAGS_DECORATOR_TAG_LIST_NAME):
+                            tag_flag = self.check_tags(method,
+                                                       tag_list,
+                                                       token)
+                            load_test_flag = tag_flag
+                        elif t_len == 0 and a_len != 0 and \
+                                hasattr(method, TAGS_DECORATOR_ATTR_DICT_NAME):
+                            attr_flag = self.check_attrs(method,
+                                                         attrs,
+                                                         attr_keys,
+                                                         token)
+                            load_test_flag = attr_flag
+                        elif t_len != 0 and a_len != 0 and \
+                                hasattr(method, TAGS_DECORATOR_TAG_LIST_NAME) \
+                                and hasattr(
+                                    method, TAGS_DECORATOR_ATTR_DICT_NAME):
+                            tag_flag = self.check_tags(method,
+                                                       tag_list,
+                                                       token)
+                            attr_flag = self.check_attrs(method,
+                                                         attrs,
+                                                         attr_keys,
+                                                         token)
+                            load_test_flag = attr_flag and tag_flag
 
                     if load_test_flag is True:
                         try:
