@@ -91,7 +91,7 @@ class BAD_XML_TOOLS(object):
             ret = {}
             for key in value.keys():
                 ret[key] = self._auto_value_to_dict(value[key])
-        elif isinstance(value, BaseMarshallingDomain):
+        elif isinstance(value, AutoMarshallingModel):
             ret = value._obj_to_json()
         return ret
 
