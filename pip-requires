@@ -1,3 +1,4 @@
 #decorator
 #paramiko
 #requests<1.0
+#pymongo==2.5
