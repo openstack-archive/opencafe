@@ -29,11 +29,12 @@ import traceback
 import unittest2 as unittest
 from datetime import datetime
 
+from cafe.common.reporting.cclogging import log_errors, log_results
 from cafe.drivers.unittest.parsers import ParseResult
-from cafe.drivers.unittest.decorators import (
-    TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME)
+from cafe.drivers.unittest.decorators import \
+    TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME
 
-'''@todo: This needs to be configurable/dealt with by the install '''
+"""@todo: This needs to be configurable/dealt with by the install """
 import test_repo
 
 # Default Config Options
@@ -45,12 +46,6 @@ else:
 BASE_DIR = "{0}{1}.cloudcafe".format(os.path.expanduser("~"), DIR_SEPR)
 DATA_DIR = os.path.expanduser('{0}{1}data'.format(BASE_DIR, DIR_SEPR))
 LOG_BASE_PATH = os.path.expanduser('{0}{1}logs'.format(BASE_DIR, DIR_SEPR))
-YELLOW = '\033[1;33m'
-GREEN = '\033[1;32m'
-WHITE = '\033[1;37m'
-RED = '\033[0;31m'
-HIGHLIGHTED_RED = '\033[1;41m'
-END = '\033[1;m'
 
 
 class _WritelnDecorator:
@@ -91,88 +86,88 @@ class CCParallelTextTestRunner(unittest.TextTestRunner):
 
 
 class CCRunner(object):
-    '''
+    """
     Cloud Cafe Runner
-    '''
+    """
 
     def __init__(self):
-        self.log = logging.getLogger('RunnerLog')
+        pass
 
     def get_cl_args(self):
-        '''
+        """
         collects and parses the command line args
         creates the runner's help msg
-        '''
+        """
 
         export_path = os.path.join(BASE_DIR, 'lib')
 
-        help1 = ' '.join(['runner.py', '<product>', '<config>', '-m',
-                          '<module pattern>', '-M', '<test method>', '-t',
-                          '[tag tag...]'])
-        help2 = ' '.join(['runner.py', '<product>', '<config>', '-p',
-                          '[package package...]', '-M',
-                          '<method name pattern>'])
-        help3 = ' '.join(['runner.py', '<product>', '<config>', '-p',
-                          '[package package...]', '-M',
-                          '<method name pattern>', '-t', '[tag tag...]'])
-        help4 = ' '.join(['runner.py', '<product>', '<config>', '-p',
-                          '[package package...]', '-m', '<module pattern>',
-                          '-M', '<test method>', '-t', '[tag tag...]'])
+        base = '{} {} {}'.format(
+            'cafe-runner',
+            '<product>',
+            '<config>')
+        mod = '{} {}'.format(
+            '-m',
+            '<module pattern>')
+        mthd = '{} {}'.format(
+            '-M',
+            '<test method>')
+        testtag = '{} {}'.format(
+            '-t',
+            '[tag tag...]')
+        pkg = '{} {}'.format(
+            '-p',
+            '[package package...]')
 
         usage_string = """
         *run all the tests for a product
-        runner.py <product> <config>
+        {baseargs}
 
         *run all the tests for a product with matching module name pattern
-        runner.py <product> <config> -m <module pattern>
+        {baseargs} {module}
 
         *run all the tests for a product with matching the method name pattern
-        runner.py <product> <config> -M <method name pattern>
+        {baseargs} {method}
 
         *run all the tests for a product with matching tag(s)
-        runner.py <product> <config> -t [tag tag...]
+        {baseargs} {tags}
 
         *run all the tests for a product with matching the method name pattern
         and matching tag(s)
-        runner.py <product> <config> -M <method name pattern> -t [tag tag...]
+        {baseargs} {method} {tags}
 
         *run all the tests for a product with matching module name pattern,
         method name pattern and matching tag(s)
-        %s
+        {baseargs} {module} {method} {tags}
 
         **run all modules in a package(s) for a product
-        runner.py <product> <config> -p [package package...]
+        {baseargs} {package}
 
         **run all modules in a package(s) for a product matching a name pattern
-        runner.py <product> <config> -p [package package...] -m <module pattern>
+        {baseargs} {package} {module}
 
-        **run all modules in a package(s) for a product with matching the method
+        **run all modules in a package(s) for a product with matching method
         name pattern
-        %s
+        {baseargs} {package} {module} {method}
 
         **run all modules in a package(s) for a product with matching tag(s)
-        runner.py <product> <config> -p [package package...] -t [tag tag...]
+        {baseargs} {package} {tags}
 
-        **run all modules in a package(s) for a product with matching the method
+        **run all modules in a package(s) for a product with matching method
         name pattern and matching tag(s)
-        %s
+        {baseargs} {package} {method} {tags}
 
         **run all modules in a package(s) for a product with matching module
         name pattern, method name pattern and matching tag(s)
-        %s
+        {baseargs} {package} {module} {method} {tags}
 
         *list tests for a product
-        runner.py <product> -l <tests>
+        cafe-runner <product> -l 'tests'
 
         *list configs for a product
-        runner.py <product> -l <configs>
+        cafe-runner <product> -l 'configs'
 
         *list tests and configs for a product
-        runner.py <product> -l <tests> <configs>
-
-        notes:
-        SET YOUR PYTHON PATH!
-        export PYTHONPATH=$PYTHONPATH:%s
+        cafe-runner <product> -l 'tests' 'configs'
 
         TAGS:
         format: -t [+] tag1 tag2 tag3 key1=value key2=value
@@ -193,137 +188,109 @@ class CCRunner(object):
         if a module is specified, all modules matching the name pattern
         will be run under the products test repo folder or packages (if
         specified).
-        """ % (help1, help2, help3, help4, export_path)
+        """.format(
+            baseargs=base,
+            package=pkg,
+            module=mod,
+            method=mthd,
+            tags=testtag)
 
         desc = "Cloud Common Automated Engine Framework"
 
-        argparser = argparse.ArgumentParser(usage=usage_string,
-                                            description=desc)
+        argparser = argparse.ArgumentParser(
+            usage=usage_string,
+            description=desc)
 
-        argparser.add_argument('product',
-                               metavar='<product>',
-                               help='product name')
-        argparser.add_argument('config',
-                               nargs='?',
-                               default=None,
-                               metavar='<config_file>',
-                               help='product test config')
-        argparser.add_argument('-q', '--quiet',
-                               default=2,
-                               action='store_const',
-                               const=1,
-                               help="quiet")
-        argparser.add_argument('-f', '--fail-fast',
-                               default=False,
-                               action='store_true',
-                               help="fail fast")
-        argparser.add_argument('-s', '--supress-load-tests',
-                               default=False,
-                               action='store_true',
-                               dest='supress_flag',
-                               help="supress load tests method")
-        argparser.add_argument('-p', '--packages',
-                               nargs='*',
-                               default=None,
-                               metavar='[package(s)]',
-                               help="test package(s) in the product's "
-                                    "test repo")
-        argparser.add_argument('-m', '--module',
-                               default=None,
-                               metavar='<module>',
-                               help="test module regex - defaults to '*.py'")
-        argparser.add_argument('-M', '--method-regex',
-                               default=None,
-                               metavar='<method>',
-                               help="test method regex defaults to 'test_'")
-        argparser.add_argument('-t', '--tags',
-                               nargs='*',
-                               default=None,
-                               metavar='tags',
-                               help="tags")
-        argparser.add_argument('-l', '--list',
-                               nargs='+',
-                               choices=['tests', 'configs'],
-                               metavar='<tests> <configs>',
-                               help='list tests and or configs')
-        argparser.add_argument('--generateXML',
-                               help="generates and xml of the testsuite run")
-        argparser.add_argument('--parallel',
-                               action="store_true",
-                               default=False)
-        argparser.add_argument('--data-directory',
-                               help="directory for tests to get data from")
+        argparser.add_argument(
+            'product',
+            metavar='<product>',
+            help='product name')
 
-        args = argparser.parse_args()
-        return args
+        argparser.add_argument(
+            'config',
+            nargs='?',
+            default=None,
+            metavar='<config_file>',
+            help='product test config')
 
-    def log_results(self, result):
-        '''
-            @summary: Replicates the printing functionality of unittest's
-            runner.run() but log's instead of prints
-        '''
-        expected_fails = unexpected_successes = skipped = 0
-        try:
-            results = map(len, (result.expectedFailures,
-                                result.unexpectedSuccesses,
-                                result.skipped))
-            expected_fails, unexpected_successes, skipped = results
-        except AttributeError:
-            pass
-        infos = []
+        argparser.add_argument(
+            '-q', '--quiet',
+            default=2,
+            action='store_const',
+            const=1,
+            help="quiet")
 
-        if not result.wasSuccessful():
-            failed, errored = map(len, (result.failures, result.errors))
-            if failed:
-                infos.append("failures=%d" % failed)
-            if errored:
-                infos.append("errors=%d" % errored)
-            self.log_errors('ERROR', result, result.errors)
-            self.log_errors('FAIL', result, result.failures)
-            self.log.info("Ran %d Tests" % result.testsRun)
-            self.log.info('FAILED ')
-        else:
-            self.log.info("Ran %d Tests" % result.testsRun)
-            self.log.info("Passing all tests")
+        argparser.add_argument(
+            '-f', '--fail-fast',
+            default=False,
+            action='store_true',
+            help="fail fast")
 
-        if skipped:
-            infos.append("skipped=%d" % skipped)
-        if expected_fails:
-            infos.append("expected failures=%d" % expected_fails)
-        if unexpected_successes:
-            infos.append("unexpected successes=%d" % unexpected_successes)
-        if infos:
-            self.log.info(" (%s)\n" % (", ".join(infos),))
-        else:
-            self.log.info("\n")
+        argparser.add_argument(
+            '-s', '--supress-load-tests',
+            default=False,
+            action='store_true',
+            dest='supress_flag',
+            help="supress load tests method")
 
-        # Write out the log dir at the end so it's easy to find
-        print(self.colorize('=', WHITE) * 150)
-        print(self.colorize("Detailed logs: {0}".format(
-            os.getenv("CLOUDCAFE_LOG_PATH")), WHITE))
-        print(self.colorize('-', WHITE) * 150)
+        argparser.add_argument(
+            '-p', '--packages',
+            nargs='*',
+            default=None,
+            metavar='[package(s)]',
+            help="test package(s) in the product's "
+                 "test repo")
 
-    def log_errors(self, label, result, errors):
-        border1 = ''.join(['\n', '=' * 45, '\n'])
-        border2 = ''.join(['-' * 45, '\n'])
+        argparser.add_argument(
+            '-m', '--module',
+            default=None,
+            metavar='<module>',
+            help="test module regex - defaults to '*.py'")
 
-        for test, err in errors:
-            msg = "%s: %s\n" % (label, result.getDescription(test))
-            self.log.info(''.join([border1, msg, border2, err]))
+        argparser.add_argument(
+            '-M', '--method-regex',
+            default=None,
+            metavar='<method>',
+            help="test method regex defaults to 'test_'")
+
+        argparser.add_argument(
+            '-t', '--tags',
+            nargs='*',
+            default=None,
+            metavar='tags',
+            help="tags")
+
+        argparser.add_argument(
+            '-l', '--list',
+            nargs='*',
+            choices=['tests', 'configs'],
+            metavar="'tests' 'configs'",
+            help='list tests and or configs')
+
+        argparser.add_argument(
+            '--generateXML',
+            help="generates xml of the testsuite run")
+
+        argparser.add_argument(
+            '--parallel',
+            action="store_true",
+            default=False)
+
+        argparser.add_argument(
+            '--data-directory',
+            help="directory for tests to get data from")
+
+        return argparser.parse_args()
 
     def tree(self, directory, padding, print_files=False):
-        '''
+        """
         creates an ascii tree for listing files or configs
-        '''
-
+        """
         files = []
+        dir_token = '{}+-'.format(padding[:-1])
+        dir_path = os.path.basename(os.path.abspath(directory))
 
-        #dir_token = '+-'
-        #file_token = '>'
-
-        print self.colorize(''.join([padding[:-1], '+-']), WHITE),
-        print self.colorize(os.path.basename(os.path.abspath(directory)), RED),
-        print self.colorize('/', WHITE)
+        print '{}{}/'.format(dir_token, dir_path)
 
         padding = ''.join([padding, ' '])
 
@@ -331,12 +298,10 @@ class CCRunner(object):
             try:
                 files = os.listdir(directory)
             except OSError:
-                print self.colorize(
-                    'Config directory: {0} Does Not Exist'.format(directory),
-                    HIGHLIGHTED_RED)
+                print 'Config directory: {0} Does Not Exist'.format(directory)
         else:
-            files = [x for x in os.listdir(directory) if
-                     os.path.isdir(DIR_SEPR.join([directory, x]))]
+            files = [name for name in os.listdir(directory) if
+                     os.path.isdir(DIR_SEPR.join([directory, name]))]
         count = 0
         for file_name in files:
             count += 1
@@ -349,40 +314,40 @@ class CCRunner(object):
             else:
                 if (file_name.find('.pyc') == -1 and
                         file_name != '__init__.py'):
-                    print self.colorize(''.join([padding, file_name]), WHITE)
+                    print '{}{}'.format(padding, file_name)
 
     def set_env(self, config_path, log_path, data_dir):
-        '''
+        """
         sets an environment var so the tests can find their respective
         product config path
-        '''
-        os.environ['CCTNG_CONFIG_FILE'] = \
-            "{0}{1}configs{1}engine.config".format(BASE_DIR, DIR_SEPR)
+        """
         os.environ['OSTNG_CONFIG_FILE'] = config_path
         os.environ['CLOUDCAFE_LOG_PATH'] = log_path
         os.environ['CLOUDCAFE_DATA_DIRECTORY'] = data_dir
+
         print
-        print self.colorize('=', WHITE) * 150
-        print(self.colorize("Percolated Configuration", WHITE))
-        print self.colorize('-', WHITE) * 150
-        print(self.colorize("CCTNG_CONFIG_FILE.......: {0}{1}configs{1}engine.config".format(BASE_DIR, DIR_SEPR), WHITE))
-        print(self.colorize("OSTNG_CONFIG_FILE.......: {0}".format(config_path), WHITE))
-        print(self.colorize("CLOUDCAFE_DATA_DIRECTORY: {0}".format(data_dir), WHITE))
-        print(self.colorize("CLOUDCAFE_LOG_PATH......: {0}".format(log_path), WHITE))
-        print self.colorize('=', WHITE) * 150
+        print '=' * 150
+        print "Percolated Configuration"
+        print '-' * 150
+        print "ENGINE CONFIG_FILE: {0}{1}" \
+            "configs{1}engine.config".format(BASE_DIR, DIR_SEPR)
+        print "TEST CONFIG FILE..: {0}".format(config_path)
+        print "DATA DIRECTORY....: {0}".format(data_dir)
+        print "LOG PATH..........: {0}".format(log_path)
+        print '=' * 150
 
     def get_safe_file_date(self):
-        '''
+        """
         @summary: Builds a date stamp that is safe for use in a file path/name
         @return: The safely formatted datetime string
         @rtype: C{str}
-        '''
+        """
         return str(datetime.now()).replace(' ', '_').replace(':', '_')
 
     def get_repo_path(self, product):
-        '''
+        """
         returns the base string for the test repo directory
-        '''
+        """
 
         repo_path = ''
 
@@ -393,15 +358,15 @@ class CCRunner(object):
         return repo_path
 
     def get_config_path(self, parent_path, product, cfg_file_name):
-        '''
+        """
         returns the base string for the config path
-        '''
+        """
 
         cfg_path = ''
 
         if product is not None and cfg_file_name is not None:
             if cfg_file_name.find('.config') == -1:
-                cfg_file_name = '.'.join([cfg_file_name, 'config'])
+                cfg_file_name = '{}.{}'.format(cfg_file_name, 'config')
 
             cfg_path = os.path.join(parent_path,
                                     'configs',
@@ -411,41 +376,44 @@ class CCRunner(object):
         return cfg_path
 
     def get_dotted_path(self, path, split_token):
-        '''
+        """
         creates a dotted path for use by unittest's loader
-        '''
+        """
         try:
             position = len(path.split(split_token)) - 1
             temp_path = "{0}{1}".format(split_token,
                                         path.split(split_token)[position])
             split_path = temp_path.split(DIR_SEPR)
             dotted_path = '.'.join(split_path)
-
         except AttributeError:
             return None
         except Exception:
             return None
+
         return dotted_path
 
     def find_root(self, path, target):
-        '''
+        """
         walks the path searching for the target root folder.
-        '''
+        """
         root_path = None
+
         for root, _, _ in os.walk(path):
             if os.path.basename(root).find(target) != -1:
                 root_path = root
                 break
             else:
                 continue
+
         return root_path
 
     def find_file(self, path, target):
-        '''
+        """
         walks the path searching for the target file. the full to the target
         file is returned
-        '''
+        """
         file_path = None
+
         for root, _, files in os.walk(path):
             for file_name in files:
                 if (file_name.find(target) != -1
@@ -454,14 +422,16 @@ class CCRunner(object):
                     break
                 else:
                     continue
+
         return file_path
 
     def find_subdir(self, path, target):
-        '''
+        """
         walks the path searching for the target subdirectory.
         the full to the target subdirectory is returned
-        '''
+        """
         subdir_path = None
+
         for root, dirs, _ in os.walk(path):
             for dir_name in dirs:
                 if dir_name.find(target) != -1:
@@ -469,39 +439,41 @@ class CCRunner(object):
                     break
                 else:
                     continue
+
         return subdir_path
 
-    #this may be used later
     def drill_path(self, path, target):
-        '''
+        """
         walks the path searching for the last instance of the target path.
-        '''
+        """
         return_path = {}
         for root, _, _ in os.walk(path):
             if os.path.basename(root).find(target) != -1:
                 return_path[target] = root
+
         return return_path
 
     def colorize(self, msg, color):
-        '''
+        """
         colorizes a string
-        '''
+        """
         end = '\033[1;m'
         colorized_msg = ''.join([color, str(msg), end])
+
         return colorized_msg
 
     def error_msg(self, e_type, e_msg):
-        '''
+        """
         creates an error message
-        '''
-        err_msg = ' '.join(['<[ WARNING', str(e_type), 'ERROR:', str(e_msg),
-                            ']>'])
+        """
+        err_msg = '<[WARNING {} ERROR {}]>'.format(str(e_type), str(e_msg))
+
         return err_msg
 
     def load_module(self, module_path):
-        '''
+        """
         uses imp to load a module
-        '''
+        """
         loaded_module = None
 
         module_name = os.path.basename(module_path)
@@ -518,9 +490,8 @@ class CCRunner(object):
 
         f, m_path, description = imp.find_module(module_name,
                                                  loaded_pkg.__path__)
-
         try:
-            mod = '.'.join([loaded_pkg.__name__, module_name])
+            mod = '{}.{}'.format(loaded_pkg.__name__, module_name)
             loaded_module = imp.load_module(mod, f, m_path, description)
         except ImportError:
             raise
@@ -528,9 +499,9 @@ class CCRunner(object):
         return loaded_module
 
     def get_class_names(self, loaded_module):
-        '''
+        """
         gets all the class names in an imported module
-        '''
+        """
         class_names = []
         # This has to be imported here as runner sets an environment variable
         # That will be required by the BaseTestFixture
@@ -559,12 +530,13 @@ class CCRunner(object):
         except AttributeError, e:
             print e
             return to_return
+
         return to_return
 
     def get_modules(self, rootdir, module_regex):
-        '''
+        """
         generator yields modules matching the module_regex
-        '''
+        """
         for root, _, files in os.walk(rootdir):
             for name in files:
                 if (fnmatch.fnmatch(name, module_regex)
@@ -575,11 +547,11 @@ class CCRunner(object):
                     yield full_path
 
     def check_attrs(self, method, attrs, attr_keys, token=None):
-        '''
+        """
         checks to see if the method passed in has matching key=value
         attributes. if a '+' token is passed only method that contain
         foo and bar will be match
-        '''
+        """
         truth_values = []
         method_attrs = getattr(method, TAGS_DECORATOR_ATTR_DICT_NAME)
         for attr_key in attr_keys:
@@ -598,12 +570,12 @@ class CCRunner(object):
         return eval(eval_string)
 
     def check_tags(self, method, tags, token):
-        '''
+        """
         checks to see if the method passed in has matching tags.
         if the tags are (foo, bar) this method will match foo or
         bar. if a '+' token is passed only method that contain
         foo and bar will be match
-        '''
+        """
         truth_values = []
         method_tags = getattr(method, TAGS_DECORATOR_TAG_LIST_NAME)
         for tag in tags:
@@ -618,13 +590,14 @@ class CCRunner(object):
         else:
             temp = 'True in'
         eval_string = ' '.join([temp, 'truth_values'])
+
         return eval(eval_string)
 
     def _parse_tags(self, tags):
-        '''
+        """
         tags sent in from the command line are sent in as a string.
         returns a list of tags and a '+' token if it is present.
-        '''
+        """
         token = None
         tag_list = []
         attrs = {}
@@ -643,9 +616,9 @@ class CCRunner(object):
         return tag_list, attrs, token
 
     def build_suite(self, loaded_module, method_regex, cl_tags, supress_flag):
-        '''
+        """
         loads the found tests and builds the test suite
-        '''
+        """
         tag_list = []
         attrs = {}
         loader = unittest.TestLoader()
@@ -728,26 +701,24 @@ class CCRunner(object):
         return suite
 
     def print_traceback(self):
-        '''
+        """
         formats and prints out a minimal stack trace
-        '''
+        """
         info = sys.exc_info()
         excp_type, excp_value = info[:2]
         err_msg = self.error_msg(excp_type.__name__,
                                  excp_value)
-        print self.colorize(err_msg, HIGHLIGHTED_RED)
-        for file_name, lineno, function, text in \
-            traceback.extract_tb(info[2]):
+        print err_msg
+        for file_name, lineno, function, text in traceback.extract_tb(info[2]):
             print ">>>", file_name
-            print "  > line", lineno, "in", function, \
-                repr(text)
+            print "  > line", lineno, "in", function, repr(text)
         print "-" * 100
 
     def run(self):
-        '''
+        """
         loops through all the packages, modules, and methods sent in from
         the command line and runs them
-        '''
+        """
         test_classes = []
         cl_args = self.get_cl_args()
         module_regex = None
@@ -755,7 +726,7 @@ class CCRunner(object):
         if os.path.exists(BASE_DIR) is False:
             err_msg = self.error_msg("{0} does not exist - Exiting".
                                      format(BASE_DIR))
-            print self.colorize(err_msg, HIGHLIGHTED_RED)
+            print err_msg
             exit(1)
 
         if cl_args.module is None:
@@ -786,21 +757,28 @@ class CCRunner(object):
             err_msg = self.error_msg('Repo', ' '.join([cl_args.product,
                                      repo_path,
                                      'does not exist - Exiting']))
-            print self.colorize(err_msg, HIGHLIGHTED_RED)
+            print err_msg
             exit(1)
 
         if cl_args.list is not None:
-            for arg in cl_args.list:
+            arg_list = []
+            if not cl_args.list:
+                arg_list = ['tests', 'configs']
+            else:
+                arg_list = cl_args.list
+
+            for arg in arg_list:
                 if arg == 'tests':
-                    banner = ''.join(['\n', '<[TEST REPO]>', '\n'])
+                    banner = '\n<[TEST REPO]>\n'
                     path = repo_path
                 else:
-                    banner = ''.join(['\n', '<[CONFIGS]>', '\n'])
-                    path = os.path.join(parent_path,
-                                        'configs',
-                                        cl_args.product)
+                    banner = '\n<[CONFIGS]>\n'
+                    path = os.path.join(
+                        parent_path,
+                        'configs',
+                        cl_args.product)
 
-                print self.colorize(banner, WHITE)
+                print banner
                 self.tree(path, ' ', print_files=True)
         else:
             suite = unittest.TestSuite()
@@ -814,24 +792,17 @@ class CCRunner(object):
 
             test_runner.failfast = cl_args.fail_fast
 
-            #-----------------------Debug Logger-----------------------------
-            #this is for the debug logger. its breaking right now
-            #test_runner = LogCaptureRunner(verbosity=cl_args.quiet)
-            #-----------------------Debug Logger-----------------------------
-
             try:
-                stats_log_path = '/'.join(
-                                 [LOG_BASE_PATH,
-                                 cl_args.product,
-                                 cl_args.config,
-                                 "statistics"])
+                stats_log_path = '{}/{}/{}/statistics'.format(
+                    LOG_BASE_PATH,
+                    cl_args.product,
+                    cl_args.config)
 
-                product_log_path = '/'.join(
-                                   [LOG_BASE_PATH,
-                                   cl_args.product,
-                                   cl_args.config,
-                                   self.get_safe_file_date()])
-
+                product_log_path = '{}/{}/{}/{}'.format(
+                    LOG_BASE_PATH,
+                    cl_args.product,
+                    cl_args.config,
+                    self.get_safe_file_date())
             except TypeError:
                 print 'Config was not set on command line - Exiting'
                 exit(1)
@@ -856,11 +827,11 @@ class CCRunner(object):
                     exit(1)
             else:
                 #Make and use the default directory if it doesn't exist
-                '''
+                """
                 @TODO:  Make this create a sub-directory based on the product
                         name like the log_dir does (minus timestamps and config
                         file name)
-                '''
+                """
                 data_dir = DATA_DIR
                 if not os.path.isdir(data_dir):
                     os.makedirs(data_dir)
@@ -898,7 +869,7 @@ class CCRunner(object):
 
                     if test_path is None:
                         err_msg = self.error_msg('Package', package_name)
-                        print self.colorize(err_msg, HIGHLIGHTED_RED)
+                        print err_msg
                         continue
 
                     for module_path in self.get_modules(test_path,
@@ -932,17 +903,19 @@ class CCRunner(object):
                 manager = Manager()
                 results = manager.list()
                 start = time.time()
+
                 for test in test_classes:
-                    p = Process(target=execute_test, args=(test_runner,
-                                                           test, results))
-                    processes.append(p)
-                    p.start()
-                for p in processes:
-                    p.join()
+                    proc = Process(target=execute_test, args=(test_runner,
+                                                              test, results))
+                    processes.append(proc)
+                    proc.start()
+
+                for proc in processes:
+                    proc.join()
+
                 finish = time.time()
-                print '=' * 71
-                print 'Tests Complete.'
-                print '=' * 71
+
+                print '-' * 71
 
                 run = 0
                 errors = 0
@@ -955,11 +928,19 @@ class CCRunner(object):
                 print ("Ran %d test%s in %.3fs" % (run,
                                                    run != 1 and "s" or "",
                                                    finish - start))
+
+                fail = ''
+                error = ''
+                space = ''
                 if failures:
-                    print("Failures=%d" % failures)
+                    fail = "Failures=%d" % failures
                 if errors:
-                    print("Errors=%d" % errors)
+                    error = "Errors=%d" % errors
                 if failures or errors:
+                    if failures and errors:
+                        space = ' '
+                    print
+                    print 'FAILED ({}{}{})'.format(fail, space, error)
                     exit(1)
             else:
                 unittest.installHandler()
@@ -974,7 +955,7 @@ class CCRunner(object):
 
                     parse_res.generate_xml_report()
 
-                self.log_results(result)
+                log_results(result)
                 if not result.wasSuccessful():
                     exit(1)
 
@@ -985,19 +966,33 @@ def execute_test(runner, test, results):
 
 
 def entry_point():
-    print('\n'.join(["\t\t     ( (",
-                     "\t\t        ) )",
-                     "\t\t     .........    ",
-                     "\t\t     |       |___ ",
-                     "\t\t     |       |_  |",
-                     "\t\t     |  :-)  |_| |",
-                     "\t\t     |       |___|",
-                     "\t\t     |_______|",
-                     "\t\t === CAFE Runner ==="]))
-    print("\t\t--------------------------------------------------------")
-    print("\t\tBrewing from {0}".format(BASE_DIR))
-    print("\t\t--------------------------------------------------------")
-    print
+    brew = 'Brewing from {0}'.format(BASE_DIR)
+
+    mug0 = "      ( ("
+    mug1 = "       ) )"
+    mug2 = "    ........."
+    mug3 = "    |       |___"
+    mug4 = "    |       |_  |"
+    mug5 = "    |  :-)  |_| |"
+    mug6 = "    |       |___|"
+    mug7 = "    |_______|"
+    mug8 = "=== CAFE Runner ==="
+
+    print "\n{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}\n{8}".format(
+        mug0,
+        mug1,
+        mug2,
+        mug3,
+        mug4,
+        mug5,
+        mug6,
+        mug7,
+        mug8)
+
+    print "-" * len(brew)
+    print brew
+    print "-" * len(brew)
+
     runner = CCRunner()
     runner.run()
     exit(0)

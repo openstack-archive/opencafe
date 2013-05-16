@@ -14,12 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import platform
 import logging
 import os
 import sys
 from cafe.engine.config import EngineConfig
 
+if platform.system().lower() == 'windows':
+    DIR_SEPR = '\\'
+else:
+    DIR_SEPR = '/'
+
+BASE_DIR = "{0}{1}.cloudcafe".format(os.path.expanduser("~"), DIR_SEPR)
+
+os.environ['CCTNG_CONFIG_FILE'] = \
+    "{0}{1}configs{1}engine.config".format(BASE_DIR, DIR_SEPR)
+
 engine_config = EngineConfig()
+log = logging.getLogger('RunnerLog')
 
 
 def get_object_namespace(obj):
@@ -118,3 +130,62 @@ def setup_new_cchandler(
     log_handler.setFormatter(logging.Formatter(fmt=fmt))
 
     return log_handler
+
+
+def log_results(result):
+    """
+        @summary: Replicates the printing functionality of unittest's
+        runner.run() but log's instead of prints
+    """
+    infos = []
+    expected_fails = unexpected_successes = skipped = 0
+
+    try:
+        results = map(len, (result.expectedFailures,
+                            result.unexpectedSuccesses,
+                            result.skipped))
+        expected_fails, unexpected_successes, skipped = results
+    except AttributeError:
+        pass
+
+    if not result.wasSuccessful():
+        failed, errored = map(len, (result.failures, result.errors))
+
+        if failed:
+            infos.append("failures={}".format(failed))
+        if errored:
+            infos.append("errors={}".format(errored))
+
+        log_errors('ERROR', result, result.errors)
+        log_errors('FAIL', result, result.failures)
+        log.info("Ran {} Tests".format(result.testsRun))
+        log.info('FAILED ')
+    else:
+        log.info("Ran {} Tests".format(result.testsRun))
+        log.info("Passing all tests")
+
+    if skipped:
+        infos.append("skipped={}".format(str(skipped)))
+    if expected_fails:
+        infos.append("expected failures={}".format(expected_fails))
+    if unexpected_successes:
+        infos.append("unexpected successes={}".format(
+            str(unexpected_successes)))
+    if infos:
+        log.info(" (%s)\n" % (", ".join(infos),))
+    else:
+        log.info("\n")
+
+    print '=' * 150
+    print "Detailed logs: {0}".format(
+        os.getenv("CLOUDCAFE_LOG_PATH"))
+    print '-' * 150
+
+
+def log_errors(label, result, errors):
+    border1 = '=' * 45
+    border2 = '-' * 45
+
+    for test, err in errors:
+        msg = "{}: {}\n".format(label, result.getDescription(test))
+        log.info('{}\n{}\n{}\n{}'.format(border1, msg, border2, err))
