@@ -34,7 +34,7 @@ class CommonToolsMixin(object):
         '''Returns a new dictionary based on 'dictionary', minus any keys with
         values that are None
         '''
-        return dict((k, v) for k, v in dictionary if v is not None)
+        return dict((k, v) for k, v in dictionary.iteritems() if v is not None)
 
 
 class JSON_ToolsMixin(object):
