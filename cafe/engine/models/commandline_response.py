@@ -17,9 +17,10 @@ limitations under the License.
 '''
 @summary: Responses directly from the command line
 '''
+from cafe.engine.models.base import BaseModel
 
 
-class CommandLineResponse(object):
+class CommandLineResponse(BaseModel):
     '''Bare bones object for any Command Line Connector response
     @ivar Command: The full original command string for this response
     @type Command: C{str}
@@ -31,6 +32,7 @@ class CommandLineResponse(object):
     @type ReturnCode: C{int}
     '''
     def __init__(self):
+        super(CommandLineResponse, self).__init__()
         self.command = ""
         self.standard_out = []
         self.standard_error = []
