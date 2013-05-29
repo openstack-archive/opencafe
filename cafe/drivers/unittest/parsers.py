@@ -18,14 +18,13 @@ import unittest2 as unittest
 import xml.etree.ElementTree as ET
 
 
-class ParseResult(object):
+class SummarizeResults(object):
 
     def __init__(self, result_dict, master_testsuite,
-                 xml_path, execution_time):
+                 execution_time):
         for keys, values in result_dict.items():
             setattr(self, keys, values)
         self.master_testsuite = master_testsuite
-        self.xml_path = xml_path
         self.execution_time = execution_time
 
     def get_passed_tests(self):
@@ -105,9 +104,12 @@ class ParseResult(object):
                        'skipped': str(len(self.skipped))}
         return summary_res
 
-    def generate_xml_report(self):
-        executed_tests = []
+    def gather_results(self):
         executed_tests = self.get_passed_tests() + self.parse_failures() + self.get_errored_tests() + self.get_skipped_tests()
+        return executed_tests
+
+    def generate_xml_report(self):
+        executed_tests = self.gather_results()
         summary_result = self.summary_result()
         root = ET.Element("testsuite")
         root.attrib['name'] = ''
@@ -141,9 +143,10 @@ class ParseResult(object):
                 else:
                     testcase_tag.attrib['result'] = "PASSED"
 
-        file = open(self.xml_path + "/cc_result.xml", 'wb')
-        ET.ElementTree(root).write(file)
-        file.close()
+        # TODO(dwalleck) Re-enable xunit results, needs refactoring
+        #file = open(self.file_path + "/cc_result.xml", 'wb')
+        #ET.ElementTree(root).write(file)
+        #file.close()
 
 
 class Result(object):
@@ -154,3 +157,9 @@ class Result(object):
         self.failure_trace = failure_trace
         self.skipped_msg = skipped_msg
         self.error_trace = error_trace
+
+    def __repr__(self):
+        values = []
+        for prop in self.__dict__:
+            values.append("%s: %s" % (prop, self.__dict__[prop]))
+        return dict('{' + ', '.join(values) + '}')
