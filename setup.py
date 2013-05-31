@@ -117,8 +117,12 @@ else:
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
 
+    # Modify file permissions if on not running on Windows or as root
+    modify_permissions = (platform.system().lower() != 'windows'
+                          and os.getenv("SUDO_USER"))
+
     # Get uid and gid of the current user to set permissions (Linux/OSX only)
-    if platform.system().lower() != 'windows':
+    if modify_permissions:
         sudo_user = os.getenv("SUDO_USER")
         uid = pwd.getpwnam(sudo_user).pw_uid
         gid = pwd.getpwnam(sudo_user).pw_gid
@@ -139,5 +143,5 @@ else:
         config.write("use_verbose_logging={0}\n".format(use_verbose_logging))
         config.close()
 
-        if platform.system().lower() != 'windows':
+        if modify_permissions:
             os.chown("{0}/engine.config".format(config_dir), uid, gid)
