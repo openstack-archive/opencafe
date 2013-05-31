@@ -70,6 +70,9 @@ setup(
          'entry_point']}
 )
 
+# real_prefix should only be set under a virtualenv
+using_virtualenv = hasattr(sys, 'real_prefix')
+
 ''' @todo: need to clean this up or do it with puppet/chef '''
 # Default Config Options
 root_dir = "{0}/.cloudcafe".format(os.path.expanduser("~"))
@@ -119,9 +122,13 @@ else:
 
     # Get uid and gid of the current user to set permissions (Linux/OSX only)
     if platform.system().lower() != 'windows':
-        sudo_user = os.getenv("SUDO_USER")
-        uid = pwd.getpwnam(sudo_user).pw_uid
-        gid = pwd.getpwnam(sudo_user).pw_gid
+        if using_virtualenv:
+            working_user = os.getenv("USER")
+        else:
+            working_user = os.getenv("SUDO_USER")
+
+        uid = pwd.getpwnam(working_user).pw_uid
+        gid = pwd.getpwnam(working_user).pw_gid
 
         os.chown(root_dir, uid, gid)
         os.chown(log_dir, uid, gid)
