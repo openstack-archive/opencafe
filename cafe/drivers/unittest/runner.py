@@ -21,6 +21,7 @@ import sys
 import time
 import fnmatch
 import inspect
+import json
 import logging
 from multiprocessing import Process, Manager
 import argparse
@@ -30,7 +31,7 @@ import unittest2 as unittest
 from datetime import datetime
 
 from cafe.common.reporting.cclogging import log_errors, log_results
-from cafe.drivers.unittest.parsers import ParseResult
+from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.decorators import \
     TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME
 
@@ -268,8 +269,8 @@ class CCRunner(object):
             help='list tests and or configs')
 
         argparser.add_argument(
-            '--generateXML',
-            help="generates xml of the testsuite run")
+            '--json-result',
+            help="generates a json formatted result file")
 
         argparser.add_argument(
             '--parallel',
@@ -920,7 +921,7 @@ class CCRunner(object):
                 run = 0
                 errors = 0
                 failures = 0
-                for result in results:
+                for tests, result in results:
                     run += result.testsRun
                     errors += len(result.errors)
                     failures += len(result.failures)
@@ -928,6 +929,20 @@ class CCRunner(object):
                 print ("Ran %d test%s in %.3fs" % (run,
                                                    run != 1 and "s" or "",
                                                    finish - start))
+
+                if cl_args.json_result is not None:
+                    all_results = []
+                    for tests, result in results:
+                        result_parser = SummarizeResults(vars(result), tests,
+                                                         (finish - start))
+                        all_results += result_parser.gather_results()
+
+                    # Convert Result objects to dicts for serialization
+                    json_results = []
+                    for r in all_results:
+                        json_results.append(r.__dict__)
+                    with open(os.getcwd() + "/result.json", 'wb') as result_file:
+                        json.dump(json_results, result_file)
 
                 fail = ''
                 error = ''
@@ -948,12 +963,17 @@ class CCRunner(object):
                 result = test_runner.run(master_suite)
                 total_execution_time = time.time() - start_time
 
-                if cl_args.generateXML is not None:
-                    xml_path = ''.join([parent_path, cl_args.generateXML])
-                    parse_res = ParseResult(vars(result), master_suite,
-                                            xml_path, total_execution_time)
+                if cl_args.json_result is not None:
+                    result_parser = SummarizeResults(vars(result), master_suite,
+                                                     total_execution_time)
+                    all_results = result_parser.gather_results()
 
-                    parse_res.generate_xml_report()
+                    # Convert Result objects to dicts for serialization
+                    json_results = []
+                    for r in all_results:
+                        json_results.append(r.__dict__)
+                    with open(os.getcwd() + "/results.json", 'wb') as result_file:
+                        json.dump(json_results, result_file)
 
                 log_results(result)
                 if not result.wasSuccessful():
@@ -962,7 +982,7 @@ class CCRunner(object):
 
 def execute_test(runner, test, results):
     result = runner.run(test)
-    results.append(result)
+    results.append((test, result))
 
 
 def entry_point():
