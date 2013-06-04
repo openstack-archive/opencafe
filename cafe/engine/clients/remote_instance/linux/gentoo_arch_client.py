@@ -16,9 +16,10 @@ limitations under the License.
 
 import time
 
+from cafe.engine.clients.remote_instance.constants import \
+    InstanceClientConstants
 from cafe.engine.clients.remote_instance.linux.linux_instance_client \
     import LinuxClient
-from cloudcafe.common.constants import InstanceClientConstants
 
 
 class GentooArchClient(LinuxClient):

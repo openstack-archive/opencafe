@@ -17,11 +17,13 @@ limitations under the License.
 import time
 import re
 
-from cafe.engine.clients.ssh import SSHBaseClient
 from cafe.common.reporting import cclogging
+from cafe.engine.clients.remote_instance.models.file_details \
+    import FileDetails
+from cafe.engine.clients.remote_instance.models.partition import \
+    Partition, DiskSize
+from cafe.engine.clients.ssh import SSHBaseClient
 from cafe.engine.clients.ping import PingClient
-from cloudcafe.compute.common.models.file_details import FileDetails
-from cloudcafe.compute.common.models.partition import Partition, DiskSize
 from cafe.engine.clients.remote_instance.linux.base_client import \
     BasePersistentLinuxClient
 from cloudcafe.compute.common.exceptions import FileNotFoundException, \

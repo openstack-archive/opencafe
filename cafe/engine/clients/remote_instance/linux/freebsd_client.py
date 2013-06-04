@@ -17,9 +17,10 @@ limitations under the License.
 import time
 import re
 
+from cafe.engine.clients.remote_instance.constants import \
+    InstanceClientConstants
 from cafe.engine.clients.remote_instance.linux.linux_instance_client \
     import LinuxClient
-from cloudcafe.common.constants import InstanceClientConstants
 
 
 class FreeBSDClient(LinuxClient):

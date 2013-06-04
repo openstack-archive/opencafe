@@ -17,13 +17,18 @@ limitations under the License.
 import subprocess
 import re
 
-from cloudcafe.common.constants import InstanceClientConstants
-
 
 class PingClient(object):
     """
     @summary: Client to ping windows or linux servers
     """
+
+    PING_IPV4_COMMAND_LINUX = 'ping -c 3 '
+    PING_IPV6_COMMAND_LINUX = 'ping6 -c 3 '
+    PING_IPV4_COMMAND_WINDOWS = 'ping '
+    PING_IPV6_COMMAND_WINDOWS = 'ping6 '
+    PING_PACKET_LOSS_REGEX = '(\d{1,3})\.?\d*\%.*loss'
+
     @classmethod
     def ping(cls, ip, ip_address_version_for_ssh):
         """
@@ -36,15 +41,16 @@ class PingClient(object):
         '''
         Porting only Linux OS
         '''
-        ipv4 = InstanceClientConstants.PING_IPV4_COMMAND_LINUX
-        ipv6 = InstanceClientConstants.PING_IPV6_COMMAND_LINUX
+
+        ipv4 = cls.PING_IPV4_COMMAND_LINUX
+        ipv6 = cls.PING_IPV6_COMMAND_LINUX
         ping_command = ipv6 if ip_address_version_for_ssh == 6 else ipv4
         command = ping_command + ip
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         process.wait()
         try:
             packet_loss_percent = re.search(
-                InstanceClientConstants.PING_PACKET_LOSS_REGEX,
+                cls.PING_PACKET_LOSS_REGEX,
                 process.stdout.read()).group(1)
         except:
             # If there is no match, fail
@@ -61,9 +67,9 @@ class PingClient(object):
         @return: True if the server was reachable, False otherwise
         @rtype: bool
         """
-        command = InstanceClientConstants.PING_IPV4_COMMAND_LINUX
+        command = cls.PING_IPV4_COMMAND_LINUX
         ping_response = remote_client.exec_command(command + ping_ip_address)
         packet_loss_percent = re.search(
-            InstanceClientConstants.PING_PACKET_LOSS_REGEX,
+            cls.PING_PACKET_LOSS_REGEX,
             ping_response).group(1)
         return packet_loss_percent != '100'
