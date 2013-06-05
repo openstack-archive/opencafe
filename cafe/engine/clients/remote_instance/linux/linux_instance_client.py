@@ -395,3 +395,17 @@ class LinuxClient(BasePersistentLinuxClient):
         '''
         self.ssh_client.exec_command(
             'mount ' + source_path + ' ' + destination_path)
+
+    def get_xen_user_metadata(self):
+        command = 'xenstore-ls vm-data/user-metadata'
+        output = self.ssh_client.exec_command(command)
+        meta_list = output.split('\n')
+        meta = {}
+        for item in meta_list:
+            # Skip any blank lines
+            if item:
+                meta_item = item.split("=")
+                key = meta_item[0].strip()
+                value = meta_item[1].strip('" ')
+                meta[key] = value
+        return meta
