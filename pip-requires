@@ -1,5 +1,5 @@
-#decorator
-#paramiko
+decorator
+paramiko
 requests==1.2.0
 pymongo==2.5
 argparse==1.2.1
