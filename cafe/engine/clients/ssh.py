@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import exceptions
 import time
 import socket
-import exceptions
+import StringIO
 import warnings
 
 with warnings.catch_warnings():
@@ -33,7 +34,8 @@ class SSHBaseClient(BaseClient):
 
     _log = cclogging.getLogger(__name__)
 
-    def __init__(self, host, username, password, timeout=20, port=22):
+    def __init__(self, host, username, password, timeout=20,
+                 port=22, key=None):
         super(SSHBaseClient, self).__init__()
         self.host = host
         self.port = port
@@ -41,6 +43,11 @@ class SSHBaseClient(BaseClient):
         self.password = password
         self.timeout = int(timeout)
         self._chan = None
+        if key:
+            key_file = StringIO.StringIO(key)
+            self.key = paramiko.RSAKey.from_private_key(key_file)
+        else:
+            self.key = None
 
     def _get_ssh_connection(self):
         """Returns an ssh connection to the specified host"""
@@ -65,6 +72,7 @@ class SSHBaseClient(BaseClient):
                 ssh.connect(hostname=self.host,
                             username=self.username,
                             password=self.password,
+                            pkey=self.key,
                             timeout=20,
                             key_filename=[],
                             look_for_keys=False,

@@ -32,7 +32,8 @@ class InstanceClientFactory(object):
 
     @classmethod
     def get_instance_client(cls, ip_address=None, username=None, password=None,
-                            os_distro=None, server_id=None, config=None):
+                            os_distro=None, server_id=None, config=None,
+                            key=None):
         """
         @summary: Returns utility class based on the OS type of server
         @param ip_address: IP Address of the server
@@ -54,7 +55,7 @@ class InstanceClientFactory(object):
 
         return instanceClient(ip_address=ip_address, username=username,
                               password=password, os_distro=os_distro,
-                              server_id=server_id, config=config)
+                              server_id=server_id, config=config, key=key)
 
 
 class InstanceClient(object):
@@ -63,10 +64,10 @@ class InstanceClient(object):
     """
 
     def __init__(self, ip_address=None, password=None, os_distro=None,
-                 config=None, username=None, server_id=None):
+                 config=None, username=None, server_id=None, key=None):
         self._client = InstanceClientFactory.get_instance_client(
             ip_address=ip_address, password=password, os_distro=os_distro,
-            username=username, server_id=server_id, config=config)
+            username=username, server_id=server_id, config=config, key=key)
         self.client_log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 

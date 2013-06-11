@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from paramiko import PKey
 import time
 import re
 
@@ -33,9 +34,11 @@ from cloudcafe.compute.common.exceptions import FileNotFoundException, \
 class LinuxClient(BasePersistentLinuxClient):
 
     def __init__(self, ip_address=None, server_id=None, username=None,
-                 password=None, config=None, os_distro=None):
+                 password=None, config=None, os_distro=None, key=None):
         self.client_log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
+
+
         ssh_timeout = config.connection_timeout
         if ip_address is None:
             raise ServerUnreachable("None")
@@ -58,7 +61,8 @@ class LinuxClient(BasePersistentLinuxClient):
         self.ssh_client = SSHBaseClient(self.ip_address,
                                         self.username,
                                         self.password,
-                                        timeout=ssh_timeout)
+                                        timeout=ssh_timeout,
+                                        key=key)
         if not self.ssh_client.test_connection_auth():
             self.client_log.error("Ssh connection failed for: IP:{0} \
                     Username:{1} Password: {2}".format(self.ip_address,
