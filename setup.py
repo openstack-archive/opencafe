@@ -81,6 +81,7 @@ data_dir = "{0}/data".format(root_dir)
 temp_dir = "{0}/temp".format(root_dir)
 config_dir = "{0}/configs".format(root_dir)
 use_verbose_logging = "False"
+default_test_repo = "test_repo"
 
 # Copy over the default configurations
 if(os.path.exists("~install")):
@@ -144,6 +145,7 @@ else:
         config.write("data_directory={0}\n".format(data_dir))
         config.write("temp_directory={0}\n".format(temp_dir))
         config.write("use_verbose_logging={0}\n".format(use_verbose_logging))
+        config.write("default_test_repo={0}\n".format(default_test_repo))
         config.close()
 
         if platform.system().lower() != 'windows':
