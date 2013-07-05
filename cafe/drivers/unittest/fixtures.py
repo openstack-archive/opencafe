@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-'''
+"""
 @summary: Base Classes for Test Fixtures
 @note: Corresponds DIRECTLY TO A unittest.TestCase
 @see: http://docs.python.org/library/unittest.html#unittest.TestCase
-'''
+"""
 import unittest2 as unittest
+import os
+import re
 
 from cafe.engine.config import EngineConfig
 from cafe.common.reporting import cclogging
@@ -31,39 +33,47 @@ engine_config = EngineConfig()
 
 
 class BaseTestFixture(unittest.TestCase):
-    '''
+    """
     @summary: Foundation for TestRepo Test Fixture.
     @note: This is the base class for ALL test cases in TestRepo. Add new
            functionality carefully.
     @see: http://docs.python.org/library/unittest.html#unittest.TestCase
-    '''
+    """
+    def shortDescription(self):
+        """
+        @summary: Returns a formatted description of the test
+        """
+        short_desc = None
+
+        if os.environ["VERBOSE"] == "true" and self._testMethodDoc:
+            temp = self._testMethodDoc.strip("\n")
+            short_desc = re.sub(r"[ ]{2,}", "", temp).strip("\n")
+        return short_desc
+
+    def logDescription(self):
+        log_desc = None
+        if self._testMethodDoc:
+            log_desc = "\n{0}".format(
+                re.sub(r"[ ]{2,}", "", self._testMethodDoc).strip("\n"))
+        return log_desc
+
     @classmethod
     def assertClassSetupFailure(cls, message):
-        '''
+        """
         @summary: Use this if you need to fail from a Test Fixture's
                   setUpClass() method
-        '''
+        """
         cls.fixture_log.error("FATAL: %s:%s" % (cls.__name__, message))
         raise AssertionError("FATAL: %s:%s" % (cls.__name__, message))
 
     @classmethod
     def assertClassTeardownFailure(cls, message):
-        '''
+        """
         @summary: Use this if you need to fail from a Test Fixture's
                   tearUpClass() method
-        '''
+        """
         cls.fixture_log.error("FATAL: %s:%s" % (cls.__name__, message))
         raise AssertionError("FATAL: %s:%s" % (cls.__name__, message))
-
-    def shortDescription(self):
-        '''
-        @summary: Returns a one-line description of the test
-        '''
-        if self._testMethodDoc is not None:
-            if self._testMethodDoc.startswith("\n") is True:
-                self._testMethodDoc = " ".join(
-                    self._testMethodDoc.splitlines()).strip()
-        return unittest.TestCase.shortDescription(self)
 
     @classmethod
     def setUpClass(cls):
@@ -83,11 +93,11 @@ class BaseTestFixture(unittest.TestCase):
             cclogging.get_object_namespace(cls))
         cls.fixture_log.addHandler(cls._fixture_log_handler)
 
-        '''
+        """
         @todo: Upgrade the metrics to be more unittest compatible.
         Currently the unittest results are not available at the fixture level,
         only the test case or the test suite and runner level.
-        '''
+        """
         # Setup the fixture level metrics
         cls.fixture_metrics = TestRunMetrics()
         cls.fixture_metrics.timer.start()
@@ -136,6 +146,8 @@ class BaseTestFixture(unittest.TestCase):
         super(BaseTestFixture, cls).tearDownClass()
 
     def setUp(self):
+        self.shortDescription()
+
         # Setup the timer and other custom init jazz
         self.fixture_metrics.total_tests += 1
         self.test_metrics = TestRunMetrics()
@@ -146,11 +158,10 @@ class BaseTestFixture(unittest.TestCase):
         self.fixture_log.info("Test Case.: {0}".format(self._testMethodName))
         self.fixture_log.info("Created.At: {0}".format(self.test_metrics.timer.
                                                        start_time))
-        if self.shortDescription():
-            self.fixture_log.info("{0}".format(self.shortDescription()))
+        self.fixture_log.info("{0}".format(self.logDescription()))
         self.fixture_log.info("{0}".format('=' * 56))
 
-        ''' @todo: Get rid of this hard coded value for the statistics '''
+        """ @todo: Get rid of this hard coded value for the statistics """
         # set up the stats log
         self.stats_log = PBStatisticsLog(
             "{0}.statistics.csv".format(
@@ -164,11 +175,11 @@ class BaseTestFixture(unittest.TestCase):
         # Kill the timer and other custom destroy jazz
         self.test_metrics.timer.stop()
 
-        '''
+        """
         @todo: This MUST be upgraded this from resultForDoCleanups into a
                better pattern or working with the result object directly.
                This is related to the todo in L{TestRunMetrics}
-        '''
+        """
         # Build metrics
         if self._resultForDoCleanups.wasSuccessful():
             self.fixture_metrics.total_passed += 1
@@ -219,9 +230,9 @@ class BaseParameterizedTestFixture(BaseTestFixture):
 
 
 class BaseBurnInTestFixture(BaseTestFixture):
-    '''
+    """
     @summary: Base test fixture that allows for Burn-In tests
-    '''
+    """
     @classmethod
     def setUpClass(cls):
         super(BaseBurnInTestFixture, cls).setUpClass()
