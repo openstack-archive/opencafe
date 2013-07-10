@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import decorator
-
 from cafe.common.reporting import cclogging
 
 

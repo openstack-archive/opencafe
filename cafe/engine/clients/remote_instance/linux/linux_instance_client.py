@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from paramiko import PKey
 import time
 import re
 
@@ -37,7 +36,6 @@ class LinuxClient(BasePersistentLinuxClient):
                  password=None, config=None, os_distro=None, key=None):
         self.client_log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
-
 
         ssh_timeout = config.connection_timeout
         if ip_address is None:
@@ -107,8 +105,8 @@ class LinuxClient(BasePersistentLinuxClient):
         '''
         @timeout: max timeout for the machine to reboot
         '''
-        ssh_connector = SSHConnector(self.ip_address, self.username,
-                                     self.password)
+        ssh_connector = SSHBaseClient(self.ip_address, self.username,
+                                      self.password)
         response, prompt = ssh_connector.exec_shell_command("sudo reboot")
         response, prompt = ssh_connector.exec_shell_command(self.password)
         self.client_log.info("Reboot response for %s: %s" % (self.ip_address,

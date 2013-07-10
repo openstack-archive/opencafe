@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+
 class InstanceClientConstants:
     LAST_REBOOT_TIME_FORMAT = '%Y-%m-%d %H:%M'
     LAST_REBOOT_TIME_FORMAT_GENTOO = '%b %d %H:%M %Y'
     LINUX_OS_FAMILY = 'linux'
-
