@@ -130,3 +130,9 @@ class EngineConfig(object):
     @property
     def use_verbose_logging(self):
         return self.get_boolean("use_verbose_logging", False)
+
+    #Used by the engine to facilitate using multiple test repositories.
+    @property
+    def default_test_repo(self):
+        return self.get_raw("default_test_repo")
+
