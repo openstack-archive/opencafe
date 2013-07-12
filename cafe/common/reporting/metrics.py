@@ -19,7 +19,6 @@ limitations under the License.
 '''
 import os
 from datetime import datetime
-from unittest2.result import TestResult
 
 
 class TestRunMetrics(object):

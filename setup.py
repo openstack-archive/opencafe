@@ -22,7 +22,6 @@ import platform
 # These imports are only possible on Linux/OSX
 if platform.system().lower() != 'windows':
     import pwd
-    import grp
 
 try:
     from setuptools import setup, find_packages

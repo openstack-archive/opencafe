@@ -20,7 +20,6 @@ limitations under the License.
 @see: http://docs.python.org/library/unittest.html#unittest.TestCase
 '''
 import unittest2 as unittest
-from datetime import datetime
 
 from cafe.engine.config import EngineConfig
 from cafe.common.reporting import cclogging
