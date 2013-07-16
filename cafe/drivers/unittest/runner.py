@@ -33,8 +33,20 @@ from cafe.drivers.unittest.fixtures import BaseTestFixture
 from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
 
-"""@todo: This needs to be configurable/dealt with by the install """
-import test_repo
+from cafe.drivers.unittest.decorators import \
+    TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME
+from cafe.engine.config import EngineConfig
+
+engine_config = EngineConfig()
+test_repo = None
+try:
+    test_repo = __import__(engine_config.default_test_repo)
+except Exception as exception:
+    sys.stderr.write(
+        "Unable to find '{0}' test repo package. Is it installed?"
+        .format(engine_config.default_test_repo))
+    raise exception
+
 
 # Default Config Options
 if platform.system().lower() == "windows":
