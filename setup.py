@@ -139,7 +139,7 @@ else:
     # Build the default configuration file
     if os.path.exists("{0}/engine.config".format(config_dir)) is False:
         config = open("{0}/engine.config".format(config_dir), "w")
-        config.write("[CCTNG_ENGINE]\n")
+        config.write("[OPENCAFE_ENGINE]\n")
         config.write("log_directory={0}\n".format(log_dir))
         config.write("data_directory={0}\n".format(data_dir))
         config.write("temp_directory={0}\n".format(temp_dir))

@@ -18,7 +18,7 @@ import os
 import ConfigParser
 
 
-_ENGINE_CONFIG_FILE_ENV_VAR = 'CCTNG_CONFIG_FILE'
+_ENGINE_CONFIG_FILE_ENV_VAR = 'OPENCAFE_CONFIG_FILE'
 
 
 class NonExistentConfigPathError(Exception):
@@ -34,7 +34,7 @@ class EngineConfig(object):
     Config interface for the global engine configuration
     '''
 
-    SECTION_NAME = 'CCTNG_ENGINE'
+    SECTION_NAME = 'OPENCAFE_ENGINE'
 
     def __init__(self, config_file_path=None, section_name=None):
         #Support for setting the section name as a class or instance
@@ -118,7 +118,7 @@ class EngineConfig(object):
     #Used by the engine for the output of engine and implementation logs
     @property
     def log_directory(self):
-        return os.getenv("CLOUDCAFE_LOG_PATH",
+        return os.getenv("OPENCAFE_LOG_PATH",
                          self.get_raw("log_directory", default="."))
 
     #Used by the engine for the output of engine and implementation logs

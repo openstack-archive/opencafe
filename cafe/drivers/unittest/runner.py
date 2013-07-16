@@ -77,7 +77,7 @@ class _WritelnDecorator(object):
         self.write("\n")
 
 
-class CCParallelTextTestRunner(unittest.TextTestRunner):
+class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
     def __init__(self, stream=sys.stderr, descriptions=1, verbosity=1):
         self.stream = _WritelnDecorator(stream)
         self.descriptions = descriptions
@@ -776,7 +776,7 @@ class RunnerSetup(object):
 
         # Use the parallel text runner so the console logs look correct
         if parallel:
-            test_runner = CCParallelTextTestRunner(verbosity=int(verbosity))
+            test_runner = OpenCafeParallelTextTestRunner(verbosity=int(verbosity))
         else:
             test_runner = unittest.TextTestRunner(verbosity=int(verbosity))
 
@@ -872,9 +872,9 @@ class RunnerSetup(object):
         return check_data(runner_data, runner_error)
 
 
-class CCRunner(object):
+class OpenCafeRunner(object):
     """
-    Cloud Cafe Runner
+    Open Cafe Runner
     """
     def __init__(self):
         pass
@@ -1062,9 +1062,9 @@ class CCRunner(object):
 
             #TODO: change this so that it prints the key/value that errored
             try:
-                runner_setup.set_env("CONFIG_FILE", config_path)
-                runner_setup.set_env("CLOUDCAFE_LOG_PATH", product_log_path)
-                runner_setup.set_env("CLOUDCAFE_DATA_DIRECTORY", data_dir)
+                runner_setup.set_env("OPENCAFE_CONFIG_FILE", config_path)
+                runner_setup.set_env("OPENCAFE_LOG_PATH", product_log_path)
+                runner_setup.set_env("OPENCAFE_DATA_DIRECTORY", data_dir)
                 runner_setup.set_env("VERBOSE", verbose_flag)
             except TypeError:
                 print "Environment variable not set - Exiting"
@@ -1248,8 +1248,8 @@ def print_paths(config_path, data_dir, log_path):
     print "=" * 150
     print "Percolated Configuration"
     print "-" * 150
-    print "ENGINE CONFIG_FILE: {0}{1}" \
-        "configs{1}engine.config".format(BASE_DIR, DIR_SEPR)
+    print "OPENCAFE_CONFIG_FILE: {0}{1}configs{1}engine.config".format(
+        BASE_DIR, DIR_SEPR)
     print "TEST CONFIG FILE..: {0}".format(config_path)
     print "DATA DIRECTORY....: {0}".format(data_dir)
     print "LOG PATH..........: {0}".format(log_path)
@@ -1284,6 +1284,6 @@ def entry_point():
     print brew
     print "-" * len(brew)
 
-    runner = CCRunner()
+    runner = OpenCafeRunner()
     runner.run()
     exit(0)
