@@ -23,13 +23,13 @@ import unittest2 as unittest
 import os
 import re
 
-from cafe.engine.config import EngineConfig
 from cafe.common.reporting import cclogging
 from cafe.common.reporting.metrics import TestRunMetrics
 from cafe.common.reporting.metrics import TestResultTypes
 from cafe.common.reporting.metrics import PBStatisticsLog
+from cafe.configurator import configurator
 
-engine_config = EngineConfig()
+engine_config = configurator.TestEnvManager.get_engine_config_interface()
 
 
 class BaseTestFixture(unittest.TestCase):
