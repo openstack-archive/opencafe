@@ -18,6 +18,8 @@ import os
 import ConfigParser
 from cafe.common.reporting import cclogging
 
+_TEST_CONFIG_FILE_ENV_VAR = 'CAFE_CONFIG_FILE'
+
 
 class ConfigDataException(Exception):
     pass
@@ -112,3 +114,31 @@ class BaseConfigSectionInterface(object):
         except ConfigParser.NoSectionError as e:
             self._log.error(str(e))
             pass
+
+
+class ConfigSectionInterface(BaseConfigSectionInterface):
+    def __init__(self, config_file_path=None, section_name=None):
+        section_name = (section_name or
+                        getattr(self, 'SECTION_NAME', None) or
+                        getattr(self, 'CONFIG_SECTION_NAME', None))
+
+        config_file_path = config_file_path or self.default_config_file
+
+        super(ConfigSectionInterface, self).__init__(config_file_path,
+                                                     section_name)
+
+    @property
+    def default_config_file(self):
+        test_config_file_path = None
+        try:
+            test_config_file_path = os.environ[_TEST_CONFIG_FILE_ENV_VAR]
+        except KeyError:
+            msg = "'{0}' environment variable was not set.".format(
+                _TEST_CONFIG_FILE_ENV_VAR)
+            raise ConfigEnvironmentVariableError(msg)
+        except Exception as exception:
+            print ("Unexpected exception when attempting to access '{1}'"
+                   " environment variable.".format(_TEST_CONFIG_FILE_ENV_VAR))
+            raise exception
+
+        return test_config_file_path

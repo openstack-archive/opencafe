@@ -14,23 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import platform
 import logging
 import os
 import sys
-from cafe.engine.config import EngineConfig
 
-if platform.system().lower() == 'windows':
-    DIR_SEPR = '\\'
-else:
-    DIR_SEPR = '/'
-
-BASE_DIR = "{0}{1}.cloudcafe".format(os.path.expanduser("~"), DIR_SEPR)
-
-os.environ['CCTNG_CONFIG_FILE'] = \
-    "{0}{1}configs{1}engine.config".format(BASE_DIR, DIR_SEPR)
-
-engine_config = EngineConfig()
 log = logging.getLogger('RunnerLog')
 
 
@@ -87,12 +74,16 @@ def getLogger(log_name, log_level=None):
     #Create new log
     new_log = logging.getLogger(name=log_name)
     new_log.setLevel(log_level or logging.DEBUG)
+    verbosity = os.getenv('CAFE_LOGGING_VERBOSITY')
 
-    if engine_config.use_verbose_logging:
+    if verbosity == 'VERBOSE':
         if logging.getLogger(log_name).handlers == []:
             if log_name == "":
-                log_name = engine_config.master_log_file_name
+                log_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
             new_log.addHandler(setup_new_cchandler(log_name))
+
+    # Add support for adding null log handlers by default when
+    # logging_verbosity == 'OFF'
 
     return new_log
 
@@ -100,12 +91,12 @@ def getLogger(log_name, log_level=None):
 def setup_new_cchandler(
         log_file_name, log_dir=None, encoding=None, msg_format=None):
     '''Creates a log handler names <log_file_name> configured to save the log
-    in <log_dir> or <os environment variable 'CLOUDCAFE_LOG_PATH'> or
+    in <log_dir> or <os environment variable 'OPENCAFE_LOG_PATH'> or
     './logs', in that order or precedent.
     File handler defaults: 'a+', encoding=encoding or "UTF-8", delay=True
     '''
 
-    log_dir = log_dir or engine_config.log_directory
+    log_dir = log_dir or os.getenv('CAFE_LOG_PATH')
 
     try:
         log_dir = os.path.expanduser(log_dir)
@@ -178,7 +169,7 @@ def log_results(result):
 
     print '=' * 150
     print "Detailed logs: {0}".format(
-        os.getenv("CLOUDCAFE_LOG_PATH"))
+        os.getenv("CAFE_LOG_PATH"))
     print '-' * 150
 
 

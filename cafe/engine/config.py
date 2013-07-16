@@ -18,7 +18,7 @@ import os
 import ConfigParser
 
 
-_ENGINE_CONFIG_FILE_ENV_VAR = 'CCTNG_CONFIG_FILE'
+_ENGINE_CONFIG_FILE_ENV_VAR = 'OPENCAFE_ENGINE_CONFIG_FILE'
 
 
 class NonExistentConfigPathError(Exception):
@@ -34,7 +34,7 @@ class EngineConfig(object):
     Config interface for the global engine configuration
     '''
 
-    SECTION_NAME = 'CCTNG_ENGINE'
+    SECTION_NAME = 'OPENCAFE_ENGINE'
 
     def __init__(self, config_file_path=None, section_name=None):
         #Support for setting the section name as a class or instance
@@ -44,7 +44,8 @@ class EngineConfig(object):
                               getattr(self, 'CONFIG_SECTION_NAME', None))
 
         self._datasource = None
-        config_file_path = config_file_path or self.default_config_file
+        if not config_file_path:
+            config_file_path = os.environ[_ENGINE_CONFIG_FILE_ENV_VAR]
         #Check the path
         if not os.path.exists(config_file_path):
             msg = 'Could not verify the existence of config file at {0}'\
@@ -57,21 +58,6 @@ class EngineConfig(object):
             self._datasource.read(config_file_path)
         except Exception as e:
             raise e
-
-    @property
-    def default_config_file(self):
-        engine_config_file_path = None
-        try:
-            engine_config_file_path = os.environ[_ENGINE_CONFIG_FILE_ENV_VAR]
-        except KeyError:
-            msg = "'{0}' environment variable was not set.".format(
-                _ENGINE_CONFIG_FILE_ENV_VAR)
-            raise ConfigEnvironmentVariableError(msg)
-        except Exception as exception:
-            print ("Unexpected exception while attempting to access '{0}' "
-                   "environment variable.".format(_ENGINE_CONFIG_FILE_ENV_VAR))
-            raise exception
-        return engine_config_file_path
 
     def get(self, item_name, default=None):
 
@@ -117,9 +103,8 @@ class EngineConfig(object):
 
     #Used by the engine for the output of engine and implementation logs
     @property
-    def log_directory(self):
-        return os.getenv("CLOUDCAFE_LOG_PATH",
-                         self.get_raw("log_directory", default="."))
+    def config_directory(self):
+        return self.get_raw("config_directory")
 
     #Used by the engine for the output of engine and implementation logs
     @property
@@ -128,8 +113,8 @@ class EngineConfig(object):
 
     #Used by the engine for the output of engine and implementation logs
     @property
-    def use_verbose_logging(self):
-        return self.get_boolean("use_verbose_logging", False)
+    def logging_verbosity(self):
+        return self.get_boolean("logging_verbosity", False)
 
     #Used by the engine to facilitate using multiple test repositories.
     @property

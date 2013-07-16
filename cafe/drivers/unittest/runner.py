@@ -19,7 +19,6 @@ import os
 import sys
 import time
 import argparse
-import platform
 import unittest2 as unittest
 import json
 from re import search
@@ -29,30 +28,18 @@ from imp import find_module, load_module
 from inspect import getmembers, isclass
 from fnmatch import fnmatch
 from traceback import extract_tb
+from cafe.configurator import configurator
 from cafe.drivers.unittest.fixtures import BaseTestFixture
 from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.decorators import \
     TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME
-from cafe.engine.config import EngineConfig
 
-engine_config = EngineConfig()
-test_repo = None
-try:
-    test_repo = __import__(engine_config.default_test_repo)
-except Exception as exception:
-    sys.stderr.write(
-        "Unable to find '{0}' test repo package. Is it installed?"
-        .format(engine_config.default_test_repo))
-    raise exception
 
-# Default Config Options
-if platform.system().lower() == "windows":
-    DIR_SEPR = "\\"
-else:
-    DIR_SEPR = "/"
-
-BASE_DIR = "{0}{1}.cloudcafe".format(os.path.expanduser("~"), DIR_SEPR)
+configurator.TestEnvManager.set_engine_config_path()
+engine_config = configurator.TestEnvManager.get_engine_config_interface()
+test_repo_path = configurator.TestEnvManager.set_test_repo_package_path()
+BASE_DIR = configurator.EngineDirectoryManager.OPENCAFE_ROOT_DIR
 
 
 class _WritelnDecorator(object):
@@ -73,7 +60,7 @@ class _WritelnDecorator(object):
         self.write("\n")
 
 
-class CCParallelTextTestRunner(unittest.TextTestRunner):
+class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
     def __init__(self, stream=sys.stderr, descriptions=1, verbosity=1):
         self.stream = _WritelnDecorator(stream)
         self.descriptions = descriptions
@@ -154,7 +141,7 @@ class SuiteBuilder(object):
             temp_path = "{0}{1}".format(
                 split_token,
                 path.split(split_token)[position])
-            split_path = temp_path.split(DIR_SEPR)
+            split_path = os.path.split(temp_path)
             dotted_path = ".".join(split_path)
         except AttributeError:
             return None
@@ -189,7 +176,7 @@ class SuiteBuilder(object):
             for file_name in files:
                 if (file_name.find(target) != -1
                         and file_name.find(".pyc") == -1):
-                    file_path = DIR_SEPR.join([root, file_name])
+                    file_path = os.path.join(root, file_name)
                     break
                 else:
                     continue
@@ -206,7 +193,7 @@ class SuiteBuilder(object):
         for root, dirs, _ in os.walk(path):
             for dir_name in dirs:
                 if dir_name.find(target) != -1:
-                    subdir_path = DIR_SEPR.join([root, dir_name])
+                    subdir_path = os.path.join(root, dir_name)
                     break
                 else:
                     continue
@@ -670,7 +657,7 @@ class EnvironmentSetup(object):
 
         try:
             repo_path = os.path.join("{0}".format(
-                test_repo.__path__[0]),
+                test_repo_path),
                 product)
         except AttributeError:
             pass
@@ -685,6 +672,9 @@ class EnvironmentSetup(object):
 
     def get_config_file_name(self, cfg_file):
         cfg_file_name = None
+
+        if cfg_file is None:
+            raise Exception("Config File name is required")
 
         if cfg_file.find(".config") == -1:
             cfg_file_name = "{0}.{1}".format(cfg_file, "config")
@@ -763,7 +753,7 @@ class RunnerSetup(object):
 
         # Use the parallel text runner so the console logs look correct
         if parallel:
-            test_runner = CCParallelTextTestRunner(verbosity=int(verbosity))
+            test_runner = OpenCafeParallelTextTestRunner(verbosity=int(verbosity))
         else:
             test_runner = unittest.TextTestRunner(verbosity=int(verbosity))
 
@@ -858,9 +848,9 @@ class RunnerSetup(object):
         return check_data(runner_data, runner_error)
 
 
-class CCRunner(object):
+class OpenCafeRunner(object):
     """
-    Cloud Cafe Runner
+    Open Cafe Runner
     """
     def __init__(self):
         pass
@@ -949,6 +939,7 @@ class CCRunner(object):
         env_setup = EnvironmentSetup()
 
         cl_args = env_setup.get_cl_args()
+        cfg_file_name = env_setup.get_config_file_name(cl_args.config)
 
         parent_path = env_paths["parent_path"] = env_setup.get_parent_path()
 
@@ -1054,9 +1045,9 @@ class CCRunner(object):
 
             #TODO: change this so that it prints the key/value that errored
             try:
-                runner_setup.set_env("CONFIG_FILE", config_path)
-                runner_setup.set_env("CLOUDCAFE_LOG_PATH", product_log_path)
-                runner_setup.set_env("CLOUDCAFE_DATA_DIRECTORY", data_dir)
+                runner_setup.set_env("CAFE_CONFIG_FILE", config_path)
+                runner_setup.set_env("CAFE_LOG_PATH", product_log_path)
+                runner_setup.set_env("CAFE_DATA_DIRECTORY", data_dir)
                 runner_setup.set_env("VERBOSE", verbose_flag)
             except TypeError:
                 print "Environment variable not set - Exiting"
@@ -1163,11 +1154,11 @@ def tree(directory, padding, print_files=False):
             print "Config directory: {0} Does Not Exist".format(directory)
     else:
         files = [name for name in os.listdir(directory) if
-                 os.path.isdir(DIR_SEPR.join([directory, name]))]
+                 os.path.isdir(os.path.join(directory, name))]
     count = 0
     for file_name in files:
         count += 1
-        path = DIR_SEPR.join([directory, file_name])
+        path = os.path.join(directory, file_name)
         if os.path.isdir(path):
             if count == len(files):
                 tree(path, "".join([padding, " "]), print_files)
@@ -1240,8 +1231,8 @@ def print_paths(config_path, data_dir, log_path):
     print "=" * 150
     print "Percolated Configuration"
     print "-" * 150
-    print "ENGINE CONFIG_FILE: {0}{1}" \
-        "configs{1}engine.config".format(BASE_DIR, DIR_SEPR)
+    print "OPENCAFE_CONFIG_FILE: {0}".format(
+        configurator.EngineConfigManager.ENGINE_CONFIG_PATH)
     print "TEST CONFIG FILE..: {0}".format(config_path)
     print "DATA DIRECTORY....: {0}".format(data_dir)
     print "LOG PATH..........: {0}".format(log_path)
@@ -1276,6 +1267,6 @@ def entry_point():
     print brew
     print "-" * len(brew)
 
-    runner = CCRunner()
+    runner = OpenCafeRunner()
     runner.run()
     exit(0)
