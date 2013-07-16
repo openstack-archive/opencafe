@@ -15,6 +15,10 @@ limitations under the License.
 """
 
 from cafe.common.reporting import cclogging
+from cafe.engine.clients.remote_instance.linux.linux_instance_client \
+    import LinuxClient
+from cafe.engine.clients.remote_instance.windows.windows_instance_client \
+    import WindowsClient
 
 
 class InstanceClientFactory(object):
