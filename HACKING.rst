@@ -41,9 +41,17 @@ Development Guidelines
 - Do not leave trailing whitespace or whitespace in blank lines.
 - Put two newlines between top-level code (funcs, classes, etc).
 - Use only UNIX style newlines ("\n"), not Windows style ("\r\n").
+- Follow the ordering/spacing guidelines described in PEP8 for imports.
 - Put one newline between methods in classes and anywhere else.
-- Long lines should be wrapped in parentheses in preference to using
-  a backslash for line continuation.
+- Avoid using line continuations unless absolutely necessary. Preferable
+  alternatives are to wrap long lines in parenthesis, or line breaking
+  on the open parenthesis of a function call.
+- Long strings should be handled by wrapping the string in parenthesis
+  and having quote delimited strings per line within.
+Example::
+    long_string = ('I cannot fit this whole phrase on one '
+                   'line, but I can properly format this string '
+                   'by using this type of structure.')
 - Do not write "except:", use "except Exception:" at the very least
 - Use try/except where logical. Avoid wrapping large blocks of code in
   in huge try/except blocks.
@@ -74,6 +82,9 @@ Example::
   (Note on ''.join():  This is OK to use and encouraged *if* you're actually
   creating a string from a large list of strings. Otherwise, ''.format()
   is the better choice).
+- Commented out code should not be submitted. Non-functional code should be
+  removed, and tests with issues should be marked to skip.
+
 
 
 Test Data/Configuration
