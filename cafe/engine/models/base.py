@@ -31,10 +31,19 @@ class CommonToolsMixin(object):
 
     @staticmethod
     def _remove_empty_values(dictionary):
-        '''Returns a new dictionary based on 'dictionary', minus any keys with
+        """Returns a new dictionary based on 'dictionary', minus any keys with
         values that are None
-        '''
+        """
         return dict((k, v) for k, v in dictionary.iteritems() if v is not None)
+
+    @staticmethod
+    def _int_to_version_str(version_int):
+        if isinstance(version_int, str):
+            version_int = int(version_int)
+        major = version_int // 1000000
+        minor = (version_int - major * 1000000) // 1000
+        patch = (version_int - major * 1000000 - minor * 1000)
+        return '%s.%s.%s' % (str(major), str(minor), str(patch))
 
 
 class JSON_ToolsMixin(object):
