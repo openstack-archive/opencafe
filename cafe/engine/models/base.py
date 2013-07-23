@@ -55,7 +55,7 @@ class XML_ToolsMixin(object):
             property_dict = CommonToolsMixin._remove_empty_keys(property_dict)
 
         for key in property_dict:
-            xml_etree.set(str(key), str(property_dict[key]))
+            xml_etree.set(str(key), unicode(property_dict[key]))
         return xml_etree
 
     @staticmethod
