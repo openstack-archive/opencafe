@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: John Vrbanac <john.vrbanac@rackspace.com>
+Code-Review+2: John Vrbanac <john.vrbanac@rackspace.com>
+Code-Review+1: Sett <sett.wai@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 25 Jul 2013 21:04:09 +0000
+Reviewed-on: https://review.openstack.org/37771
+Project: stackforge/opencafe
+Branch: refs/heads/master
