@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import inspect
+import itertools
 
 from types import FunctionType
 from unittest2 import TestCase
@@ -92,9 +94,19 @@ def DataDrivenFixture(cls):
 
             # Change the new test's default keyword values to the appropriate
             # new data as defined by the datasource decorator
-            new_default_values = []
-            for arg in list(original_test.func_code.co_varnames)[1:]:
-                new_default_values.append(dataset.data[arg])
+            args, _, _, defaults = inspect.getargspec(original_test)
+
+            # Self doesn't have a default, so we need to remove it
+            args.remove('self')
+
+            # Make sure we take into account required arguments
+            kwargs = dict(itertools.izip_longest(args[::-1],
+                                                 list(defaults)[::-1],
+                                                 fillvalue=None))
+            kwargs.update(dataset.data)
+
+            # Make sure the updated values are in the correct order
+            new_default_values = [kwargs[arg] for arg in args]
             setattr(new_test, "func_defaults", tuple(new_default_values))
 
             # Add the new test to the TestCase
