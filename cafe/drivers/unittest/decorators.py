@@ -15,8 +15,9 @@ limitations under the License.
 """
 
 from types import FunctionType
-from unittest2 import TestCase
+from unittest2 import TestCase, skip
 
+from cafe.common.tracker import launchpad
 
 TAGS_DECORATOR_TAG_LIST_NAME = "__test_tags__"
 TAGS_DECORATOR_ATTR_DICT_NAME = "__test_attrs__"
@@ -100,3 +101,18 @@ def DataDrivenFixture(cls):
             # Add the new test to the TestCase
             setattr(cls, new_test_name, new_test)
     return cls
+
+
+def _id(obj):
+    return obj
+
+
+def skip_open_issue(type, bug_id):
+    """ Skips the test if there is an open issue for that test.
+
+    @param type: The issue tracker type (e.g., Launchpad, GitHub).
+    @param bug_id: ID of the issue for the test.
+    """
+    if type.lower() == 'launchpad' and launchpad.bug_is_open(bug_id=bug_id):
+        return skip('Launchpad Bug #{0}'.format(bug_id))
+    return _id
