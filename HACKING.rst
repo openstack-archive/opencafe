@@ -96,6 +96,9 @@ Test Data/Configuration
   but even those are discouraged unless absolutely necessary.
 - Each test/test class is responsible for deleting/or removing any resources
   creating during the test.
+- Test asserts such as assertEqual() should written as if they were spoken
+  verbally. Example: Asserting that a new value is equal to an
+  older one would be written as: self.assertEqual(changed, original)
 
 
 Imports
