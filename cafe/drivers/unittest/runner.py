@@ -32,7 +32,6 @@ from traceback import extract_tb
 from cafe.drivers.unittest.fixtures import BaseTestFixture
 from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
-
 from cafe.drivers.unittest.decorators import \
     TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME
 from cafe.engine.config import EngineConfig
@@ -47,7 +46,6 @@ except Exception as exception:
         .format(engine_config.default_test_repo))
     raise exception
 
-
 # Default Config Options
 if platform.system().lower() == "windows":
     DIR_SEPR = "\\"
@@ -55,8 +53,6 @@ else:
     DIR_SEPR = "/"
 
 BASE_DIR = "{0}{1}.cloudcafe".format(os.path.expanduser("~"), DIR_SEPR)
-DATA_DIR = os.path.expanduser("{0}{1}data".format(BASE_DIR, DIR_SEPR))
-LOG_BASE_PATH = os.path.expanduser("{0}{1}logs".format(BASE_DIR, DIR_SEPR))
 
 
 class _WritelnDecorator(object):
@@ -122,14 +118,14 @@ class LoadedTestClass(object):
                 continue
 
     def _get_class(self, loaded_module, test_class_name):
-        _class = None
+        class_ = None
         try:
-            _class = getattr(loaded_module, test_class_name)
+            class_ = getattr(loaded_module, test_class_name)
         except AttributeError, e:
             print e
             return None
 
-        return _class
+        return class_
 
     def get_instances(self):
         for class_name in self._get_class_names(self.module):
@@ -302,7 +298,8 @@ class SuiteBuilder(object):
         method_attrs = {}
 
         attr_keys = attrs.keys()
-        method_attrs = method.__dict__["__test_attrs__"]
+        method_attrs = \
+            TAGS_DECORATOR_TAG_LIST_NAME[TAGS_DECORATOR_ATTR_DICT_NAME]
         method_attrs_keys = method_attrs.keys()
 
         for attr_key in attr_keys:
@@ -388,12 +385,7 @@ class SuiteBuilder(object):
         attrs = {}
         loader = unittest.TestLoader()
         suite = unittest.TestSuite()
-
         loaded = LoadedTestClass(loaded_module)
-
-        base_dotted_path = self.get_dotted_path(
-            loaded.module_path,
-            test_repo.__name__)
 
         if self.tags:
             tag_list, attrs, token = self._parse_tags(self.tags)
@@ -421,15 +413,9 @@ class SuiteBuilder(object):
                             attrs,
                             token)
 
-                    if load_test_flag is True:
+                    if load_test_flag:
                         try:
-                            dotted_path = "{0}.{1}.{2}.{3}".format(
-                                base_dotted_path,
-                                loaded.module_name,
-                                class_.__name__,
-                                method_name)
-                            suite.addTest(
-                                loader.loadTestsFromName(dotted_path))
+                            suite.addTest(class_(method_name))
                         except ImportError:
                             raise
                         except AttributeError:
@@ -587,7 +573,8 @@ class EnvironmentSetup(object):
         argparser.add_argument(
             "-v", "--verbose",
             nargs="?",
-            default="2",
+            default=2,
+            type=int,
             help="verbosity")
 
         argparser.add_argument(
@@ -661,11 +648,7 @@ class EnvironmentSetup(object):
 
         args = argparser.parse_args()
 
-        if not args.verbose.isdigit():
-            print "cafe-runner: error: unrecognized argument: {0}".format(
-                args.verbose)
-            exit(1)
-        elif int(args.verbose) < 0 or int(args.verbose) > 3:
+        if args.verbose < 0 or args.verbose > 3:
             print "cafe-runner: error: argument out of range: {0}".format(
                 args.verbose)
             exit(1)
@@ -792,27 +775,27 @@ class RunnerSetup(object):
         """
         return str(datetime.now()).replace(" ", "_").replace(":", "_")
 
-    def get_stats_log_path(self, product, config):
+    def get_stats_log_path(self, log_dir, product, config):
         stats_log_path = None
-
-        if not product or not config:
+        log_dir = os.path.expanduser(log_dir)
+        if not log_dir or not product or not config:
             return None
         else:
             stats_log_path = "{0}/{1}/{2}/statistics".format(
-                LOG_BASE_PATH,
+                os.path.expanduser(log_dir),
                 product,
                 config)
 
         return stats_log_path
 
-    def get_product_log_path(self, product, config):
+    def get_product_log_path(self, log_dir, product, config):
         product_log_path = None
-
-        if not product or not config:
+        log_dir = os.path.expanduser(log_dir)
+        if not log_dir or not product or not config:
             return None
         else:
             product_log_path = "{0}/{1}/{2}/{3}".format(
-                LOG_BASE_PATH,
+                log_dir,
                 product,
                 config,
                 self.get_safe_file_date())
@@ -820,8 +803,7 @@ class RunnerSetup(object):
         return product_log_path
 
     def _set_default_data_dir(self):
-        data_dir = DATA_DIR
-
+        data_dir = os.path.expanduser(engine_config.data_directory)
         if not os.path.isdir(data_dir):
             os.makedirs(data_dir)
 
@@ -1026,17 +1008,18 @@ class CCRunner(object):
 
             stats_log_path = runner_paths["stats_log_path"] = \
                 runner_setup.get_stats_log_path(
+                    engine_config.log_directory,
                     cl_args.product,
                     cl_args.config)
 
             product_log_path = runner_paths["product_log_path"] = \
                 runner_setup.get_product_log_path(
+                    engine_config.log_directory,
                     cl_args.product,
                     cl_args.config)
 
             data_dir = runner_paths["data_dir"] = \
-                runner_setup.create_data_dir(
-                    cl_args.data_directory)
+                runner_setup.create_data_dir(cl_args.data_directory)
 
             runner_error = \
                 {"stats_log_path":
@@ -1057,7 +1040,7 @@ class CCRunner(object):
             runner_setup.create_product_log_dir(product_log_path)
 
             verbose_flag = "false"
-            if int(cl_args.verbose) == 3:
+            if cl_args.verbose == 3:
                 verbose_flag = "true"
 
             #TODO: change this so that it prints the key/value that errored
@@ -1252,7 +1235,7 @@ def print_paths(config_path, data_dir, log_path):
         "configs{1}engine.config".format(BASE_DIR, DIR_SEPR)
     print "TEST CONFIG FILE..: {0}".format(config_path)
     print "DATA DIRECTORY....: {0}".format(data_dir)
-    print "LOG PATH..........: {0}".format(log_path)
+    print "LOG PATH..........: {0}".format(os.path.expanduser(log_path))
     print "=" * 150
 
 
