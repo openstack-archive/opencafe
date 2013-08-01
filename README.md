@@ -99,3 +99,6 @@ package is specifically for building CAFE support for various Python based test 
 heavily extends the basic unittest functionality. Driver plug-ins can easily be constructed to add CAFE support for most of the popular ones already 
 available (nose, pytest, lettuce, testr, etc...) or even for 100% custom test case drivers if desired.  
 
+##resources
+Contains all modules that reference external resources to OpenCAFE. One example of an external resource is a Launchpad tracker.
+
