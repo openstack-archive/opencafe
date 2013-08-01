@@ -298,8 +298,7 @@ class SuiteBuilder(object):
         method_attrs = {}
 
         attr_keys = attrs.keys()
-        method_attrs = \
-            TAGS_DECORATOR_TAG_LIST_NAME[TAGS_DECORATOR_ATTR_DICT_NAME]
+        method_attrs = method.__dict__[TAGS_DECORATOR_ATTR_DICT_NAME]
         method_attrs_keys = method_attrs.keys()
 
         for attr_key in attr_keys:
@@ -328,7 +327,7 @@ class SuiteBuilder(object):
         truth_values = []
         method_tags = []
 
-        method_tags = method.__dict__["__test_tags__"]
+        method_tags = method.__dict__[TAGS_DECORATOR_TAG_LIST_NAME]
 
         for tag in tags:
             if tag in method_tags:
@@ -352,7 +351,8 @@ class SuiteBuilder(object):
 
         method = getattr(class_, method_name)
 
-        if dict(method.__dict__) and "__test_tags__" in method.__dict__:
+        if dict(method.__dict__) \
+                and TAGS_DECORATOR_TAG_LIST_NAME in method.__dict__:
             if tags and not attrs:
                 tag_flag = self.check_tags(
                     method,
