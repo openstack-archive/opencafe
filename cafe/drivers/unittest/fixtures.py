@@ -181,12 +181,17 @@ class BaseTestFixture(unittest.TestCase):
                This is related to the todo in L{TestRunMetrics}
         """
         # Build metrics
-        if self._resultForDoCleanups.wasSuccessful():
-            self.fixture_metrics.total_passed += 1
-            self.test_metrics.result = TestResultTypes.PASSED
-        else:
+        if any(r for r in self._resultForDoCleanups.failures
+               if r[0]._testMethodName == self._testMethodName):
             self.fixture_metrics.total_failed += 1
             self.test_metrics.result = TestResultTypes.FAILED
+        elif any(r for r in self._resultForDoCleanups.errors
+                 if r[0]._testMethodName == self._testMethodName):
+            self.fixture_metrics.total_failed += 1
+            self.test_metrics.result = TestResultTypes.ERRORED
+        else:
+            self.fixture_metrics.total_passed += 1
+            self.test_metrics.result = TestResultTypes.PASSED
 
         # Report
         self.fixture_log.info("{0}".format('=' * 56))

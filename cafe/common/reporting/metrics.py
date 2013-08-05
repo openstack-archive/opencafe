@@ -52,6 +52,8 @@ class TestResultTypes(object):
     @type SKIPPED: C{str}
     @cvar TIMEDOUT: Test exceeded pre-defined execution time limit
     @type TIMEDOUT: C{str}
+    @cvar ERRORED: Test has errored
+    @type ERRORED: C{str}
     @note: This is essentially an Enumerated Type
     '''
     PASSED = "Passed"
@@ -59,6 +61,7 @@ class TestResultTypes(object):
     SKIPPED = "Skipped"    # Not Supported Yet
     TIMEDOUT = "Timedout"  # Not Supported Yet
     UNKNOWN = "UNKNOWN"
+    ERRORED = "ERRORED"
 
 
 class TestTimer(object):
