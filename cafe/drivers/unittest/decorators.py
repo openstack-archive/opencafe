@@ -19,6 +19,7 @@ import itertools
 from types import FunctionType
 from unittest2 import TestCase, skip
 
+from cafe.resources.github.issue_tracker import GitHubTracker
 from cafe.resources.launchpad.issue_tracker import LaunchpadTracker
 
 TAGS_DECORATOR_TAG_LIST_NAME = "__test_tags__"
@@ -124,4 +125,7 @@ def skip_open_issue(type, bug_id):
     if type.lower() == 'launchpad' and LaunchpadTracker.is_bug_open(
             bug_id=bug_id):
         return skip('Launchpad Bug #{0}'.format(bug_id))
+    elif type.lower() == 'github' and GitHubTracker.is_bug_open(
+            issue_id=bug_id):
+        return skip('GitHub Issue #{0}'.format(bug_id))
     return lambda obj: obj
