@@ -35,8 +35,8 @@ class SummarizeResults(object):
         setup_errored_classes = []
         setup_errored_tests = []
         passed_obj_list = []
-        for item in vars(self.master_testsuite).get('_tests'):
-            all_tests.append(vars(item).get('_tests')[0])
+        for test in vars(self.master_testsuite).get('_tests'):
+            all_tests.append(test)
         for failed_test in self.failures:
             failed_tests.append(failed_test[0])
         for skipped_test in self.skipped:
