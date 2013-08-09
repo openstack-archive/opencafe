@@ -29,6 +29,10 @@ Rules of Law
 4. Common libraries should be favored over importing directly from other
    project code. The exception to this is importing clients, behaviors,
    and configurations for use in integration tests.
+5. Once you have submitted a branch for review, the only changes that
+   should be made to that branch should be changes requested by
+   reviewers or functional issues.  Any follow on work should be submitted
+   in a new branch.
 
 
 Development Guidelines
@@ -59,6 +63,8 @@ Example::
   or magic numbers between Functions, Methods, Classes and Packages.
   Python does not provide a default Enumerated Type data type, CloudCafe uses
   Class structs by naming convention in their place.
+- Use specific assertions in favor of generic assertions (i.e. assertIsNone(x)
+  instead of assertTrue(x is not None)).
 
 Example::
   class ComputeServerStates(object):
@@ -105,7 +111,15 @@ Imports
 -------
 - Do not use wildcard ``*`` import
 - Do not make relative imports
-- Order your imports by the full module path
+- Imports should be broken into two sections: standard lib imports and your
+  defined imports. Imports should be in alphabetical order within each section
+
+Example::
+    import json
+    import lxml
+
+    from cafe import Runner
+    from foo.bar import Baz
 
 
 Docstrings
@@ -133,11 +147,15 @@ Before Committing
   (https://wiki.openstack.org/wiki/Gerrit_Workflow). This means all
   all submissions should be squashed into one commit with one commit id
   and be submitted from a feature branch, not master.
+- Each pull request should address a single issue, ideally which should
+  be described in a blueprint or bug. Pull requests that address multiple,
+  unrelated issues will be closed and need to be resubmitted as separate
+  submissions
 - Always run a PEP8 check on your modified code before committing.
   You can do this with a plethora of tools such as flake8, pylint,
   and pyflakes.  **Once gating on PEP-8 rules is enabled, Gerrit will
   immediately reject any submission with PEP-8 issues.**
-- Blocks of commented out code should not be submitted to trunk except
+- Blocks of commented out code or configuration should not be submitted to trunk except
   in extraordinary cases.
 - Tests that either validate nothing or simply have the "pass" statement
   should not be submitted.
@@ -173,3 +191,10 @@ and how to split up commits into a series of changes, consult the
 project wiki:
 
    http://wiki.openstack.org/GitCommitMessages
+
+
+Code Review Etiquette
+---------------------
+- Do not vote on your own code submissions
+- If you have a submission that has not been looked at, it is okay to
+  send an email out to the CloudCafe mailing list asking for a review
