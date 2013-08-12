@@ -102,16 +102,17 @@ def DataDrivenFixture(cls):
             args.remove('self')
 
             # Make sure we take into account required arguments
-            kwargs = dict(itertools.izip_longest(args[::-1],
-                                                 list(defaults)[::-1],
-                                                 fillvalue=None))
+            kwargs = dict(
+                itertools.izip_longest(
+                    args[::-1], list(defaults or ())[::-1], fillvalue=None))
+
             kwargs.update(dataset.data)
 
             # Make sure the updated values are in the correct order
             new_default_values = [kwargs[arg] for arg in args]
             setattr(new_test, "func_defaults", tuple(new_default_values))
 
-            # Add the new test to the TestCase
+            # Add the new test to the decorated TestCase
             setattr(cls, new_test_name, new_test)
     return cls
 
