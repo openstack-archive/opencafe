@@ -52,10 +52,11 @@ class XML_ToolsMixin(object):
         properties if only if exclude_empty_properties == False.
         '''
         if exclude_empty_properties:
-            property_dict = CommonToolsMixin._remove_empty_values(property_dict)
+            property_dict = CommonToolsMixin._remove_empty_values(
+                property_dict)
 
         for key in property_dict:
-            xml_etree.set(str(key), str(property_dict[key]))
+            xml_etree.set(key, property_dict[key])
         return xml_etree
 
     @staticmethod
