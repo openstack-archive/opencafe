@@ -181,12 +181,17 @@ class BaseTestFixture(unittest.TestCase):
                This is related to the todo in L{TestRunMetrics}
         """
         # Build metrics
-        if self._resultForDoCleanups.wasSuccessful():
-            self.fixture_metrics.total_passed += 1
-            self.test_metrics.result = TestResultTypes.PASSED
-        else:
+        if any(r for r in self._resultForDoCleanups.failures
+               if self._test_name_matches_result(self._testMethodName, r)):
             self.fixture_metrics.total_failed += 1
             self.test_metrics.result = TestResultTypes.FAILED
+        elif any(r for r in self._resultForDoCleanups.errors
+                 if self._test_name_matches_result(self._testMethodName, r)):
+            self.fixture_metrics.total_failed += 1
+            self.test_metrics.result = TestResultTypes.ERRORED
+        else:
+            self.fixture_metrics.total_passed += 1
+            self.test_metrics.result = TestResultTypes.PASSED
 
         # Report
         self.fixture_log.info("{0}".format('=' * 56))
@@ -206,6 +211,20 @@ class BaseTestFixture(unittest.TestCase):
 
         # Let the base handle whatever hoodoo it needs
         super(BaseTestFixture, self).tearDown()
+
+    def _test_name_matches_result(self, name, test_result):
+        """Checks if a test result matches a specific test name."""
+        # Try to get the result portion of the tuple
+        try:
+            result = test_result[0]
+        except IndexError:
+            return False
+
+        # Verify the object has the correct property
+        if hasattr(result, '_testMethodName'):
+            return result._testMethodName == name
+        else:
+            return False
 
 
 class BaseParameterizedTestFixture(BaseTestFixture):
