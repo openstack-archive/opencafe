@@ -683,19 +683,23 @@ class EnvironmentSetup(object):
 
         return repo_path
 
-    def get_config_path(self, product, cfg_file_name):
+    def get_config_file_name(self, cfg_file):
+        cfg_file_name = None
+
+        if cfg_file.find(".config") == -1:
+            cfg_file_name = "{0}.{1}".format(cfg_file, "config")
+        else:
+            cfg_file_name = cfg_file
+
+        return cfg_file_name
+
+    def get_config_path(self, parent_path, product, cfg_file_name):
         """
         returns the base string for the config path
         """
-
         cfg_path = None
 
-        parent_path = self.get_parent_path()
-
         try:
-            if cfg_file_name.find(".config") == -1:
-                cfg_file_name = "{0}.{1}".format(cfg_file_name, "config")
-
             cfg_path = os.path.join(
                 parent_path,
                 "configs",
@@ -777,12 +781,12 @@ class RunnerSetup(object):
 
     def get_stats_log_path(self, log_dir, product, config):
         stats_log_path = None
-        log_dir = os.path.expanduser(log_dir)
+
         if not log_dir or not product or not config:
             return None
         else:
             stats_log_path = "{0}/{1}/{2}/statistics".format(
-                os.path.expanduser(log_dir),
+                log_dir,
                 product,
                 config)
 
@@ -790,7 +794,7 @@ class RunnerSetup(object):
 
     def get_product_log_path(self, log_dir, product, config):
         product_log_path = None
-        log_dir = os.path.expanduser(log_dir)
+
         if not log_dir or not product or not config:
             return None
         else:
@@ -966,9 +970,12 @@ class CCRunner(object):
 
             method_regex = env_setup.get_method_regex(cl_args.method_regex)
 
+            cfg_file_name = env_setup.get_config_file_name(cl_args.config)
+
             config_path = env_paths["config_path"] = env_setup.get_config_path(
+                parent_path,
                 cl_args.product,
-                cl_args.config)
+                cfg_file_name)
 
             env_error = \
                 {"parent_path": ["DEFAULT DIR",
@@ -1006,17 +1013,19 @@ class CCRunner(object):
                 cl_args.fail_fast,
                 cl_args.verbose)
 
+            log_dir = os.path.expanduser(engine_config.log_directory)
+
             stats_log_path = runner_paths["stats_log_path"] = \
                 runner_setup.get_stats_log_path(
-                    engine_config.log_directory,
+                    log_dir,
                     cl_args.product,
-                    cl_args.config)
+                    cfg_file_name)
 
             product_log_path = runner_paths["product_log_path"] = \
                 runner_setup.get_product_log_path(
-                    engine_config.log_directory,
+                    log_dir,
                     cl_args.product,
-                    cl_args.config)
+                    cfg_file_name)
 
             data_dir = runner_paths["data_dir"] = \
                 runner_setup.create_data_dir(cl_args.data_directory)
@@ -1235,7 +1244,7 @@ def print_paths(config_path, data_dir, log_path):
         "configs{1}engine.config".format(BASE_DIR, DIR_SEPR)
     print "TEST CONFIG FILE..: {0}".format(config_path)
     print "DATA DIRECTORY....: {0}".format(data_dir)
-    print "LOG PATH..........: {0}".format(os.path.expanduser(log_path))
+    print "LOG PATH..........: {0}".format(log_path)
     print "=" * 150
 
 
