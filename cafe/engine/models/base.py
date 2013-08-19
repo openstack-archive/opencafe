@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from xml.etree import ElementTree
 from cafe.common.reporting import cclogging
 
 
@@ -74,55 +73,6 @@ class XML_ToolsMixin(object):
         return doc
 
 
-class BAD_XML_TOOLS(object):
-    '''THESE ARE BAD.  DON'T USE THEM.  They were created in a more innocent
-    age, and are here for backwards compatability only.
-    '''
-
-    def _auto_value_to_dict(self, value):
-        ret = None
-        if isinstance(value, (int, str, unicode, bool)):
-            ret = value
-        elif isinstance(value, list):
-            ret = []
-            for item in value:
-                ret.append(self._auto_value_to_dict(item))
-        elif isinstance(value, dict):
-            ret = {}
-            for key in value.keys():
-                ret[key] = self._auto_value_to_dict(value[key])
-        elif isinstance(value, AutoMarshallingModel):
-            ret = value._obj_to_json()
-        return ret
-
-    def _auto_to_dict(self):
-        ret = {}
-        for attr in vars(self).keys():
-            value = vars(self).get(attr)
-            if value is not None and attr != '_log':
-                ret[attr] = self._auto_value_to_dict(value)
-
-        if hasattr(self, 'ROOT_TAG'):
-            return {self.ROOT_TAG: ret}
-        else:
-            return ret
-
-    def _auto_to_xml(self):
-        #XML is almost impossible to do without a schema definition because it
-        #cannot be determined when an instance variable should be an attribute
-        #of an element or text between that element's tags
-        ret = ElementTree.Element(self.ROOT_TAG)
-        for attr in vars(self).keys():
-            value = vars(self).get(attr)
-            if value is not None:
-                assigned = self._auto_value_to_xml(attr, value)
-                if isinstance(assigned, ElementTree.Element):
-                    ret.append(assigned)
-                else:
-                    ret.set(attr, str(assigned))
-        return ret
-
-
 class BaseModel(object):
     __REPR_SEPARATOR__ = '\n'
 
@@ -168,8 +118,7 @@ class BaseModel(object):
 #tool objects in the AutoMarshallingModel, which would just act as
 #sub-namespaces, to keep it clean. --Jose
 class AutoMarshallingModel(
-        BaseModel, CommonToolsMixin, JSON_ToolsMixin, XML_ToolsMixin,
-        BAD_XML_TOOLS):
+        BaseModel, CommonToolsMixin, JSON_ToolsMixin, XML_ToolsMixin):
     """
     @summary: A class used as a base to build and contain the logic necessary
              to automatically create serialized requests and automatically
