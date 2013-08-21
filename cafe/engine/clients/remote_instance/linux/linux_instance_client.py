@@ -411,3 +411,27 @@ class LinuxClient(BasePersistentLinuxClient):
                 value = meta_item[1].strip('" ')
                 meta[key] = value
         return meta
+
+    def create_directory(self, path):
+        '''
+        @summary: Creates Directory
+        @param path: Directory path
+        @type path: string
+        '''
+        command = 'mkdir -p ' + path
+        output = self.ssh_client.exec_command(command)
+        return output
+
+    def is_directory_present(self, directory_path):
+        '''
+        @summary: Check if directory is present
+        @param path: Path for the directory
+        @type path: string
+        '''
+        command = 'cd ' + directory_path
+        output = self.ssh_client.exec_command(command)
+        if output == '':
+            output = True
+        else:
+            output = False
+        return output
