@@ -259,3 +259,9 @@ class AutoMarshallingListModel(list, AutoMarshallingModel):
     """List-like AutoMarshallingModel used for some special cases"""
     def __str__(self):
         return list.__str__(self)
+
+
+class AutoMarshallingDictModel(dict, AutoMarshallingModel):
+    """Dict-like AutoMarshallingModel used for some special cases"""
+    def __str__(self):
+        return dict.__str__(self)
