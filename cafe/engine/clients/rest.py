@@ -262,12 +262,15 @@ class AutoMarshallingRestClient(RestClient):
     """@TODO: Turn serialization and deserialization into decorators so
     that we can support serialization and deserialization on a per-method
     basis"""
-    def __init__(self, serialize_format=None, deserialize_format=None):
+    def __init__(
+            self, serialize_format=None, deserialize_format=None,
+            headers=None):
         super(AutoMarshallingRestClient, self).__init__()
         self.serialize_format = serialize_format
         self.deserialize_format = deserialize_format or self.serialize_format
-        self.default_headers = {'Content-Type': 'application/{format}'.format(
-            format=serialize_format)}
+        self.default_headers = headers or {
+            'Content-Type': 'application/{format}'.
+            format(format=serialize_format)}
 
     def request(self, method, url, headers=None, params=None, data=None,
                 response_entity_type=None, request_entity=None,
