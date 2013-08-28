@@ -18,6 +18,10 @@ import time
 import re
 
 from cafe.common.reporting import cclogging
+from cafe.engine.clients.remote_instance.models.dir_details \
+    import DirectoryDetails
+from cafe.engine.clients.remote_instance.exceptions \
+    import DirectoryNotFoundException
 from cafe.engine.clients.remote_instance.models.file_details \
     import FileDetails
 from cafe.engine.clients.remote_instance.models.partition import \
@@ -411,3 +415,21 @@ class LinuxClient(BasePersistentLinuxClient):
                 value = meta_item[1].strip('" ')
                 meta[key] = value
         return meta
+
+    def get_directory_details(self, dirpath):
+        """
+        @summary: Get the directory details
+        @param direpath: Path to the directory
+        @type dirpath: string
+        @return: Directory details including permissions and content
+        @rtype: DirectoryDetails
+        """
+        output = self.is_directory_present(dirpath)
+        if not output:
+            raise DirectoryNotFoundException(
+                "Directory: {1} not found.".format(dirpath))
+        dir_permissions = self.ssh_client.exec_command(
+            "stat -c %a {1}".format(dirpath)).rstrip("\n")
+        dir_size = float(self.ssh_client.exec_command(
+            "du -s {1}".format(dirpath)).split('\t', 1)[0])
+        return DirectoryDetails(dir_permissions, dir_size, dirpath)
