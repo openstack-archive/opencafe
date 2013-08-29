@@ -13,19 +13,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from cafe.engine.models.data_interfaces import ConfigSectionInterface
-
-
-class GitHubConfig(ConfigSectionInterface):
-
-    SECTION_NAME = 'GITHUB'
-
-    #Access or authorization token
-    @property
-    def token(self):
-        return self.get('token')
-
-    #Full repository name (e.g., 'organization/repo')
-    @property
-    def repo(self):
-        return self.get('repo')
