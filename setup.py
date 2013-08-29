@@ -16,29 +16,53 @@ limitations under the License.
 
 import os
 import sys
-import cafe
-import platform
-
-# These imports are only possible on Linux/OSX
-if platform.system().lower() != 'windows':
-    import pwd
+from subprocess import call
 
 try:
     from setuptools import setup, find_packages
+    from setuptools.command.install import install as _install
 except ImportError:
+    #currently broken, this really only works with setuptools
     from distutils.core import setup, find_packages
+    from distutils.command.install import install as _install
 
 if sys.argv[-1] == 'publish':
     os.system('python setup.py sdist upload')
     sys.exit()
 
+
+#Post-install engine configuration
+def _post_install(dir):
+    call(['cafe-config', 'engine', '--init-install'])
+    print(
+        """
+         ( (
+            ) )
+        ........
+        |      |___
+        |      |_  |
+        |  :-) |_| |
+        |      |___|
+        |______|
+    === OpenCAFE ===
+        """)
+
+
+#cmdclass hook allows setup to make post install call
+class install(_install):
+    def run(self):
+        _install.run(self)
+        self.execute(
+            _post_install, (self.install_lib,),
+            msg="\nRunning post install tasks...")
+
+
+#Normal setup stuff
 requires = open('pip-requires').readlines()
 
-''' @todo: entry point should be read from a configuration and not hard coded
-           to the unittest driver's runner '''
 setup(
     name='cafe',
-    version=cafe.__version__,
+    version='0.1.0',
     description='The Common Automation Framework Engine',
     long_description='{0}\n\n{1}'.format(
         open('README.md').read(),
@@ -46,7 +70,7 @@ setup(
     author='Rackspace Cloud QE',
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://rackspace.com',
-    packages=find_packages(exclude=[]),
+    packages=find_packages(),
     package_data={'': ['LICENSE', 'NOTICE']},
     package_dir={'cafe': 'cafe'},
     include_package_data=True,
@@ -65,87 +89,6 @@ setup(
     ),
     entry_points = {
         'console_scripts':
-        ['cafe-runner = cafe.drivers.unittest.runner:'
-         'entry_point']}
-)
-
-# real_prefix should only be set under a virtualenv
-using_virtualenv = hasattr(sys, 'real_prefix')
-
-''' @todo: need to clean this up or do it with puppet/chef '''
-# Default Config Options
-root_dir = "{0}/.cloudcafe".format(os.path.expanduser("~"))
-log_dir = "{0}/logs".format(root_dir)
-data_dir = "{0}/data".format(root_dir)
-temp_dir = "{0}/temp".format(root_dir)
-config_dir = "{0}/configs".format(root_dir)
-use_verbose_logging = "False"
-default_test_repo = "cloudroast"
-
-# Copy over the default configurations
-if(os.path.exists("~install")):
-    os.remove("~install")
-    # Report
-    print('\n'.join(["\t\t     ( (",
-                     "\t\t        ) )",
-                     "\t\t     .........    ",
-                     "\t\t     |       |___ ",
-                     "\t\t     |       |_  |",
-                     "\t\t     |  :-)  |_| |",
-                     "\t\t     |       |___|",
-                     "\t\t     |_______|",
-                     "\t\t === CAFE Core ==="]))
-    print("========================================================")
-    print("CAFE Core installed with the options:")
-    print("Config File: {0}/engine.config".format(config_dir))
-    print("log_directory={0}".format(log_dir))
-    print("data_directory={0}".format(data_dir))
-    print("temp_directory={0}".format(temp_dir))
-    print("use_verbose_logging={0}".format(use_verbose_logging))
-    print("========================================================")
-else:
-    # State file
-    temp = open("~install", "w")
-    temp.close()
-
-    # Build Default directories
-    if not os.path.exists(root_dir):
-        os.makedirs(root_dir)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    if not os.path.exists(temp_dir):
-        os.makedirs(temp_dir)
-    if not os.path.exists(config_dir):
-        os.makedirs(config_dir)
-
-    # Get uid and gid of the current user to set permissions (Linux/OSX only)
-    if platform.system().lower() != 'windows':
-        if using_virtualenv:
-            working_user = os.getenv("USER")
-        else:
-            working_user = os.getenv("SUDO_USER")
-
-        uid = pwd.getpwnam(working_user).pw_uid
-        gid = pwd.getpwnam(working_user).pw_gid
-
-        os.chown(root_dir, uid, gid)
-        os.chown(log_dir, uid, gid)
-        os.chown(data_dir, uid, gid)
-        os.chown(temp_dir, uid, gid)
-        os.chown(config_dir, uid, gid)
-
-    # Build the default configuration file
-    if os.path.exists("{0}/engine.config".format(config_dir)) is False:
-        config = open("{0}/engine.config".format(config_dir), "w")
-        config.write("[CCTNG_ENGINE]\n")
-        config.write("log_directory={0}\n".format(log_dir))
-        config.write("data_directory={0}\n".format(data_dir))
-        config.write("temp_directory={0}\n".format(temp_dir))
-        config.write("use_verbose_logging={0}\n".format(use_verbose_logging))
-        config.write("default_test_repo={0}\n".format(default_test_repo))
-        config.close()
-
-        if platform.system().lower() != 'windows':
-            os.chown("{0}/engine.config".format(config_dir), uid, gid)
+        ['cafe-runner = cafe.drivers.unittest.runner:entry_point',
+         'cafe-config = cafe.configurator.cli:entry_point']},
+    cmdclass={'install': install})
