@@ -45,15 +45,29 @@ def expected_values(*values):
     return decorator
 
 
+def _get_path_from_env(os_env_var):
+    try:
+        return os.environ[os_env_var]
+    except KeyError:
+        msg = "'{0}' environment variable was not set.".format(
+            os_env_var)
+        raise ConfigEnvironmentVariableError(msg)
+    except Exception as exception:
+        print ("Unexpected exception when attempting to access '{1}'"
+               " environment variable.".format(os_env_var))
+        raise exception
+
+
 class BaseConfigSectionInterface(object):
     """
     Base class for building an interface for the data contained in a
     SafeConfigParser object, as loaded from the config file as defined
     by the engine's config file.
 
+    @TODO:
     This is meant to be a generic interface so that in the future
-    get() and getboolean() can be reimplemented to provide data from a
-    database
+    get() and getboolean() can be reimplemented to provide data from any
+    datasource, which is why we don't inherit from SafeConfigParser directly.
     """
 
     def __init__(self, config_file_path, section_name):
@@ -112,3 +126,16 @@ class BaseConfigSectionInterface(object):
         except ConfigParser.NoSectionError as e:
             self._log.error(str(e))
             pass
+
+
+class ConfigSectionInterface(BaseConfigSectionInterface):
+    def __init__(self, config_file_path=None, section_name=None):
+        section_name = (section_name or
+                        getattr(self, 'SECTION_NAME', None) or
+                        getattr(self, 'CONFIG_SECTION_NAME', None))
+
+        config_file_path = config_file_path or _get_path_from_env(
+            'CAFE_CONFIG_FILE_PATH')
+
+        super(ConfigSectionInterface, self).__init__(
+            config_file_path, section_name)
