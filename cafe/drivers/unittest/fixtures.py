@@ -23,13 +23,10 @@ import unittest2 as unittest
 import os
 import re
 
-from cafe.engine.config import EngineConfig
 from cafe.common.reporting import cclogging
 from cafe.common.reporting.metrics import TestRunMetrics
 from cafe.common.reporting.metrics import TestResultTypes
 from cafe.common.reporting.metrics import PBStatisticsLog
-
-engine_config = EngineConfig()
 
 
 class BaseTestFixture(unittest.TestCase):
@@ -81,10 +78,11 @@ class BaseTestFixture(unittest.TestCase):
 
         #Master Config Provider
 
-        #Setup root log handler only if the root logger doesn't already haves
+        #Setup root log handler if the root logger doesn't already have one
+        master_log_file_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
         if cclogging.getLogger('').handlers == []:
             cclogging.getLogger('').addHandler(
-                cclogging.setup_new_cchandler('cc.master'))
+                cclogging.setup_new_cchandler(master_log_file_name))
 
         #Setup fixture log, which is really just a copy of the master log
         #for the duration of this test fixture
@@ -163,10 +161,11 @@ class BaseTestFixture(unittest.TestCase):
 
         """ @todo: Get rid of this hard coded value for the statistics """
         # set up the stats log
+        root_log_dir = os.environ['CAFE_ROOT_LOG_PATH']
         self.stats_log = PBStatisticsLog(
             "{0}.statistics.csv".format(
                 self._testMethodName),
-            "{0}/../statistics/".format(engine_config.log_directory))
+            "{0}/statistics/".format(root_log_dir))
 
         # Let the base handle whatever hoodoo it needs
         unittest.TestCase.setUp(self)
