@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: John Vrbanac <john.vrbanac@rackspace.com>
+Code-Review+2: John Vrbanac <john.vrbanac@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 04 Sep 2013 16:29:03 +0000
+Reviewed-on: https://review.openstack.org/42669
+Project: stackforge/opencafe
+Branch: refs/heads/master
