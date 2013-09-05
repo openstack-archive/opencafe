@@ -90,5 +90,6 @@ setup(
     entry_points = {
         'console_scripts':
         ['cafe-runner = cafe.drivers.unittest.runner:entry_point',
+         'behave-runner = cafe.drivers.behave.runner:entry_point',
          'cafe-config = cafe.configurator.cli:entry_point']},
     cmdclass={'install': install})
