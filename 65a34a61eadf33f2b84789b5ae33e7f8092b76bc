@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Daryl Walleck <daryl.walleck@rackspace.com>
+Code-Review+2: Sam Danes <sam.danes@rackspace.com>
+Approved+1: vara chinnappareddy <vara.chinnappareddy@rackspace.com>
+Code-Review+2: vara chinnappareddy <vara.chinnappareddy@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 06 Sep 2013 21:58:43 +0000
+Reviewed-on: https://review.openstack.org/45308
+Project: stackforge/opencafe
+Branch: refs/heads/master
