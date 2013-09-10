@@ -163,18 +163,21 @@ class TestEnvManager(object):
             self.test_logging_verbosity = self.test_logging_verbosity
             self.test_master_log_file_name = self.test_master_log_file_name
 
+        _check(self.test_repo_path)
+        _check(self.test_data_directory)
+        _check(self.test_config_file_path)
+
         if create_log_dirs:
             _create(self.test_root_log_dir)
             _create(self.test_log_dir)
 
-        _check(self.test_repo_path)
-        _check(self.test_data_directory)
         _check(self.test_root_log_dir)
         _check(self.test_log_dir)
-        _check(self.test_config_file_path)
 
     @property
     def test_repo_path(self):
+        if not self._test_repo_path:
+            self.test_repo_path = None
         return self._test_repo_path
 
     @test_repo_path.setter
@@ -191,6 +194,8 @@ class TestEnvManager(object):
 
     @property
     def test_repo_package(self):
+        if not self._test_repo_package:
+            self.test_repo_package = None
         return self._test_repo_package
 
     @test_repo_package.setter
@@ -241,6 +246,8 @@ class TestEnvManager(object):
 
     @property
     def test_log_dir(self):
+        if not self._test_log_dir:
+            self.test_log_dir = None
         return self._test_log_dir
 
     @test_log_dir.setter
@@ -258,6 +265,8 @@ class TestEnvManager(object):
 
     @property
     def test_config_file_path(self):
+        if not self._test_config_file_path:
+            self.test_config_file_path = None
         return self._test_config_file_path
 
     @test_config_file_path.setter
