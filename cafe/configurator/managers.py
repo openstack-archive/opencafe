@@ -71,46 +71,29 @@ class PlatformManager(object):
             return pwd.getpwnam(working_user).pw_gid
 
 
-class UnittestRunnerTestEnvManager(object):
-    """DO NOT USE
-    Supports the current unittest runner until it can be refactored to use
-    the regular TestEnvManager, at which time this class will be deleted"""
-
-    @staticmethod
-    def set_engine_config_path():
-        os.environ['CAFE_ENGINE_CONFIG_FILE_PATH'] = \
-            EngineConfigManager.ENGINE_CONFIG_PATH
-        return EngineConfigManager.ENGINE_CONFIG_PATH
-
-    @staticmethod
-    def get_engine_config_interface():
-        return EngineConfig(EngineConfigManager.ENGINE_CONFIG_PATH)
-
-    @staticmethod
-    def set_test_repo_package_path():
-        eng_conf = EngineConfig(EngineConfigManager.ENGINE_CONFIG_PATH)
-        test_repo_package = eng_conf.default_test_repo
-
-        os.environ["CAFE_TEST_REPO_PACKAGE"] = test_repo_package
-
-        module_info = None
-        try:
-            module_info = imp.find_module(test_repo_package)
-        except ImportError as exception:
-            print "Cannot find test repo '{0}'".format(test_repo_package)
-            raise exception
-
-        test_repo_path = module_info[1]
-        os.environ["CAFE_TEST_REPO_PATH"] = test_repo_path
-        return test_repo_path
-
-
 class TestEnvManager(object):
     """
     Manages setting all required and optional environment variables used by
     the engine and it's implementations.
     Usefull for writing bootstrappers for runners and scripts.
     """
+
+    class _lazy_property(object):
+        '''
+        meant to be used for lazy evaluation of an object attribute.
+        property should represent non-mutable data, as it replaces itself.
+        '''
+
+        def __init__(self, func):
+            self.func = func
+            self.func_name = func.__name__
+
+        def __get__(self, obj, cls):
+            if obj is None:
+                return None
+            value = self.func(obj)
+            setattr(obj, self.func_name, value)
+            return value
 
     def __init__(
             self, product_name, test_config_file_name,
@@ -120,21 +103,9 @@ class TestEnvManager(object):
         self.test_config_file_name = test_config_file_name
         self.engine_config_path = engine_config_path or \
             EngineConfigManager.ENGINE_CONFIG_PATH
-        os.environ['CAFE_ENGINE_CONFIG_FILE_PATH'] = \
-            self.engine_config_path
         self.engine_config_interface = EngineConfig(self.engine_config_path)
 
-        #Property value vars
-        self._test_repo_path = None
-        self._test_repo_package = None
-        self._test_data_directory = None
-        self._test_root_log_dir = None
-        self._test_log_dir = None
-        self._test_logging_verbosity = None
-        self._test_config_file_path = None
-        self._test_master_log_file_name = None
-
-    def finalize(self, create_log_dirs=True, set_defaults=True):
+    def finalize(self, create_log_dirs=True, set_os_env_vars=True):
         """
         Sets all non-configured values to the defaults in the engine.config
         file. set_defaults=False will override this behavior, but note that
@@ -153,59 +124,37 @@ class TestEnvManager(object):
             if not os.path.exists(path):
                 os.makedirs(path)
 
-        if set_defaults:
-            self.test_repo_path = self.test_repo_path
-            self.test_repo_package = self.test_repo_package
-            self.test_data_directory = self.test_data_directory
-            self.test_root_log_dir = self.test_root_log_dir
-            self.test_log_dir = self.test_log_dir
-            self.test_config_file_path = self.test_config_file_path
-            self.test_logging_verbosity = self.test_logging_verbosity
-            self.test_master_log_file_name = self.test_master_log_file_name
+        _check(self.test_repo_path)
+        _check(self.test_data_directory)
+        _check(self.test_config_file_path)
 
         if create_log_dirs:
             _create(self.test_root_log_dir)
             _create(self.test_log_dir)
 
-        _check(self.test_repo_path)
-        _check(self.test_data_directory)
         _check(self.test_root_log_dir)
         _check(self.test_log_dir)
-        _check(self.test_config_file_path)
 
-    @property
+        if set_os_env_vars:
+            os.environ['CAFE_ENGINE_CONFIG_FILE_PATH'] = \
+                self.engine_config_path
+            os.environ["CAFE_TEST_REPO_PACKAGE"] = self.test_repo_package
+            os.environ["CAFE_TEST_REPO_PATH"] = self.test_repo_path
+            os.environ["CAFE_DATA_DIR_PATH"] = self.test_data_directory
+            os.environ["CAFE_ROOT_LOG_PATH"] = self.test_root_log_dir
+            os.environ["CAFE_TEST_LOG_PATH"] = self.test_log_dir
+            os.environ["CAFE_CONFIG_FILE_PATH"] = self.test_config_file_path
+            os.environ["CAFE_LOGGING_VERBOSITY"] = self.test_logging_verbosity
+            os.environ["CAFE_MASTER_LOG_FILE_NAME"] = \
+                self.test_master_log_file_name
+
+    @_lazy_property
     def test_repo_path(self):
-        return self._test_repo_path
-
-    @test_repo_path.setter
-    def test_repo_path(self, test_repo_path=None):
         """NOTE:  There is no default for test_repo_path because we don't
-        officially support non-package test repos yet, even though every
-        runner just gets the path to the test repo package.
-
-        This is set by the test_repo_package property as a convenience.
+        officially support test repo paths yet, even though every runner just
+        gets the path to the test repo package.
         """
 
-        self._test_repo_path = test_repo_path
-        os.environ["CAFE_TEST_REPO_PATH"] = str(self._test_repo_path)
-
-    @property
-    def test_repo_package(self):
-        return self._test_repo_package
-
-    @test_repo_package.setter
-    def test_repo_package(self, test_repo_package=None):
-        """NOTE: The actual test repo package is never used by any current
-        runners, instead they reference the root path to the tests.  For that
-        reason, it sets the CAFE_TEST_REPO_PATH directly as well as
-        CAFE_TEST_REPO_PACKAGE
-        """
-        self._test_repo_package = test_repo_package or \
-            self.engine_config_interface.default_test_repo
-
-        os.environ["CAFE_TEST_REPO_PACKAGE"] = self._test_repo_package
-
-        #Also set test repo package path
         module_info = None
         try:
             module_info = imp.find_module(self.test_repo_package)
@@ -213,87 +162,50 @@ class TestEnvManager(object):
             print "Cannot find test repo '{0}'".format(self.test_repo_package)
             raise exception
 
-        self.test_repo_path = module_info[1]
-        os.environ["CAFE_TEST_REPO_PATH"] = self.test_repo_path
+        return str(module_info[1])
 
-    @property
+    @_lazy_property
+    def test_repo_package(self):
+        """NOTE: The actual test repo package is never used by any current
+        runners, instead they reference the root path to the tests.  For that
+        reason, it sets the CAFE_TEST_REPO_PATH directly as well as
+        CAFE_TEST_REPO_PACKAGE
+        """
+        return self.engine_config_interface.default_test_repo
+
+    @_lazy_property
     def test_data_directory(self):
-        return self._test_data_directory
+        return self.engine_config_interface.data_directory
 
-    @test_data_directory.setter
-    def test_data_directory(self, test_data_directory=None):
-        self._test_data_directory = test_data_directory or \
-            self.engine_config_interface.data_directory
-
-        os.environ["CAFE_DATA_DIR_PATH"] = self._test_data_directory
-
-    @property
+    @_lazy_property
     def test_root_log_dir(self):
-        return self._test_root_log_dir
-
-    @test_root_log_dir.setter
-    def test_root_log_dir(self, test_root_log_dir=None):
-        self._test_root_log_dir = test_root_log_dir or os.path.join(
+        return os.path.join(
             self.engine_config_interface.log_directory, self.product_name,
             self.test_config_file_name)
 
-        os.environ["CAFE_ROOT_LOG_PATH"] = self._test_root_log_dir
-
-    @property
+    @_lazy_property
     def test_log_dir(self):
-        return self._test_log_dir
-
-    @test_log_dir.setter
-    def test_log_dir(self, test_log_dir=None):
         log_dir_name = str(datetime.datetime.now()).replace(" ", "_").replace(
             ":", "_")
+        return os.path.join(self.test_root_log_dir, log_dir_name)
 
-        self._test_root_log_dir = self.test_root_log_dir or \
-            self.engine_config_interface.log_directory
-
-        self._test_log_dir = test_log_dir or os.path.join(
-            self.test_root_log_dir, log_dir_name)
-
-        os.environ["CAFE_TEST_LOG_PATH"] = self._test_log_dir
-
-    @property
+    @_lazy_property
     def test_config_file_path(self):
-        return self._test_config_file_path
-
-    @test_config_file_path.setter
-    def test_config_file_path(self, test_config_file_path=None):
-        self._test_config_file_path = test_config_file_path or os.path.join(
+        return os.path.join(
             self.engine_config_interface.config_directory, self.product_name,
             self.test_config_file_name)
 
-        os.environ["CAFE_CONFIG_FILE_PATH"] = self._test_config_file_path
-
-    @property
+    @_lazy_property
     def test_logging_verbosity(self):
-        return self._test_logging_verbosity
-
-    @test_logging_verbosity.setter
-    def test_logging_verbosity(self, test_logging_verbosity=None):
         """Currently supports STANDARD and VERBOSE.
         TODO: Implement 'OFF' option that adds null handlers to all loggers
 
         """
-        self._test_logging_verbosity = test_logging_verbosity or \
-            self.engine_config_interface.logging_verbosity
+        return self.engine_config_interface.logging_verbosity
 
-        os.environ["CAFE_LOGGING_VERBOSITY"] = self._test_logging_verbosity
-
-    @property
-    def test_master_log_file_name(self, test_master_log_file_name=None):
-        return self._test_master_log_file_name
-
-    @test_master_log_file_name.setter
-    def test_master_log_file_name(self, test_master_log_file_name=None):
-        self._test_master_log_file_name = test_master_log_file_name or \
-            str(self.engine_config_interface.master_log_file_name)
-
-        os.environ["CAFE_MASTER_LOG_FILE_NAME"] = \
-            self._test_master_log_file_name
+    @_lazy_property
+    def test_master_log_file_name(self):
+        return self.engine_config_interface.master_log_file_name
 
 
 class EngineDirectoryManager(object):
