@@ -42,7 +42,7 @@ class BaseTestFixture(unittest.TestCase):
         """
         short_desc = None
 
-        if os.environ["VERBOSE"] == "true" and self._testMethodDoc:
+        if os.environ.get("VERBOSE", None) == "true" and self._testMethodDoc:
             temp = self._testMethodDoc.strip("\n")
             short_desc = re.sub(r"[ ]{2,}", "", temp).strip("\n")
         return short_desc
