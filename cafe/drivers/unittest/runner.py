@@ -33,6 +33,7 @@ from cafe.drivers.unittest.decorators import (
     TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME)
 from cafe.common.reporting.reporter import Reporter
 from cafe.configurator.managers import TestEnvManager
+from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
 
 
 def tree(directory, padding, print_files=False):
@@ -402,7 +403,7 @@ class SuiteBuilder(object):
         tag_list = []
         attrs = {}
         loader = unittest.TestLoader()
-        suite = unittest.TestSuite()
+        suite = OpenCafeUnittestTestSuite()  # unittest.TestSuite()
         loaded = LoadedTestClass(loaded_module)
 
         if self.tags:
@@ -443,7 +444,7 @@ class SuiteBuilder(object):
         return suite
 
     def get_tests(self, module_path):
-        suite = unittest.TestSuite()
+        suite = OpenCafeUnittestTestSuite()  # unittest.TestSuite()
 
         try:
             loaded_module = self.load_module(module_path)
@@ -885,7 +886,7 @@ class UnittestRunner(object):
         loops through all the packages, modules, and methods sent in from
         the command line and runs them
         """
-        master_suite = unittest.TestSuite()
+        master_suite = OpenCafeUnittestTestSuite()  # unittest.TestSuite()
         parallel_test_list = []
 
         builder = SuiteBuilder(

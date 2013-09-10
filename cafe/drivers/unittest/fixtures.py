@@ -75,8 +75,7 @@ class BaseTestFixture(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super(BaseTestFixture, cls).setUpClass()
-
-        #Master Config Provider
+        cls._class_cleanup_tasks = []
 
         #Setup root log handler if the root logger doesn't already have one
         master_log_file_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
@@ -224,6 +223,38 @@ class BaseTestFixture(unittest.TestCase):
             return result._testMethodName == name
         else:
             return False
+
+    @classmethod
+    def _do_class_cleanup_tasks(cls):
+        for func, args, kwargs in reversed(cls._class_cleanup_tasks):
+            cls.fixture_log.error(
+                "Running class cleanup task: {0}({1}, {2})".format(
+                    func.__name__,
+                    ", ".join([str(arg) for arg in args]),
+                    ", ".join(["{0}={1}".format(
+                        str(k), str(kwargs[k])) for k in kwargs])))
+            try:
+                func(*args, **kwargs)
+            except Exception as exception:
+                #Pretty prints method signature in the following format:
+                #"classTearDown failure: Unable to execute FnName(a, b, c=42)"
+                cls.fixture_log.exception(exception)
+                cls.fixture_log.error(
+                    "classTearDown failure: Exception occured while trying to"
+                    " execute class teardown task: {0}({1}, {2})".format(
+                        func.__name__,
+                        ", ".join([str(arg) for arg in args]),
+                        ", ".join(["{0}={1}".format(
+                            str(k), str(kwargs[k])) for k in kwargs])))
+
+    @classmethod
+    def addClassCleanup(cls, function, *args, **kwargs):
+        """Named to match unittest's addCleanup.
+        ClassCleanup tasks run if setUpClass fails, or after tearDownClass.
+        (They don't depend on tearDownClass running)
+        """
+
+        cls._class_cleanup_tasks.append((function, args or [], kwargs or {}))
 
 
 class BaseBurnInTestFixture(BaseTestFixture):
