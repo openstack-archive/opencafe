@@ -20,7 +20,7 @@ import os
 import platform
 import sys
 import textwrap
-from getpass import getuser
+import getpass
 from ConfigParser import SafeConfigParser
 from cafe.engine.config import EngineConfig
 
@@ -34,19 +34,21 @@ class PlatformManager(object):
 
     @classmethod
     def get_current_user(cls):
-        # Attempts to do exactly what we want, and then falls back to getuser()
-        # if we cant
+        """Returns the name of the current user.  For linux, always tries to
+        return a user other than 'root' if it can."""
+
+        real_user = os.getenv("SUDO_USER")
+        effective_user = os.getenv("USER")
 
         if not cls.USING_WINDOWS and not cls.USING_VIRTUALENV:
-            # Will return username if running under sudo or root if running
-            # as root
-            return os.getenv("SUDO_USER") or os.getenv("USER") or getuser()
+            if effective_user == 'root' and real_user != 'root':
+                #Running 'sudo' as root
+                return real_user
 
-        if cls.USING_VIRTUALENV:
-            return os.getenv("USER") or getuser()
+        elif cls.USING_WINDOWS:
+            return getpass.getuser()
 
-        if cls.USING_WINDOWS:
-            return getuser()
+        return effective_user
 
     @classmethod
     def get_user_home_path(cls):
