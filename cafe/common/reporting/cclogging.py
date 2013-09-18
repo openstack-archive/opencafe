@@ -145,27 +145,27 @@ def log_results(result):
         failed, errored = map(len, (result.failures, result.errors))
 
         if failed:
-            infos.append("failures={}".format(failed))
+            infos.append("failures={0}".format(failed))
         if errored:
-            infos.append("errors={}".format(errored))
+            infos.append("errors={0}".format(errored))
 
         log_errors('ERROR', result, result.errors)
         log_errors('FAIL', result, result.failures)
-        log.info("Ran {} Tests".format(result.testsRun))
+        log.info("Ran {0} Tests".format(result.testsRun))
         log.info('FAILED ')
     else:
-        log.info("Ran {} Tests".format(result.testsRun))
+        log.info("Ran {0} Tests".format(result.testsRun))
         log.info("Passing all tests")
 
     if skipped:
-        infos.append("skipped={}".format(str(skipped)))
+        infos.append("skipped={0}".format(str(skipped)))
     if expected_fails:
-        infos.append("expected failures={}".format(expected_fails))
+        infos.append("expected failures={0}".format(expected_fails))
     if unexpected_successes:
-        infos.append("unexpected successes={}".format(
+        infos.append("unexpected successes={0}".format(
             str(unexpected_successes)))
     if infos:
-        log.info(" (%s)\n" % (", ".join(infos),))
+        log.info(" ({0})\n".format((", ".join(infos),)))
     else:
         log.info("\n")
 
@@ -180,5 +180,5 @@ def log_errors(label, result, errors):
     border2 = '-' * 45
 
     for test, err in errors:
-        msg = "{}: {}\n".format(label, result.getDescription(test))
-        log.info('{}\n{}\n{}\n{}'.format(border1, msg, border2, err))
+        msg = "{0}: {1}\n".format(label, result.getDescription(test))
+        log.info('{0}\n{1}\n{2}\n{3}'.format(border1, msg, border2, err))
