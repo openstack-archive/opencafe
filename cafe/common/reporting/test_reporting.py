@@ -1,0 +1,123 @@
+"""
+Copyright 2013 Rackspace
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+import os
+import shutil
+import unittest2 as unittest
+from uuid import uuid4
+
+from cafe.common.reporting.reporter import Reporter
+from cafe.drivers.unittest.parsers import SummarizeResults
+
+
+class FakeTests(unittest.TestCase):
+    def test_report_pass(self):
+        pass
+
+    def test_report_fail(self):
+        pass
+
+    def test_report_skip(self):
+        pass
+
+    def test_report_error(self):
+        pass
+
+
+class ReportingTests(unittest.TestCase):
+    def setUp(self):
+        """ Creates a SummarizeResults parser with fake tests and initializes
+        the reporter. Also creates a directory for the created reports.
+        """
+        test_suite = unittest.suite.TestSuite()
+        test_suite.addTest(FakeTests('test_report_pass'))
+        test_suite.addTest(FakeTests('test_report_fail'))
+        test_suite.addTest(FakeTests('test_report_skip'))
+        test_suite.addTest(FakeTests('test_report_error'))
+
+        self.failure_trace = 'Traceback: ' + str(uuid4())
+        self.skip_msg = str(uuid4())
+        self.error_trace = 'Traceback: ' + str(uuid4())
+        result = {'testsRun': 4,
+                  'errors': [FakeTests('test_report_error'),
+                             self.error_trace],
+                  'skipped': [(FakeTests('test_report_skip'),
+                               self.skip_msg)],
+                  'failures': [(FakeTests('test_report_fail'),
+                                self.failure_trace)]}
+
+        self.result_parser = SummarizeResults(master_testsuite=test_suite,
+                                              result_dict=result,
+                                              execution_time=1.23)
+        self.all_results = self.result_parser.gather_results()
+        self.reporter = Reporter(result_parser=self.result_parser,
+                                 all_results=self.all_results,)
+
+        self.results_dir = os.getcwd() + '/test-reporting-results'
+        if not os.path.exists(self.results_dir):
+            os.makedirs(self.results_dir)
+
+    def _file_contains_test_info(self, file_path):
+        """ Checks for generic test information (names and messages)
+        in the specified report file.
+        """
+        return self._file_contains(file_path=file_path,
+                                   target_strings=
+                                   ['test_report_pass', 'test_report_fail',
+                                    'test_report_skip', 'test_report_error',
+                                    self.failure_trace, self.skip_msg,
+                                    self.error_trace])
+
+    def _file_contains(self, file_path, target_strings):
+        """ Checks that the specified file contains all strings in the
+        target_strings list.
+        """
+        for target_string in target_strings:
+            if target_string in open(file_path).read():
+                return True
+        return False
+
+    def test_create_json_report(self):
+        """ Creates a json report and checks that the created report contains
+        the proper test information.
+        """
+        self.reporter.generate_report(result_type='json',
+                                      directory=self.results_dir)
+        results_file = self.results_dir + '/results.json'
+        self.assertTrue(os.path.exists(results_file))
+        self.assertTrue(self._file_contains_test_info(file_path=results_file))
+
+    def test_create_xml_report(self):
+        """ Creates an xml report and checks that the created report contains
+        the proper test information.
+        """
+        self.reporter.generate_report(result_type='xml',
+                                      directory=self.results_dir)
+        results_file = self.results_dir + '/results.xml'
+        self.assertTrue(os.path.exists(results_file))
+        self.assertTrue(self._file_contains_test_info(file_path=results_file))
+
+    def tearDown(self):
+        """ Deletes created reports and directories. """
+        if os.path.exists(self.results_dir):
+            self.results_dir = shutil.rmtree(self.results_dir)
+
+if __name__ == '__main__':
+    # Creates a suite of only the actual unit tests so that
+    # fake tests are not a part of the unit test results.
+    suite = unittest.suite.TestSuite()
+    suite.addTest(ReportingTests('test_create_json_report'))
+    suite.addTest(ReportingTests('test_create_xml_report'))
+    unittest.TextTestRunner().run(suite)
