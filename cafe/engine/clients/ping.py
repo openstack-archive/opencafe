@@ -14,8 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import subprocess
+import platform
 import re
+import subprocess
 
 
 class PingClient(object):
@@ -23,14 +24,14 @@ class PingClient(object):
     @summary: Client to ping windows or linux servers
     """
 
-    PING_IPV4_COMMAND_LINUX = 'ping -c 3 '
-    PING_IPV6_COMMAND_LINUX = 'ping6 -c 3 '
-    PING_IPV4_COMMAND_WINDOWS = 'ping '
-    PING_IPV6_COMMAND_WINDOWS = 'ping6 '
+    PING_IPV4_COMMAND_LINUX = 'ping -c 3'
+    PING_IPV6_COMMAND_LINUX = 'ping6 -c 3'
+    PING_IPV4_COMMAND_WINDOWS = 'ping'
+    PING_IPV6_COMMAND_WINDOWS = 'ping -6'
     PING_PACKET_LOSS_REGEX = '(\d{1,3})\.?\d*\%.*loss'
 
     @classmethod
-    def ping(cls, ip, ip_address_version_for_ssh):
+    def ping(cls, ip, ip_address_version):
         """
         @summary: Ping a server with a IP
         @param ip: IP address to ping
@@ -38,38 +39,23 @@ class PingClient(object):
         @return: True if the server was reachable, False otherwise
         @rtype: bool
         """
-        '''
-        Porting only Linux OS
-        '''
 
-        ipv4 = cls.PING_IPV4_COMMAND_LINUX
-        ipv6 = cls.PING_IPV6_COMMAND_LINUX
-        ping_command = ipv6 if ip_address_version_for_ssh == 6 else ipv4
-        command = ping_command + ip
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+        os_type = platform.system().lower()
+        ping_ipv4 = (cls.PING_IPV4_COMMAND_WINDOWS if os_type == 'windows'
+                     else cls.PING_IPV4_COMMAND_LINUX)
+        ping_ipv6 = (cls.PING_IPV6_COMMAND_WINDOWS if os_type == 'windows'
+                     else cls.PING_IPV6_COMMAND_LINUX)
+        ping_command = ping_ipv6 if ip_address_version == 6 else ping_ipv4
+        command = '{command} {address}'.format(
+            command=ping_command, address=ip)
+        process = subprocess.Popen(command, shell=True,
+                                   stdout=subprocess.PIPE)
         process.wait()
         try:
             packet_loss_percent = re.search(
                 cls.PING_PACKET_LOSS_REGEX,
                 process.stdout.read()).group(1)
-        except:
+        except Exception:
             # If there is no match, fail
             return False
-        return packet_loss_percent != '100'
-
-    @classmethod
-    def ping_using_remote_machine(cls, remote_client, ping_ip_address):
-        """
-        @summary: Ping a server using a remote machine
-        @param remote_client: Client to remote machine
-        @param ip: IP address to ping
-        @type ip: string
-        @return: True if the server was reachable, False otherwise
-        @rtype: bool
-        """
-        command = cls.PING_IPV4_COMMAND_LINUX
-        ping_response = remote_client.exec_command(command + ping_ip_address)
-        packet_loss_percent = re.search(
-            cls.PING_PACKET_LOSS_REGEX,
-            ping_response).group(1)
         return packet_loss_percent != '100'
