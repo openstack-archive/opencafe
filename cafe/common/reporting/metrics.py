@@ -17,8 +17,10 @@ limitations under the License.
 '''
 @summary: Generic Classes for test statistics
 '''
-import os
 from datetime import datetime
+import os
+import csv
+import sys
 
 
 class TestRunMetrics(object):
@@ -111,58 +113,54 @@ class TestTimer(object):
         return(elapsedTime)
 
 
-class PBStatisticsLog(object):
+class CSVWriter(object):
     '''
-    @summary: PSYCHOTICALLY BASIC Statistics logger
-    @ivar: File: File Name of this logger
-    @type File:  C{str}
-    @ivar: FileMode: Mode this logger runs in. a or w
-    @type FileMode:  C{str}
-    @ivar: Errors: List of all error messages recorded by this logger
-    @type Errors:  C{list}
-    @ivar: Warnings: List of all warning messages recorded by this logger
-    @type Warnings:  C{list}
-    @ivar: IsDebugMode: Flag to turn Debug logging on and off
-    @type IsDebugMode:  C{bool}
-    @todo: Upgrade this astoundingly basic logger to
-           Python or Twisted logger framework
-    @attention: THIS LOGGER IS DESIGNED TO BE TEMPORARY.
-                It will be replaced in the matured framework
     '''
-    def __init__(self, fileName=None, log_dir='.', startClean=False):
-        self.FileMode = 'a'
-        if fileName is not None:
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-            self.File = os.path.normpath(os.path.join(log_dir, fileName))
-            if startClean and os.path.exists(self.File):
-                ''' Force the file to be overwritten before any writing '''
-                os.remove(self.File)
-        else:
-            self.File = None
+    def __init__(self, headers, file_name, log_dir='.', start_clean=False):
+        self.file_mode = 'a'
+        self.headers = headers
 
-        if os.path.exists(self.File) is False:
+        #create the dir if it does not exist
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        #get full path
+        self.full_path = os.path.normpath(os.path.join(log_dir, file_name))
+
+        #remove file if you want a clean log file
+        if start_clean:
+            ''' Force the file to be overwritten before any writing '''
+            try:
+                os.remove(self.full_path)
+            except OSError:
+                sys.stderr.write('File not writable\n')                
+
+        if os.path.exists(self.full_path) is False:
             ''' Write out the header to the stats log '''
-            self.__write(
-                "Elapsed Time,Start Time,Stop Time,Result,Errors,Warnings")
+            self.writerow(self.headers)
 
-    def __write(self, message):
-        '''
-        @summary: Writes a message to this log file
-        @param formatted: Indicates if message applies standard formatting
-        @type formatted: C{bool}
-        @return: None
-        @rtype: None
-        '''
-        if self.File is not None:
-            log = open(self.File, self.FileMode)
-            log.write("%s\n" % message)
-            log.close()
-        return
+    def writerow(self, row_list):
+        if self.full_path:
+            fp = open(self.full_path, "ab")
+            csv_writer = csv.writer(
+                fp, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            try:
+                csv_writer.writerow(row_list)
+            except OSError:
+                sys.stderr.write('File not writable\n')                
+            fp.close()
+
+
+class PBStatisticsLog(CSVWriter):
+    """extends the csv writer"""
+
+    def __init__(self, file_name=None, log_dir='.', start_clean=False):
+        headers = ["Elapsed", "Time", "Start Time", "Stop Time", "Result"]
+
+        super(PBStatisticsLog, self).__init__(
+            headers, file_name, log_dir, start_clean)
 
     def report(self, test_result=TestRunMetrics()):
-        self.__write("{0},{1},{2},{3}".format(
-            test_result.timer.get_elapsed_time(),
-            test_result.timer.start_time,
-            test_result.timer.stop_time,
-            test_result.result))
+        self.writerow([
+            test_result.timer.get_elapsed_time(), test_result.timer.start_time,
+            test_result.timer.stop_time, test_result.result])
