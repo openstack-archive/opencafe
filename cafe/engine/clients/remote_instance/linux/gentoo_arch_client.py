@@ -29,10 +29,10 @@ class GentooArchClient(LinuxClient):
         @return: The boot time of the server
         @rtype: time.struct_time
         """
-        boot_time_string = self.ssh_client.exec_command(
-            'who -b | grep -o "[A-Za-z]* [0-9].*"').replace('\n', ' ')
-        year = self.ssh_client.exec_command(
-            'date | grep -o "[0-9]\{4\}$"').replace('\n', '')
+        boot_time_string = self.ssh_client.execute_command(
+            'who -b | grep -o "[A-Za-z]* [0-9].*"').replace('\n', ' ').stdout
+        year = self.ssh_client.execute_command(
+            'date | grep -o "[0-9]\{4\}$"').replace('\n', '').stdout
         boot_time = boot_time_string + year
 
         time_format = InstanceClientConstants.LAST_REBOOT_TIME_FORMAT_GENTOO

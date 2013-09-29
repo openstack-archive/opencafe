@@ -14,283 +14,352 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import exceptions
-import time
 import socket
 import StringIO
-import warnings
+import time
 
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    from paramiko.resource import ResourceManager
-    from paramiko.client import SSHClient
-    import paramiko
+import paramiko
+from paramiko import AuthenticationException, SSHException
+from paramiko.client import SSHClient as ParamikoSSHClient
+from paramiko.resource import ResourceManager
 
-from cafe.common.reporting import cclogging
 from cafe.engine.clients.base import BaseClient
+from cafe.common.reporting import cclogging
 
 
-class SSHBaseClient(BaseClient):
+class SSHAuthStrategy:
+    PASSWORD = 'password'
+    LOCAL_KEY = 'local_key'
+    KEY_STRING = 'key_string'
+    KEY_FILE_LIST = 'key_file_list'
+
+
+class ExecResponse(object):
+
+    def __init__(self, stdin=None, stdout=None,
+                 stderr=None, exit_status=None):
+        """
+        Initialization
+
+        @param stdin: stdin stream resulting from a command execution
+        @type host: stream
+        @param stdout: Text from the stdout stream
+        @type stdout: string
+        @param stderr: Text from the stderr stream
+        @type stderr: string
+        @param exit_status: Exit status code of the command
+        @type exit_status: int
+        """
+        self.stdin = stdin
+        self.stdout = stdout
+        self.stderr = stderr
+        self.exit_status = exit_status
+
+
+class SSHClient(ParamikoSSHClient):
+
+    def exec_command(self, command, bufsize=-1, timeout=None, get_pty=False,
+                     return_exit_status=False):
+        """
+        Re-implements exec_command to optionally return an
+        exit status code.
+        """
+        chan = self._transport.open_session()
+        if(get_pty):
+            chan.get_pty()
+        chan.settimeout(timeout)
+        chan.exec_command(command)
+        stdin = chan.makefile('wb', bufsize)
+        stdout = chan.makefile('rb', bufsize)
+        stderr = chan.makefile_stderr('rb', bufsize)
+        if return_exit_status:
+            exit_status = chan.recv_exit_status()
+            return {'stdin': stdin, 'stdout': stdout,
+                    'stderr': stderr, 'exit_status': exit_status}
+        return {'stdin': stdin, 'stdout': stdout, 'stderr': stderr}
+
+
+class BaseSSHClient(BaseClient):
 
     _log = cclogging.getLogger(__name__)
 
-    def __init__(self, host, username, password, timeout=20,
-                 port=22, key=None):
-        super(SSHBaseClient, self).__init__()
+    def __init__(self, host):
+        """
+        Initialization
+
+        @param host: IP address or host name to connect to
+        @type host: string
+        """
+        self.ssh_connection = None
         self.host = host
-        self.port = port
+
+    def connect(self, username=None, password=None,
+                accept_missing_host_key=True, tcp_timeout=30,
+                auth_strategy=None, port=22, key=None,
+                allow_agent=True, key_filename=None):
+        """
+        Attempts to connect to a remote server via SSH
+
+        @param username: Username to be used for SSH connection
+        @type username: string
+        @param password: Password to be used for SSH connection
+        @type password: string
+        @param auth_strategy: Authentication strategy to use to connect
+        @type auth_strategy: string
+        @param port: Port to use for the SSH connection
+        @type port: int
+        @param key: Text of an SSH key to be used to connect
+        @type key: string
+        @param key_filename: Name of a file that contains a SSH key
+        @type key_filename: string
+        @param allow_agent: Set to False to disable connecting to
+                            the SSH agent
+        @type allow_agent: bool
+        @param accept_missing_host_key: Sets if a SSH connection can
+                                        be made to remote server if
+                                        the server does not have a
+                                        host key in the local system
+        @type accept_missing_host_key: bool
+        @return: None
+        """
+
+        ssh = SSHClient()
+        if accept_missing_host_key:
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        connect_args = {'hostname': self.host, 'username': username,
+                        'timeout': tcp_timeout, 'port': port,
+                        'allow_agent': allow_agent}
+        self._log.debug('Attempting to SSH connect to {host} '
+                        'with user {user} and strategy {strategy}.'.format(
+                            host=self.host, user=username,
+                            strategy=auth_strategy))
+        if auth_strategy == SSHAuthStrategy.PASSWORD:
+            connect_args['password'] = password
+        if auth_strategy == SSHAuthStrategy.LOCAL_KEY:
+            connect_args['look_for_keys'] = True
+        if auth_strategy == SSHAuthStrategy.KEY_STRING:
+            key_file = StringIO.StringIO(key)
+            key = paramiko.RSAKey.from_private_key(key_file)
+            connect_args['pkey'] = key
+        if auth_strategy == SSHAuthStrategy.KEY_FILE_LIST:
+            connect_args['key_filename'] = key_filename
+
+        try:
+            ssh.connect(**connect_args)
+        except (AuthenticationException, SSHException,
+                socket.error) as exception:
+            # Log the failure
+            self._log.error(exception.message)
+        else:
+            # Complete setup of the client
+            ResourceManager.register(self, ssh.get_transport())
+            self.ssh_connection = ssh
+
+    def _format_response(self, resp_dict):
+        """
+        Converts the exec_command response streams into an object.
+
+        @param resp_dict: A dictionary containing the result
+                          of an executed command
+        @type resp_dict: dict
+        @return: response
+        @rtype: ExecResponse
+        """
+
+        stdout = (resp_dict.get('stdout').read()
+                  if resp_dict.get('stdout') else None)
+        stderr = (resp_dict.get('stderr').read()
+                  if resp_dict.get('stderr') else None)
+        response = ExecResponse(stdin=resp_dict.get('stdin'), stdout=stdout,
+                                stderr=stderr,
+                                exit_status=resp_dict.get('exit_status'))
+        return response
+
+    def is_connected(self):
+        """Checks to see if an SSH connection exists."""
+        return self.ssh_connection is not None
+
+    def execute_command(self, command, return_exit_status=False):
+        """
+        Executes a command and returns the results.
+
+        @param command: Command to execute
+        @type command: string
+        @param return_exit_status: Decides if the exit code is included
+                                   with the response. If this is set to True,
+                                   the function will block until the
+                                   response code is determined
+        @type return_exit_status: bool
+        @return: response
+        @rtype: ExecResponse
+        """
+        if not self.is_connected():
+            message = 'Not currently connected to {host}.'.format(
+                host=self.host)
+            self._log.error(message)
+            raise Exception(message)
+        self._log.debug('Executing command: {command}'.format(
+            command=command))
+        response = self.ssh_connection.exec_command(
+            command=command, return_exit_status=return_exit_status)
+        response = self._format_response(response)
+        self._log.debug('Stdout: {stdout}'.format(stdout=response.stdout))
+        self._log.debug('Stderr: {stderr}'.format(stderr=response.stderr))
+        self._log.debug('Exit status: {status}'.format(
+            status=response.exit_status))
+        return response
+
+
+class SSHBehaviors(BaseSSHClient):
+
+    def __init__(self, username=None, password=None, host=None,
+                 tcp_timeout=None, auth_strategy=None, port=22,
+                 look_for_keys=None, key=None, key_filename=None,
+                 allow_agent=True, accept_missing_host_key=True):
+        """
+        Initialization
+        @param username: Username to be used for SSH connection
+        @type username: string
+        @param password: Password to be used for SSH connection
+        @type password: string
+        @param host: IP address or host name to connect to
+        @type host: string
+        @param auth_strategy: Authentication strategy to use to connect
+        @type auth_strategy: string
+        @param port: Port to use for the SSH connection
+        @type port: int
+        @param look_for_keys: Whether the client should look for
+               local look_for_keys
+        @type look_for_keys: bool
+        @param key: Text of an SSH key to be used to connect
+        @type key: string
+        @param key_filename: Name of a file that contains a SSH key
+        @type key_filename: string
+        @param allow_agent: Set to False to disable connecting to
+                            the SSH agent
+        @type allow_agent: bool
+        @param accept_missing_host_key: Sets if a SSH connection can
+                                        be made to remote server if
+                                        the server does not have a
+                                        host key in the local system
+        @type accept_missing_host_key: bool
+        """
+        super(SSHBehaviors, self).__init__(host=host)
         self.username = username
         self.password = password
-        self.timeout = int(timeout)
-        self._chan = None
-        if key:
-            key_file = StringIO.StringIO(key)
-            self.key = paramiko.RSAKey.from_private_key(key_file)
-        else:
-            self.key = None
+        self.host = host
+        self.tcp_timeout = tcp_timeout
+        self.auth_strategy = auth_strategy
+        self.look_for_keys = look_for_keys
+        self.key = key
+        self.key_filename = key_filename
+        self.allow_agent = allow_agent
+        self.port = port
+        self.accept_missing_host_key = accept_missing_host_key
 
-    def _get_ssh_connection(self):
-        """Returns an ssh connection to the specified host"""
-        _timeout = True
-        ssh = SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        _start_time = time.time()
-        saved_exception = exceptions.StandardError()
-        #doing this because the log file fills up with these messages
-        #this way it only logs it once
-        log_attempted = False
-        socket_error_logged = False
-        auth_error_logged = False
-        ssh_error_logged = False
-        while not self._is_timed_out(self.timeout, _start_time):
-            try:
-                if not log_attempted:
-                    self._log.debug('Attempting to SSH connect to: ')
-                    self._log.debug('host: %s, username: %s, password: %s' %
-                                    (self.host, self.username, self.password))
-                    log_attempted = True
-                ssh.connect(hostname=self.host,
-                            username=self.username,
-                            password=self.password,
-                            pkey=self.key,
-                            timeout=20,
-                            key_filename=[],
-                            look_for_keys=False,
-                            allow_agent=False)
-                _timeout = False
-                break
-            except socket.error as e:
-                if not socket_error_logged:
-                    self._log.error('Socket Error: %s' % str(e))
-                    socket_error_logged = True
-                saved_exception = e
-                continue
-            except paramiko.AuthenticationException as e:
-                if not auth_error_logged:
-                    self._log.error('Auth Exception: %s' % str(e))
-                    auth_error_logged = True
-                saved_exception = e
-                time.sleep(2)
-                continue
-            except paramiko.SSHException as e:
-                if not ssh_error_logged:
-                    self._log.error('SSH Exception: %s' % str(e))
-                    ssh_error_logged = True
-                saved_exception = e
-                time.sleep(2)
-                continue
-                #Wait 2 seconds otherwise
-            time.sleep(2)
-        if _timeout:
-            self._log.error('SSHConnector timed out while trying to establish'
-                            ' a connection')
-            raise saved_exception
-
-        #This MUST be done because the transport gets garbage collected if it
-        #is not done here, which causes the connection to close on invoke_shell
-        #which is needed for exec_shell_command
-        ResourceManager.register(self, ssh.get_transport())
-        return ssh
-
-    def _is_timed_out(self, timeout, start_time):
-        return (time.time() - timeout) > start_time
-
-    def connect_until_closed(self):
-        """Connect to the server and wait until connection is lost"""
-        try:
-            ssh = self._get_ssh_connection()
-            _transport = ssh.get_transport()
-            _start_time = time.time()
-            _timed_out = self._is_timed_out(self.timeout, _start_time)
-            while _transport.is_active() and not _timed_out:
-                time.sleep(5)
-                _timed_out = self._is_timed_out(self.timeout, _start_time)
-            ssh.close()
-        except (EOFError, paramiko.AuthenticationException, socket.error):
-            return
-
-    def exec_command(self, cmd):
-        """Execute the specified command on the server.
-
-        :returns: data read from standard output of the command
-
+    def connect_with_retries(self, retries=10, cooldown=10):
         """
-        self._log.debug('EXECing: %s' % str(cmd))
-        ssh = self._get_ssh_connection()
-        stdin, stdout, stderr = ssh.exec_command(cmd)
-        output = stdout.read()
-        ssh.close()
-        self._log.debug('EXEC-OUTPUT: %s' % str(output))
-        return output
+        Attempt to connect via SSH, retrying until a
+        time limit has been exceeded.
 
-    def test_connection_auth(self):
-        """ Returns true if ssh can connect to server"""
+        @param cooldown: Amount of time to wait between connection attempts
+        @type cooldown: int
+        @param retries: Number of times to retry connecting
+        @type retries: int
+        @rtype: bool
+        """
+
+        for iteration in range(1, retries + 1):
+            self._log.debug('Attempting connection {iteration} of '
+                            '{retries} to {host}.'.format(
+                                iteration=iteration, retries=retries,
+                                host=self.host))
+            self.connect(
+                username=self.username, password=self.password,
+                accept_missing_host_key=self.accept_missing_host_key,
+                tcp_timeout=self.tcp_timeout,
+                auth_strategy=self.auth_strategy,
+                port=self.port, key=self.key,
+                allow_agent=self.allow_agent,
+                key_filename=self.key_filename)
+            if self.is_connected():
+                return True
+            time.sleep(cooldown)
+        return False
+
+    def connect_with_timeout(self, cooldown=10, timeout=600):
+        """
+        Attempt to connect via SSH, retrying until a
+        time limit has been exceeded.
+
+        @param cooldown: Amount of time to wait between connection attempts
+        @type cooldown: int
+        @param timeout: Amount of time to wait before giving up on connecting
+        @type timeout: int
+        @rtype: bool
+        """
+
+        end_time = time.time() + timeout
+
+        while time.time() < end_time:
+            self._log.debug('Attempting connection to {host}.'.format(
+                host=self.host))
+            self.connect(
+                username=self.username, password=self.password,
+                accept_missing_host_key=self.accept_missing_host_key,
+                tcp_timeout=self.tcp_timeout,
+                auth_strategy=self.auth_strategy,
+                port=self.port, key=self.key,
+                allow_agent=self.allow_agent,
+                key_filename=self.key_filename)
+            if self.is_connected():
+                return True
+            time.sleep(cooldown)
+        return False
+
+    def transfer_file_to(self, local_path, remote_path):
+        """
+        Transfers a file from the local machine to the remote
+        machine via SFTP.
+
+        @param local_path: Path to transfer file from.
+        @type local_path: string
+        @param remote_path: Path to transfer file to.
+        @param remote_path: string
+        @rtype: bool
+        """
+
+        sftp_conn = self.ssh_connection.open_sftp()
         try:
-            connection = self._get_ssh_connection()
-            connection.close()
-        except paramiko.AuthenticationException:
+            sftp_conn.put(local_path, remote_path)
+        except IOError, exception:
+            self._log.warning("Error during file transfer: {error}".format(
+                exception))
             return False
-
+        else:
+            sftp_conn.close()
         return True
 
-    def start_shell(self):
-        """Starts a shell instance of SSH to use with multiple commands."""
-        #large width and height because of need to parse output of commands
-        #in exec_shell_command
-        self._chan = self._get_ssh_connection().invoke_shell(width=9999999,
-                                                             height=9999999)
-        #wait until buffer has data
-        while not self._chan.recv_ready():
-            time.sleep(1)
-            #clearing initial buffer, usually login information
-        while self._chan.recv_ready():
-            self._chan.recv(1024)
+    def retrieve_file_from(self, local_path, remote_path):
+        """
+        Transfers a file from the remote machine to the
+        local machine via SFTP.
 
-    def exec_shell_command(self, cmd, stop_after_send=False):
+        @param local_path: Path to transfer file to.
+        @type local_path: string
+        @param remote_path: Path to transfer file from.
+        @param remote_path: string
+        @rtype: bool
         """
-        Executes a command in shell mode and receives all of the response.
-        Parses the response and returns the output of the command and the
-        prompt.
-        """
-        if not cmd.endswith('\n'):
-            cmd = '%s\n' % cmd
-        self._log.debug('EXEC-SHELLing: %s' % cmd)
-        if self._chan is None or self._chan.closed:
-            self.start_shell()
-        while not self._chan.send_ready():
-            time.sleep(1)
-        self._chan.send(cmd)
-        if stop_after_send:
-            self._chan.get_transport().set_keepalive(1000)
-            return None
-        while not self._chan.recv_ready():
-            time.sleep(1)
-        output = ''
-        while self._chan.recv_ready():
-            output += self._chan.recv(1024)
-        self._log.debug('SHELL-COMMAND-RETURN: \n%s' % output)
-        prompt = output[output.rfind('\r\n') + 2:]
-        output = output[output.find('\r\n') + 2:output.rfind('\r\n')]
-        self._chan.get_transport().set_keepalive(1000)
-        return output, prompt
 
-    def exec_shell_command_wait_for_prompt(self, cmd, prompt='#', timeout=300):
-        """
-        Executes a command in shell mode and receives all of the response.
-        Parses the response and returns the output of the command and the
-        prompt.
-        """
-        if not cmd.endswith('\n'):
-            cmd = '%s\n' % cmd
-        self._log.debug('EXEC-SHELLing: %s' % cmd)
-        if self._chan is None or self._chan.closed:
-            self.start_shell()
-        while not self._chan.send_ready():
-            time.sleep(1)
-        self._chan.send(cmd)
-        while not self._chan.recv_ready():
-            time.sleep(1)
-        output = ''
-        max_time = time.time() + timeout
-        while time.time() < max_time:
-            current = self._chan.recv(1024)
-            output += current
-            if current.find(prompt) != -1:
-                self._log.debug('SHELL-PROMPT-FOUND: %s' % prompt)
-                break
-            self._log.debug('Current response: %s' % current)
-            self._log.debug('Looking for prompt: %s. Time remaining until '
-                            'timeout: %s' % (prompt, max_time - time.time()))
-            while not self._chan.recv_ready() and time.time() < max_time:
-                time.sleep(5)
-            self._chan.get_transport().set_keepalive(1000)
-        self._log.debug('SHELL-COMMAND-RETURN: %s' % output)
-        prompt = output[output.rfind('\r\n') + 2:]
-        output = output[output.find('\r\n') + 2:output.rfind('\r\n')]
-        return output, prompt
-
-    def make_directory(self, directory_name):
-        self._log.info('Making a Directory')
-        transport = paramiko.Transport((self.host, self.port))
-        transport.connect(username=self.username, password=self.password)
-        sftp = paramiko.SFTPClient.from_transport(transport)
+        sftp_conn = self.ssh_connection.open_sftp()
         try:
-            sftp.mkdir(directory_name)
+            sftp_conn.get(remote_path, local_path)
         except IOError, exception:
-            self._log.warning('Exception in making a directory: '
-                              '%s' % exception)
+            self._log.warning("Error during file transfer: {error}".format(
+                exception))
             return False
         else:
-            sftp.close()
-            transport.close()
-            return True
-
-    def browse_folder(self):
-        self._log.info('Browsing a folder')
-        transport = paramiko.Transport((self.host, self.port))
-        transport.connect(username=self.username, password=self.password)
-        sftp = paramiko.SFTPClient.from_transport(transport)
-        try:
-            sftp.listdir()
-        except IOError, exception:
-            self._log.warning("Exception in browsing folder file: %s"
-                              % exception)
-            return False
-        else:
-            sftp.close()
-            transport.close()
-            return True
-
-    def upload_a_file(self, server_file_path, client_file_path):
-        self._log.info("uploading file from %s to %s"
-                       % (client_file_path, server_file_path))
-        transport = paramiko.Transport((self.host, self.port))
-        transport.connect(username=self.username, password=self.password)
-        sftp = paramiko.SFTPClient.from_transport(transport)
-        try:
-            sftp.put(client_file_path, server_file_path)
-        except IOError, exception:
-            self._log.warning("Exception in uploading file: %s" % exception)
-            return False
-        else:
-            sftp.close()
-            transport.close()
-            return True
-
-    def download_a_file(self, server_filepath, client_filepath):
-        transport = paramiko.Transport(self.host)
-        transport.connect(username=self.username, password=self.password)
-        sftp = paramiko.SFTPClient.from_transport(transport)
-        try:
-            sftp.get(server_filepath, client_filepath)
-        except IOError:
-            return False
-        else:
-            sftp.close()
-            transport.close()
-            return True
-
-    def end_shell(self):
-        if not self._chan.closed:
-            self._chan.close()
-        self._chan = None
+            sftp_conn.close()
+        return True
