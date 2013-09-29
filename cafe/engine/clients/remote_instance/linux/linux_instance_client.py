@@ -18,6 +18,7 @@ import time
 import re
 
 from cafe.common.reporting import cclogging
+from cafe.engine.clients.base import BaseClient
 from cafe.engine.clients.remote_instance.models.dir_details \
     import DirectoryDetails
 from cafe.engine.clients.remote_instance.exceptions \
@@ -26,15 +27,13 @@ from cafe.engine.clients.remote_instance.models.file_details \
     import FileDetails
 from cafe.engine.clients.remote_instance.models.partition import \
     Partition, DiskSize
-from cafe.engine.clients.ssh import SSHBaseClient
+from cafe.engine.clients.ssh import SSHAuthStrategy, SSHBehaviors
 from cafe.engine.clients.ping import PingClient
-from cafe.engine.clients.remote_instance.linux.base_client import \
-    BasePersistentLinuxClient
 from cloudcafe.compute.common.exceptions import FileNotFoundException, \
     ServerUnreachable, SshConnectionException
 
 
-class LinuxClient(BasePersistentLinuxClient):
+class LinuxClient(BaseClient):
 
     def __init__(self, ip_address=None, server_id=None, username=None,
                  password=None, config=None, os_distro=None, key=None):
@@ -60,17 +59,21 @@ class LinuxClient(BasePersistentLinuxClient):
             if int(time.time()) - start >= config.connection_timeout:
                 raise ServerUnreachable(ip_address)
 
-        self.ssh_client = SSHBaseClient(self.ip_address,
-                                        self.username,
-                                        self.password,
-                                        timeout=ssh_timeout,
-                                        key=key)
-        if not self.ssh_client.test_connection_auth():
-            self.client_log.error("Ssh connection failed for: IP:{0} \
-                    Username:{1} Password: {2}".format(self.ip_address,
-                                                       self.username,
-                                                       self.password))
-            raise SshConnectionException("ssh connection failed")
+        if key is not None:
+            auth_strategy = SSHAuthStrategy.KEY_STRING
+        else:
+            auth_strategy = SSHAuthStrategy.PASSWORD
+
+        self.ssh_client = SSHBehaviors(
+            username=self.username, password=self.password,
+            host=self.ip_address, tcp_timeout=20, auth_strategy=auth_strategy,
+            look_for_keys=False, key=key)
+        self.ssh_client.connect_with_timeout(cooldown=20, timeout=ssh_timeout)
+        if not self.ssh_client.is_connected():
+            message = ('SSH timeout after {timeout} seconds: '
+                       'Could not connect to {ip_address}.')
+            raise SshConnectionException(message.format(
+                timeout=ssh_timeout, ip_address=ip_address))
 
     def can_connect_to_public_ip(self):
         """
@@ -103,25 +106,7 @@ class LinuxClient(BasePersistentLinuxClient):
         @return: True if you can connect, False otherwise
         @rtype: bool
         """
-        return self.ssh_client.test_connection_auth()
-
-    def reboot(self, timeout=100):
-        '''
-        @timeout: max timeout for the machine to reboot
-        '''
-        ssh_connector = SSHBaseClient(self.ip_address, self.username,
-                                      self.password)
-        response, prompt = ssh_connector.exec_shell_command("sudo reboot")
-        response, prompt = ssh_connector.exec_shell_command(self.password)
-        self.client_log.info("Reboot response for %s: %s" % (self.ip_address,
-                                                             response))
-        max_time = time.time() + timeout
-        while time.time() < max_time:
-            time.sleep(5)
-            if self.ssh_client.test_connection_auth():
-                self.client_log.info("Reboot successful for %s"
-                                     % (self.ip_address))
-                return True
+        return self.ssh_client.is_connected()
 
     def get_hostname(self):
         """
@@ -129,7 +114,7 @@ class LinuxClient(BasePersistentLinuxClient):
         @return: The host name of the server
         @rtype: string
         """
-        return self.ssh_client.exec_command("hostname").rstrip()
+        return self.ssh_client.execute_command("hostname").stdout.rstrip()
 
     def can_remote_ping_private_ip(self, private_addresses):
         """
@@ -155,7 +140,8 @@ class LinuxClient(BasePersistentLinuxClient):
         @rtype: List of strings
         """
         command = "ls -m " + path
-        return self.ssh_client.exec_command(command).rstrip('\n').split(', ')
+        return self.ssh_client.execute_command(
+            command).stdout.rstrip('\n').split(', ')
 
     def get_ram_size_in_mb(self):
         """
@@ -163,7 +149,7 @@ class LinuxClient(BasePersistentLinuxClient):
         @return: The RAM size in MB
         @rtype: string
         """
-        output = self.ssh_client.exec_command('free -m | grep Mem')
+        output = self.ssh_client.execute_command('free -m | grep Mem').stdout
         # TODO (dwalleck): We should handle the failure case here
         if output:
             return output.split()[1]
@@ -174,9 +160,9 @@ class LinuxClient(BasePersistentLinuxClient):
         @return: The Swap size in MB
         @rtype: int
         """
-        output = self.ssh_client.exec_command(
+        output = self.ssh_client.execute_command(
             'fdisk -l /dev/xvdc1 2>/dev/null | grep '
-            '"Disk.*bytes"').rstrip('\n')
+            '"Disk.*bytes"').stdout.rstrip('\n')
         if output:
             return int(output.split()[2])
 
@@ -187,7 +173,7 @@ class LinuxClient(BasePersistentLinuxClient):
         @rtype: int
         """
         command = "df -h | grep '{0}'".format(disk_path)
-        output = self.ssh_client.exec_command(command)
+        output = self.ssh_client.execute_command(command).stdout
         size = output.split()[1]
 
         def is_decimal(char):
@@ -202,7 +188,7 @@ class LinuxClient(BasePersistentLinuxClient):
         @rtype: int
         """
         command = 'cat /proc/cpuinfo | grep processor | wc -l'
-        output = self.ssh_client.exec_command(command)
+        output = self.ssh_client.execute_command(command).stdout
         return int(output)
 
     def get_partitions(self):
@@ -212,7 +198,7 @@ class LinuxClient(BasePersistentLinuxClient):
         @rtype: string
         """
         command = 'cat /proc/partitions'
-        output = self.ssh_client.exec_command(command)
+        output = self.ssh_client.execute_command(command).stdout
         return output
 
     def get_uptime(self):
@@ -220,7 +206,7 @@ class LinuxClient(BasePersistentLinuxClient):
         @summary: Get the uptime time of the server
         @return: The uptime of the server
         """
-        result = self.ssh_client.exec_command('cat /proc/uptime')
+        result = self.ssh_client.execute_command('cat /proc/uptime').stdout
         uptime = float(result.split(' ')[0])
         return uptime
 
@@ -236,7 +222,7 @@ class LinuxClient(BasePersistentLinuxClient):
         '''
         if file_path is None:
             file_path = "/root/" + file_name
-        self.ssh_client.exec_command(
+        self.ssh_client.execute_command(
             'echo -n ' + file_content + '>>' + file_path)
         return FileDetails("644", file_content, file_path)
 
@@ -250,14 +236,15 @@ class LinuxClient(BasePersistentLinuxClient):
         """
         command = ('[ -f ' + filepath + ' ] && echo "File exists" || '
                                         'echo "File does not exist"')
-        output = self.ssh_client.exec_command(command)
+        output = self.ssh_client.execute_command(command).stdout
         if not output.rstrip('\n') == 'File exists':
             raise FileNotFoundException(
                 "File:" + filepath + " not found on instance.")
 
-        file_permissions = self.ssh_client.exec_command(
-            'stat -c %a ' + filepath).rstrip("\n")
-        file_contents = self.ssh_client.exec_command('cat ' + filepath)
+        file_permissions = self.ssh_client.execute_command(
+            'stat -c %a ' + filepath).stdout.rstrip("\n")
+        file_contents = self.ssh_client.execute_command(
+            'cat ' + filepath).stdout
         return FileDetails(file_permissions, file_contents, filepath)
 
     def is_file_present(self, filepath):
@@ -269,7 +256,7 @@ class LinuxClient(BasePersistentLinuxClient):
         """
         command = ('[ -f ' + filepath + ' ] && echo "File exists" || '
                                         'echo "File does not exist"')
-        output = self.ssh_client.exec_command(command)
+        output = self.ssh_client.execute_command(command).stdout
         return output.rstrip('\n') == 'File exists'
 
     def get_partition_types(self):
@@ -278,8 +265,8 @@ class LinuxClient(BasePersistentLinuxClient):
         @return: The partition types for all partitions
         @rtype: Dictionary
         """
-        partitions_list = self.ssh_client.exec_command(
-            'blkid').rstrip('\n').split('\n')
+        partitions_list = self.ssh_client.execute_command(
+            'blkid').stdout.rstrip('\n').split('\n')
         partition_types = {}
         for row in partitions_list:
             partition_name = row.split()[0].rstrip(':')
@@ -298,9 +285,10 @@ class LinuxClient(BasePersistentLinuxClient):
         partition_types = self.get_partition_types()
         partition_names = ' '.join(partition_types.keys())
 
-        partition_size_output = self.ssh_client.exec_command(
+        partition_size_output = self.ssh_client.execute_command(
             'fdisk -l %s 2>/dev/null | '
-            'grep "Disk.*bytes"' % partition_names).rstrip('\n').split('\n')
+            'grep "Disk.*bytes"' % partition_names).stdout
+        partition_size_output = partition_size_output.rstrip('\n').split('\n')
         partitions = []
         for row in partition_size_output:
             row_details = row.split()
@@ -399,12 +387,12 @@ class LinuxClient(BasePersistentLinuxClient):
         @param destination_path: Path to mount destination
         @type destination_path: String
         '''
-        self.ssh_client.exec_command(
+        self.ssh_client.execute_command(
             'mount ' + source_path + ' ' + destination_path)
 
     def get_xen_user_metadata(self):
         command = 'xenstore-ls vm-data/user-metadata'
-        output = self.ssh_client.exec_command(command)
+        output = self.ssh_client.execute_command(command).stdout
         meta_list = output.split('\n')
         meta = {}
         for item in meta_list:
@@ -419,7 +407,7 @@ class LinuxClient(BasePersistentLinuxClient):
     def get_xenstore_disk_config_value(self):
         """Returns the xenstore value for disk config (True/False)"""
         command = 'xenstore-read vm-data/auto-disk-config'
-        output = self.ssh_client.exec_command(command)
+        output = self.ssh_client.execute_command(command).stdout
         return output.strip().lower() == 'true'
 
     def create_directory(self, path):
@@ -429,7 +417,7 @@ class LinuxClient(BasePersistentLinuxClient):
         @type path: string
         '''
         command = "{0} {1}".format("mkdir -p", path)
-        output = self.ssh_client.exec_command(command)
+        output = self.ssh_client.execute_command(command).stdout
         return output
 
     def is_directory_present(self, directory_path):
@@ -444,7 +432,7 @@ class LinuxClient(BasePersistentLinuxClient):
                 "] && echo 'Directory found' || echo 'Directory",
                 directory_path, "not found'"]
         command = cmd_str.format(*args)
-        output = self.ssh_client.exec_command(command)
+        output = self.ssh_client.execute_command(command)
         return output.rstrip('\n') == 'Directory found'
 
     def get_directory_details(self, dirpath):
@@ -459,14 +447,14 @@ class LinuxClient(BasePersistentLinuxClient):
         if not output:
             raise DirectoryNotFoundException(
                 "Directory: {0} not found.".format(dirpath))
-        dir_permissions = self.ssh_client.exec_command(
-            "stat -c %a {0}".format(dirpath)).rstrip("\n")
-        dir_size = float(self.ssh_client.exec_command(
-            "du -s {0}".format(dirpath)).split('\t', 1)[0])
+        dir_permissions = self.ssh_client.execute_command(
+            "stat -c %a {0}".format(dirpath)).stdout.rstrip("\n")
+        dir_size = float(self.ssh_client.execute_command(
+            "du -s {0}".format(dirpath)).stdout.split('\t', 1)[0])
         return DirectoryDetails(dir_permissions, dir_size, dirpath)
 
     def get_block_devices(self):
-        disks_raw = self.ssh_client.exec_command('lsblk -dn')
+        disks_raw = self.ssh_client.execute_command('lsblk -dn').stdout
         disks_raw_list = disks_raw.split('\n')
         devices = []
         for disk in disks_raw_list:
