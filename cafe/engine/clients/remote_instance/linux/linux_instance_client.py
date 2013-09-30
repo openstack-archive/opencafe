@@ -416,6 +416,12 @@ class LinuxClient(BasePersistentLinuxClient):
                 meta[key] = value
         return meta
 
+    def get_xenstore_disk_config_value(self):
+        """Returns the xenstore value for disk config (True/False)"""
+        command = 'xenstore-read vm-data/auto-disk-config'
+        output = self.ssh_client.exec_command(command)
+        return output.strip().lower() == 'true'
+
     def create_directory(self, path):
         '''
         @summary: Creates Directory
