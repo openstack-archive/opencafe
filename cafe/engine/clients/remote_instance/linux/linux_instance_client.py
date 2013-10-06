@@ -464,3 +464,14 @@ class LinuxClient(BasePersistentLinuxClient):
         dir_size = float(self.ssh_client.exec_command(
             "du -s {0}".format(dirpath)).split('\t', 1)[0])
         return DirectoryDetails(dir_permissions, dir_size, dirpath)
+
+    def get_block_devices(self):
+        disks_raw = self.ssh_client.exec_command('lsblk -dn')
+        disks_raw_list = disks_raw.split('\n')
+        devices = []
+        for disk in disks_raw_list:
+            disk_params = disk.split()
+            if disk_params:
+                devices.append({'name': disk_params[0],
+                                'size': disk_params[3]})
+        return devices
