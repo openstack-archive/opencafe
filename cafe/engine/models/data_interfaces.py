@@ -18,6 +18,11 @@ import os
 import ConfigParser
 from cafe.common.reporting import cclogging
 
+class FileSize:
+    EXACT_BYTES, KILO, MEGG, GIGG, KIBI, MEBI, GIBI = range(7)
+
+class DataUnit:
+    BIT, BYTE = range(2)
 
 class ConfigDataException(Exception):
     pass
@@ -29,7 +34,6 @@ class NonExistentConfigPathError(Exception):
 
 class ConfigEnvironmentVariableError(Exception):
     pass
-
 
 #Decorator
 def expected_values(*values):
