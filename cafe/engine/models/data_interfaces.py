@@ -18,7 +18,6 @@ import os
 import ConfigParser
 from cafe.common.reporting import cclogging
 
-
 class ConfigDataException(Exception):
     pass
 
@@ -29,7 +28,6 @@ class NonExistentConfigPathError(Exception):
 
 class ConfigEnvironmentVariableError(Exception):
     pass
-
 
 #Decorator
 def expected_values(*values):
