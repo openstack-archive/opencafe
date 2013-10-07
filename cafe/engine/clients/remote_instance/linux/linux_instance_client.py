@@ -123,6 +123,20 @@ class LinuxClient(BasePersistentLinuxClient):
                                      % (self.ip_address))
                 return True
 
+    def add_public_key_to_authorized_keys(self, public_key):
+        ssh_connector = SSHBaseClient(self.ip_address,
+                                      self.username,
+                                      self.password)
+        ssh_connector.exec_command(
+            "echo '{0}' >> /home/{1}/.ssh/authorized_keys".format(
+                public_key, self.username))
+        check = ssh_connector.exec_command(
+            "cat /home/{0}/.ssh/authorized_keys".format(self.username))
+        if check.find(public_key) == -1:
+            return False
+        else:
+            return True
+
     def get_hostname(self):
         """
         @summary: Gets the host name of the server
