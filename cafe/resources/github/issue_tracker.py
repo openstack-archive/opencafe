@@ -42,6 +42,10 @@ class GitHubTracker(object):
         except RateLimitExceededException as error:
             log.info('Rate limit for API calls exceeded.'
                      'GithubException: {0}'.format(error))
+        except Exception as error:
+            # Need to blanket error catch due to the wide variety of issues
+            # in PyGitHub. Using info as a normal user would need to know this
+            log.info(error.message)
 
         if issue is None or issue.state == 'closed':
             return False
