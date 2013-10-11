@@ -247,7 +247,7 @@ class SuiteBuilder(object):
         for root, _, files in os.walk(rootdir):
             for name in files:
                 if (fnmatch(name, self.module_regex)
-                        and name.find("init") == -1
+                        and name.find("__init__") == -1
                         and name.find(".pyc") == -1):
                     file_name = name.split(".")[0]
                     full_path = "{0}/{1}".format(root, file_name)
