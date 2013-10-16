@@ -30,7 +30,7 @@ class FreeBSDClient(LinuxClient):
         @return: The boot time of the server
         @rtype: time.struct_time
         """
-        uptime_string = self.ssh_client.exec_command('uptime')
+        uptime_string = self.ssh_client.execute_command('uptime').stdout
         uptime = uptime_string.replace('\n', '').split(',')[0].split()[2]
         uptime_unit = uptime_string.replace('\n', '').split(',')[0].split()[3]
         if uptime_unit == 'mins':
@@ -40,7 +40,8 @@ class FreeBSDClient(LinuxClient):
 
         command = 'date -v -{uptime}{unit_format} "+%Y-%m-%d %H:%M"'.format(
             uptime=uptime, uptime_unit_format=uptime_unit_format)
-        reboot_time = self.ssh_client.exec_command(command).replace('\n', '')
+        reboot_time = self.ssh_client.execute_command(
+            command).stdout.replace('\n', '')
 
         return time.strptime(reboot_time,
                              InstanceClientConstants.LAST_REBOOT_TIME_FORMAT)
@@ -51,7 +52,7 @@ class FreeBSDClient(LinuxClient):
         @return: The disk size in GB
         @rtype: int
         """
-        output = self.ssh_client.exec_command(
-            'gpart show -p | grep "GPT"').replace('\n', '')
+        output = self.ssh_client.execute_command(
+            'gpart show -p | grep "GPT"').stdout.replace('\n', '')
         disk_size = re.search(r'([0-9]+)G', output).group(1)
         return int(disk_size)
