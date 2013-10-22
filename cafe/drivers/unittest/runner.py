@@ -1255,28 +1255,20 @@ def print_paths(config_path, data_dir, log_path):
 
 
 def entry_point():
+    ascii_mug ="""
+      ( (
+       ) )
+    .........
+    |       |___
+    |       |_  |
+    |  :-)  |_| |
+    |       |___|
+    |_______|
+=== CAFE Runner ==="""
+
     brew = "Brewing from {0}".format(BASE_DIR)
 
-    mug0 = "      ( ("
-    mug1 = "       ) )"
-    mug2 = "    ........."
-    mug3 = "    |       |___"
-    mug4 = "    |       |_  |"
-    mug5 = "    |  :-)  |_| |"
-    mug6 = "    |       |___|"
-    mug7 = "    |_______|"
-    mug8 = "=== CAFE Runner ==="
-
-    print "\n{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}\n{8}".format(
-        mug0,
-        mug1,
-        mug2,
-        mug3,
-        mug4,
-        mug5,
-        mug6,
-        mug7,
-        mug8)
+    print ascii_mug
 
     print "-" * len(brew)
     print brew
