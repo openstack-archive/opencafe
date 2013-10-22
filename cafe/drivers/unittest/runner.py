@@ -20,7 +20,6 @@ import sys
 import time
 import argparse
 import unittest2 as unittest
-import json
 from re import search
 from multiprocessing import Process, Manager
 from datetime import datetime
@@ -33,6 +32,7 @@ from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.decorators import (
     TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME)
+from cafe.common.reporting.reporter import Reporter
 from cafe.configurator.managers import (
     UnittestRunnerTestEnvManager, EngineDirectoryManager, EngineConfigManager)
 
@@ -612,10 +612,14 @@ class EnvironmentSetup(object):
             help="list tests and or configs")
 
         argparser.add_argument(
-            '--json-result',
-            action="store_true",
-            default=False,
-            help="generates a json formatted result file")
+            "--result",
+            choices=["json", "xml"],
+            help="generates a specified formatted result file")
+
+        argparser.add_argument(
+            "--result-directory",
+            help="directory for result file to be stored"
+        )
 
         argparser.add_argument(
             "--parallel",
@@ -856,7 +860,8 @@ class OpenCafeRunner(object):
     def __init__(self):
         pass
 
-    def run_parallel(self, test_suites, test_runner, json_result=False):
+    def run_parallel(self, test_suites, test_runner, result_type=None,
+                     results_path=None):
         exit_code = 0
         proc = None
         unittest.installHandler()
@@ -880,7 +885,7 @@ class OpenCafeRunner(object):
 
         errors, failures, _ = dump_results(start, finish, results)
 
-        if json_result:
+        if result_type is not None:
             all_results = []
             for tests, result in zip(test_suites, results):
                 result_parser = SummarizeResults(
@@ -889,36 +894,32 @@ class OpenCafeRunner(object):
                     (finish - start))
                 all_results += result_parser.gather_results()
 
-            # Convert Result objects to dicts for serialization
-            json_results = []
-            for r in all_results:
-                json_results.append(r.__dict__)
-            with open(os.getcwd() + "/results.json", 'wb') as result_file:
-                json.dump(json_results, result_file)
+            reporter = Reporter(result_parser=result_parser,
+                                all_results=all_results)
+            reporter.generate_report(result_type=result_type,
+                                     path=results_path)
 
         if failures or errors:
             exit_code = 1
 
         return exit_code
 
-    def run_serialized(self, master_suite, test_runner, json_result=False):
+    def run_serialized(self, master_suite, test_runner, result_type=None,
+                       results_path=None):
         exit_code = 0
         unittest.installHandler()
         start_time = time.time()
         result = test_runner.run(master_suite)
         total_execution_time = time.time() - start_time
 
-        if json_result:
+        if result_type is not None:
             result_parser = SummarizeResults(vars(result), master_suite,
                                              total_execution_time)
             all_results = result_parser.gather_results()
-
-            # Convert Result objects to dicts for serialization
-            json_results = []
-            for r in all_results:
-                json_results.append(r.__dict__)
-            with open(os.getcwd() + "/results.json", 'wb') as result_file:
-                json.dump(json_results, result_file)
+            reporter = Reporter(result_parser=result_parser,
+                                all_results=all_results)
+            reporter.generate_report(result_type=result_type,
+                                     path=results_path)
 
         log_results(result)
         if not result.wasSuccessful():
@@ -1089,13 +1090,15 @@ class OpenCafeRunner(object):
                 exit_code = self.run_parallel(
                     test_suites,
                     test_runner,
-                    json_result=cl_args.json_result)
+                    result_type=cl_args.result,
+                    results_path=cl_args.result_directory)
                 exit(exit_code)
             else:
                 exit_code = self.run_serialized(
                     master_suite,
                     test_runner,
-                    json_result=cl_args.json_result)
+                    result_type=cl_args.result,
+                    results_path=cl_args.result_directory)
                 exit(exit_code)
 
 
