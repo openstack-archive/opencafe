@@ -6,3 +6,5 @@ argparse==1.2.1
 unittest2==0.5.1
 launchpadlib==1.10.2
 pygithub==1.17.0
+pyes==0.20.0
+thrift==0.9.1
