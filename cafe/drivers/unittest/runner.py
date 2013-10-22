@@ -21,12 +21,12 @@ import os
 import sys
 import time
 import unittest2 as unittest
-import textwrap
 from re import search
 from multiprocessing import Process, Manager
 from inspect import getmembers, isclass
 from fnmatch import fnmatch
 from traceback import extract_tb
+from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
 from cafe.drivers.unittest.fixtures import BaseTestFixture
 from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
@@ -178,6 +178,7 @@ class LoadedTestClass(object):
 
 
 class SuiteBuilder(object):
+
     def __init__(self, module_regex, method_regex, cl_tags, supress_flag):
         self.module_regex = module_regex
         self.method_regex = method_regex
@@ -397,10 +398,11 @@ class SuiteBuilder(object):
         """
         loads the found tests and builds the test suite
         """
+
         tag_list = []
         attrs = {}
         loader = unittest.TestLoader()
-        suite = unittest.TestSuite()
+        suite = OpenCafeUnittestTestSuite()  # unittest.TestSuite()
         loaded = LoadedTestClass(loaded_module)
 
         if self.tags:
@@ -441,7 +443,7 @@ class SuiteBuilder(object):
         return suite
 
     def get_tests(self, module_path):
-        suite = unittest.TestSuite()
+        suite = OpenCafeUnittestTestSuite()  # unittest.TestSuite()
 
         try:
             loaded_module = self.load_module(module_path)
@@ -887,8 +889,8 @@ class UnittestRunner(object):
         """
         test_suites = []
         builder = None
-        suite = unittest.TestSuite()
-        master_suite = unittest.TestSuite()
+        suite = OpenCafeUnittestTestSuite()  # unittest.TestSuite()
+        master_suite = OpenCafeUnittestTestSuite()  # unittest.TestSuite()
 
         builder = SuiteBuilder(
             self.cl_args.module_regex,
