@@ -178,15 +178,33 @@ class BaseSSHClient(BaseClient):
                 host=self.host)
             self._log.error(message)
             raise Exception(message)
-        self._log.debug('Executing command: {command}'.format(
-            command=command))
+        try:
+            self._log.debug('Executing command: {command}'.format(
+                            command=str(command).decode(
+                                encoding='UTF-8', errors='ignore')))
+        except Exception as exception:
+            self._log.debug(exception)
         response = self.ssh_connection.exec_command(
             command=command, return_exit_status=return_exit_status)
         response = self._format_response(response)
-        self._log.debug('Stdout: {stdout}'.format(stdout=response.stdout))
-        self._log.debug('Stderr: {stderr}'.format(stderr=response.stderr))
-        self._log.debug('Exit status: {status}'.format(
-            status=response.exit_status))
+        try:
+            self._log.debug('Stdout: {stdout}'.format(
+                            stdout=str(response.stdout).decode(
+                                encoding='UTF-8', errors='ignore')))
+        except Exception as exception:
+            self._log.debug(exception)
+        try:
+            self._log.debug('Stderr: {stderr}'.format(
+                            stderr=str(response.stderr).decode(
+                                encoding='UTF-8', errors='ignore')))
+        except Exception as exception:
+            self._log.debug(exception)
+        try:
+            self._log.debug('Exit status: {status}'.format(
+                            status=str(response.exit_status).decode(
+                                encoding='UTF-8', errors='ignore')))
+        except Exception as exception:
+            self._log.debug(exception)
         return response
 
 
