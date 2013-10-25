@@ -226,27 +226,6 @@ class BaseTestFixture(unittest.TestCase):
             return False
 
 
-class BaseParameterizedTestFixture(BaseTestFixture):
-    """ TestCase classes that want to be parameterized should
-        inherit from this class.
-    """
-    def __copy__(self):
-        new_copy = self.__class__(self._testMethodName)
-        for key in self.__dict__.keys():
-            new_copy.key = self.__dict__[key]
-        return new_copy
-
-    def setUp(self):
-        self._testMethodName = self.__dict__
-        super(BaseTestFixture, self).setup()
-
-    def __str__(self):
-        if "test_record" in self.__dict__:
-            return self._testMethodName + " " + str(self.test_record)
-        else:
-            return super(BaseParameterizedTestFixture, self).__str__()
-
-
 class BaseBurnInTestFixture(BaseTestFixture):
     """
     @summary: Base test fixture that allows for Burn-In tests
