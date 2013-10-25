@@ -38,6 +38,7 @@ class TestRunMetrics(object):
     def __init__(self):
         self.total_tests = 0
         self.total_passed = 0
+        self.total_errored = 0
         self.total_failed = 0
         self.timer = TestTimer()
         self.result = TestResultTypes.UNKNOWN
