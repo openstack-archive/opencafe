@@ -8,3 +8,7 @@ launchpadlib==1.10.2
 pygithub==1.17.0
 pyes==0.20.0
 thrift==0.9.1
+
+# Keep this turned off unless your using the rsyslog client
+# i.e. you know what you're doing :)
+#meniscus-portal
