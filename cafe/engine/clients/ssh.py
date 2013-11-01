@@ -71,6 +71,7 @@ class BaseSSHClient(BaseClient):
         """
         self.ssh_connection = None
         self.host = host
+        self._chan = None
 
     def connect(self, username=None, password=None,
                 accept_missing_host_key=True, tcp_timeout=30,
@@ -158,6 +159,107 @@ class BaseSSHClient(BaseClient):
     def is_connected(self):
         """Checks to see if an SSH connection exists."""
         return self.ssh_connection is not None
+
+    def start_shell(self, retries=5):
+        """
+        @summary: Starts a shell instance of SSH to use with multiple commands.
+
+        """
+        # large width and height because of need to parse output of commands
+        # in exec_shell_command
+        retry_count = 0
+        while retry_count < retries:
+            try:
+                self._chan = self.ssh_connection.invoke_shell(width=9999999,
+                                                              height=9999999)
+                if self._chan is not None:
+                    break
+            except SSHException, msg:
+                retry_count = retry_count + 1
+                self._log.error("Channel attempt {0} failed \n {1}".format(
+                    retry_count,
+                    msg))
+
+        # wait until buffer has data
+        while not self._chan.recv_ready():
+            time.sleep(1)
+
+        # clearing initial buffer, usually login information
+        while self._chan.recv_ready():
+            self._chan.recv(1024)
+
+    def end_shell(self):
+        if not self._chan.closed:
+            self._chan.close()
+        self._chan = None
+
+    def wait_for_active_shell(self, max_time):
+        if not self.is_connected():
+            message = 'Not currently connected to {host}.'.format(
+                host=self.host)
+            self._log.error(message)
+            raise Exception(message)
+        if self._chan is None or self._chan.closed:
+            self.start_shell()
+        while not self._chan.send_ready() and time.time() < max_time:
+            time.sleep(1)
+
+    def read_shell_response(self, prompt, max_time):
+        output = ''
+        while time.time() < max_time:
+            while not self._chan.recv_ready() and time.time() < max_time:
+                time.sleep(1)
+            if not self._chan.recv_ready():
+                break
+            current = self._chan.recv(1024)
+            output += current
+            if not prompt:
+                break
+            if current.find(prompt) != -1:
+                self._log.debug('SHELL-PROMPT-FOUND: %s' % prompt)
+                break
+            self._log.debug('Current response: {0}'.format(current))
+            self._log.debug(
+                "Looking for prompt: {0}.Time remaining: {1}".format(
+                    prompt, max_time - time.time()))
+            self._chan.get_transport().set_keepalive(1000)
+        self._log.debug('SHELL-COMMAND-RETURN: {0}'.format(output))
+        return output
+
+    def execute_shell_command(self,
+                              cmd,
+                              prompt=None,
+                              timeout=100):
+        """
+        @summary: Executes a command in shell mode and receives all of
+            the response.  Parses the response and returns the output
+            of the command and the prompt.
+        @return: Returns the output of the command and the prompt.
+
+        """
+
+        max_time = time.time() + timeout
+        if not cmd.endswith("\n"):
+            cmd = "{0}\n".format(cmd)
+        self._log.debug('EXEC-SHELLing: {0}'.format(cmd))
+        self.wait_for_active_shell(max_time)
+        if not self._chan.send_ready():
+            self._log.error("Channel timed out for send ready")
+            return ExecResponse(
+                stdin=None,
+                stdout=None,
+                stderr=None)
+        self._chan.send(cmd)
+        output = self.read_shell_response(prompt,
+                                          max_time)
+        if self._chan.recv_stderr_ready():
+            stderr = self._chan.recv_stderr(1024)
+        else:
+            stderr = None
+        return ExecResponse(
+            stdin=self._chan.makefile('wb'),
+            stdout=output,
+            stderr=stderr)
 
     def execute_command(self, command, return_exit_status=False):
         """
