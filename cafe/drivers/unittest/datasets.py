@@ -17,25 +17,26 @@ limitations under the License.
 import json
 
 
-class Dataset(object):
+class _Dataset(object):
     def __init__(self, name, data_dict):
         """Defines a set of data to be used as input for a data driven test.
-
         data_dict should be a dictionary with keys matching the keyword
         arguments defined in test method that consumes the dataset.
-
         name should be a string describing the dataset.
         """
 
         self.name = name
         self.data = data_dict
 
+    def __repr__(self):
+        return "<name:{0}, data:{1}>".format(self.name, self.data)
+
 
 class DatasetList(list):
     """Specialized list-like object that holds Dataset objects"""
 
     def append(self, dataset):
-        if not isinstance(dataset, Dataset):
+        if not isinstance(dataset, _Dataset):
             raise TypeError(
                 "append() argument must be type Dataset, not {0}".format(
                     type(dataset)))
@@ -44,7 +45,7 @@ class DatasetList(list):
 
     def append_new_dataset(self, name,  data_dict):
         """Creates and appends a new Dataset"""
-        self.append(Dataset(name, data_dict))
+        self.append(_Dataset(name, data_dict))
 
 
 class DatasetGenerator(DatasetList):

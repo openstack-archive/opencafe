@@ -13,12 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
+import collections
 import inspect
 import itertools
 
 from types import FunctionType
 from unittest2 import TestCase, skip
 
+from cafe.common.reporting import cclogging
 from cafe.resources.github.issue_tracker import GitHubTracker
 from cafe.resources.launchpad.issue_tracker import LaunchpadTracker
 
@@ -130,3 +133,66 @@ def skip_open_issue(type, bug_id):
             issue_id=bug_id):
         return skip('GitHub Issue #{0}'.format(bug_id))
     return lambda obj: obj
+
+
+class memoized(object):
+    """
+    Decorator.
+    @see: https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
+    Caches a function's return value each time it is called.
+    If called later with the same arguments, the cached value is returned
+    (not reevaluated).
+
+    Adds and removes handlers to root log for the duration of the function
+    call, or logs return of cached result.
+    """
+
+    def __init__(self, func):
+        self.func = func
+        self.cache = {}
+        self.__name__ = func.func_name
+
+    def __call__(self, *args):
+        self._start_logging(cclogging.get_object_namespace(args[0]))
+        if not isinstance(args, collections.Hashable):
+            # uncacheable. a list, for instance.
+            # better to not cache than blow up.
+            value = self.func(*args)
+            self.func._log.debug("Uncacheable.  Data returned")
+            self._stop_logging()
+            return value
+
+        if args in self.cache:
+            self.func._log.debug("Cached data returned.")
+            self._stop_logging()
+            return self.cache[args]
+
+        else:
+            value = self.func(*args)
+            self.cache[args] = value
+            self.func._log.debug(
+                "Data cached for future calls: {0}".format(value))
+            self._stop_logging()
+            return value
+
+    def __repr__(self):
+        """Return the function's docstring."""
+        return self.func.__doc__
+
+    # Because the root log is initialized in the base test fixture, and because
+    # datalist generators are run before that test fixture is initialized,
+    # it is neccessary to add a log handler to the root logger so that logs
+    # get logged.  Once the root log handler initialization is moved
+    # upstream of the base test fixture initialization, this code can be
+    # removed.
+    def _start_logging(self, log_file_name):
+        setattr(self.func, '_log_handler', cclogging.setup_new_cchandler(
+            log_file_name))
+        setattr(self.func, '_log', cclogging.getLogger(''))
+        self.func._log.addHandler(self.func._log_handler)
+        curframe = inspect.currentframe()
+        self.func._log.debug("{0} called from {1}".format(
+            self.__name__, inspect.getouterframes(curframe, 2)[2][3]))
+
+    def _stop_logging(self):
+        self.func._log.removeHandler(self.func._log_handler)
