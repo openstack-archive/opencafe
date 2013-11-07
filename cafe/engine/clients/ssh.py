@@ -35,7 +35,7 @@ class SSHAuthStrategy:
     KEY_FILE_LIST = 'key_file_list'
 
 
-class SSHClient(ParamikoSSHClient):
+class ExtendedParamikoSSHClient(ParamikoSSHClient):
 
     def exec_command(self, command, bufsize=-1, timeout=None, get_pty=False,
                      return_exit_status=False):
@@ -102,7 +102,7 @@ class BaseSSHClient(BaseClient):
         @return: None
         """
 
-        ssh = SSHClient()
+        ssh = ExtendedParamikoSSHClient()
         if accept_missing_host_key:
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -208,7 +208,7 @@ class BaseSSHClient(BaseClient):
         return response
 
 
-class SSHBehaviors(BaseSSHClient):
+class SSHClient(BaseSSHClient):
 
     def __init__(self, username=None, password=None, host=None,
                  tcp_timeout=None, auth_strategy=None, port=22,
@@ -242,7 +242,7 @@ class SSHBehaviors(BaseSSHClient):
                                         host key in the local system
         @type accept_missing_host_key: bool
         """
-        super(SSHBehaviors, self).__init__(host=host)
+        super(SSHClient, self).__init__(host=host)
         self.username = username
         self.password = password
         self.host = host
