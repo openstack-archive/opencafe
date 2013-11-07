@@ -26,7 +26,7 @@ from cafe.engine.clients.base import BaseClient
 
 class BaseElasticSearchClient(BaseClient):
 
-    def __init__(self, servers, index):
+    def __init__(self, servers, index=None):
         """
         @param servers: Make sure to include the port with the server address
         @param index: Document index
@@ -35,7 +35,9 @@ class BaseElasticSearchClient(BaseClient):
         super(BaseElasticSearchClient, self).__init__()
         self.connection = None
         self.servers = servers
-        self.index = index if type(index) is list else [index]
+
+        if index is not None:
+            self.index = index if type(index) is list else [index]
 
     def connect(self, connection_pool=1, bulk_size=10):
         update_connection_pool(connection_pool)
@@ -83,27 +85,27 @@ class BaseElasticSearchClient(BaseClient):
         self._log.info('ES: Deleting index {0}'.format(index_name))
         self.connection.delete_index(index_name)
 
-    def find_term(self, name, value, size=10):
+    def find_term(self, name, value, size=10, index=None):
         if not self.connection:
             return
 
         query = TermQuery(name, value)
         return self.connection.search(query=Search(query, size=size),
-                                      indices=self.index)
+                                      indices=index or self.index)
 
-    def find(self, filter_terms, size=10, doc_types=None):
+    def find(self, filter_terms, size=10, doc_types=None, index=None):
         if not self.connection:
             return
 
         query = self._create_term_query(must_list=filter_terms)
         return self.connection.search(query=Search(query, size=size),
-                                      indices=self.index,
+                                      indices=index or self.index,
                                       doc_types=doc_types)
 
-    def find_one(self, filter_terms, size=10, doc_types=None):
+    def find_one(self, filter_terms, doc_types=None, index=None):
         if not self.connection:
             return
 
-        results = self.find(filter_terms=filter_terms, size=size,
-                            doc_types=doc_types)
+        results = self.find(filter_terms=filter_terms, size=1,
+                            doc_types=doc_types, index=index)
         return results[0] if len(results) > 0 else None
