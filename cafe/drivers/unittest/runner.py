@@ -115,8 +115,11 @@ class LoadedTestClass(object):
         return class_
 
     def get_instances(self):
+        loaded = []
         for class_name in self._get_class_names(self.module):
-            yield self._get_class(self.module, class_name)
+            if class_name not in loaded:
+                loaded.append(class_name)
+                yield self._get_class(self.module, class_name)
 
     def _get_module_path(self, loaded_module):
         return os.path.dirname(loaded_module.__file__)
