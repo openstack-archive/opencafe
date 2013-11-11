@@ -86,7 +86,6 @@ class BaseTestFixture(unittest.TestCase):
         super(BaseTestFixture, cls).tearDownClass()
 
     def setUp(self):
-        super(BaseTestFixture, self).setUp()
         self.shortDescription()
         self._reporter.start_test_metrics(
             self._testMethodName, self.logDescription())
