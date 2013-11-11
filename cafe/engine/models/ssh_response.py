@@ -35,3 +35,12 @@ class ExecResponse(object):
         self.stdout = stdout
         self.stderr = stderr
         self.exit_status = exit_status
+
+
+class SSHKeyResponse(object):
+
+    def __init__(self, public_key=None, private_key=None, error=None):
+
+        self.public_key = public_key
+        self.private_key = private_key
+        self.error = error
