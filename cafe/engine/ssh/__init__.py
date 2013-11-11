@@ -13,9 +13,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-from warnings import warn, simplefilter
-simplefilter("default", DeprecationWarning)
-warn("cafe.engine.models.ssh_response has been moved to "
-    "cafe.engine.ssh.models.ssh_response", DeprecationWarning)
-from cafe.engine.ssh.models.ssh_response import SSHKeyResponse, ExecResponse
