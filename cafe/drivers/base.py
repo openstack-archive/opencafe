@@ -27,7 +27,6 @@ class _FixtureLogger(object):
 
 class FixtureReporter(object):
     """Provides logging and metrics reporting for any test fixture"""
-    SEPERATOR = "{0}".format('=' * 56)
 
     def __init__(self, parent_object):
         self.logger = _FixtureLogger(parent_object)
