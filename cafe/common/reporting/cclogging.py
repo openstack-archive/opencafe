@@ -17,6 +17,7 @@ limitations under the License.
 import logging
 import os
 import sys
+from collections import OrderedDict
 
 log = logging.getLogger('RunnerLog')
 
@@ -182,3 +183,52 @@ def log_errors(label, result, errors):
     for test, err in errors:
         msg = "{0}: {1}\n".format(label, result.getDescription(test))
         log.info('{0}\n{1}\n{2}\n{3}'.format(border1, msg, border2, err))
+
+
+def init_root_log_handler():
+    #Setup root log handler if the root logger doesn't already have one
+    if not getLogger('').handlers:
+        master_log_file_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
+        getLogger('').addHandler(
+            setup_new_cchandler(master_log_file_name))
+
+
+def log_info_block(
+        log, info, separator=None, heading=None, log_level=logging.INFO):
+    """Expects info to be a list of tuples or an OrderedDict
+    Logs info as individual lines in blocks surrounded by a separator:
+    ====================================================================
+    A heading will print here, with another separator below it.
+    ====================================================================
+    Items are logged in order................................: Info
+    And are separated from their info........................: Info
+    By at least three dots...................................: Info
+    If no second value is given in the tuple, a single line is logged
+    Lower lines will still line up correctly.................: Info
+    The longest line dictates the dot length for all lines...: Like this
+    ====================================================================
+    """
+    try:
+        info = info if isinstance(info, OrderedDict) else OrderedDict(info)
+    except:
+        #Something went wrong, log what can be logged
+        log.log(log_level, str(info))
+        return
+
+    separator = str(separator or "{0}".format('=' * 56))
+    max_length = len(max([k for k in info.keys() if info.get(k)], key=len))+3
+
+    log.log(log_level, separator)
+    if heading:
+        log.info(heading)
+        log.log(log_level, separator)
+
+    for k in info:
+        value = str(info.get(k, None))
+        if value:
+            log.log(log_level, "{0}{1}: {2}".format(
+                k, "." * (max_length-len(k)), value))
+        else:
+            log.log(log_level, "{0}".format(k))
+
+    log.log(log_level, separator)
