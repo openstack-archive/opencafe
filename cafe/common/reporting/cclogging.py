@@ -182,3 +182,11 @@ def log_errors(label, result, errors):
     for test, err in errors:
         msg = "{0}: {1}\n".format(label, result.getDescription(test))
         log.info('{0}\n{1}\n{2}\n{3}'.format(border1, msg, border2, err))
+
+
+def init_root_log_handler():
+    #Setup root log handler if the root logger doesn't already have one
+    if not getLogger('').handlers:
+        master_log_file_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
+        getLogger('').addHandler(
+            setup_new_cchandler(master_log_file_name))
