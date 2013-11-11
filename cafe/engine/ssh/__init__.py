@@ -13,8 +13,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-from cafe.engine.ssh.client import SSHAuthStrategy
-from cafe.engine.ssh.client import ExtendedParamikoSSHClient
-from cafe.engine.ssh.client import BaseSSHClient
-from cafe.engine.ssh.client import SSHClient
