@@ -13,10 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from time import sleep
+
 from pyes import ES
 from pyes import TermQuery, BoolQuery, Search
 from pyes.connection import NoServerAvailable
 from pyes.connection_http import update_connection_pool
+from pyes.exceptions import IndexMissingException
 
 from cafe.engine.clients.base import BaseClient
 
@@ -34,11 +37,11 @@ class BaseElasticSearchClient(BaseClient):
         self.servers = servers
         self.index = index if type(index) is list else [index]
 
-    def connect(self, connection_pool=1):
+    def connect(self, connection_pool=1, bulk_size=10):
         update_connection_pool(connection_pool)
 
         try:
-            self.connection = ES(self.servers)
+            self.connection = ES(self.servers, bulk_size=bulk_size)
         except NoServerAvailable:
             self._log.error('Failed to connect to elastic search server')
             return False
@@ -52,6 +55,33 @@ class BaseElasticSearchClient(BaseClient):
         query = BoolQuery()
         for term in must_list:
             query.add_must(term)
+
+    def refresh_index(self, index_name, wait=1):
+        self._log.info('ES: Refreshing index {0}'.format(index_name))
+        self.connection.indices.refresh(index_name, timesleep=wait)
+
+    def has_index(self, index_name):
+        self._log.info('ES: Checking for index {0}'.format(index_name))
+        try:
+            self.connection.status(index_name)
+        except IndexMissingException:
+            return False
+        return True
+
+    def wait_for_index(self, index_name):
+        """ Checks to see if an index exists.
+        Checks every second for 30 seconds and returns True if successful
+        """
+        for i in range(0, 30):
+            if self.has_index(index_name):
+                return True
+
+            sleep(1)
+        return False
+
+    def delete_index(self, index_name):
+        self._log.info('ES: Deleting index {0}'.format(index_name))
+        self.connection.delete_index(index_name)
 
     def find_term(self, name, value, size=10):
         if not self.connection:
