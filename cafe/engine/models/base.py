@@ -43,6 +43,14 @@ class JSON_ToolsMixin(object):
 
 class XML_ToolsMixin(object):
     """Methods used to make building xml data models easier"""
+    _XML_VERSION = '1.0'
+    _ENCODING = 'UTF-8'
+
+    @property
+    def xml_header(self):
+        return "<?xml version='{version}' encoding='{encoding}'?>".format(
+            version=self._XML_VERSION, encoding=self._ENCODING)
+
     @staticmethod
     def _set_xml_etree_element(
             xml_etree, property_dict, exclude_empty_properties=True):
