@@ -25,8 +25,17 @@ class JSONReport(BaseReport):
         """ Generates a JSON report in the specified directory. """
         # Convert Result objects to dicts for serialization
         json_results = []
-        for r in all_results:
-            json_results.append(r.__dict__)
+        for result in all_results:
+            test_result = result.__dict__
+            if test_result.get('failure_trace') is not None:
+                test_result['result'] = "FAILED"
+            elif test_result.get('skipped_msg') is not None:
+                test_result['result'] = "SKIPPED"
+            elif test_result.get('error_trace') is not None:
+                test_result['result'] = "ERROR"
+            else:
+                test_result['result'] = "PASSED"
+            json_results.append(test_result)
 
         result_path = path or os.getcwd()
         if os.path.isdir(result_path):
