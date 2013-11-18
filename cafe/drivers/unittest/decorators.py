@@ -170,8 +170,7 @@ class memoized(object):
         else:
             value = self.func(*args)
             self.cache[args] = value
-            self.func._log.debug(
-                "Data cached for future calls: {0}".format(value))
+            self.func._log.debug("Data cached for future calls")
             self._stop_logging()
             return value
 
@@ -190,9 +189,14 @@ class memoized(object):
             log_file_name))
         setattr(self.func, '_log', cclogging.getLogger(''))
         self.func._log.addHandler(self.func._log_handler)
-        curframe = inspect.currentframe()
-        self.func._log.debug("{0} called from {1}".format(
-            self.__name__, inspect.getouterframes(curframe, 2)[2][3]))
+        try:
+            curframe = inspect.currentframe()
+            self.func._log.debug("{0} called from {1}".format(
+                self.__name__, inspect.getouterframes(curframe, 2)[2][3]))
+        except:
+            self.func._log.debug(
+                "Unable to log where {0} was called from".format(
+                    self.__name__))
 
     def _stop_logging(self):
-        self.func._log.removeHandler(self.func._log_handler)
+            self.func._log.removeHandler(self.func._log_handler)
