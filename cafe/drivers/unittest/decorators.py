@@ -186,13 +186,19 @@ class memoized(object):
     # upstream of the base test fixture initialization, this code can be
     # removed.
     def _start_logging(self, log_file_name):
-        setattr(self.func, '_log_handler', cclogging.setup_new_cchandler(
-            log_file_name))
-        setattr(self.func, '_log', cclogging.getLogger(''))
-        self.func._log.addHandler(self.func._log_handler)
-        curframe = inspect.currentframe()
-        self.func._log.debug("{0} called from {1}".format(
-            self.__name__, inspect.getouterframes(curframe, 2)[2][3]))
+        try:
+            setattr(self.func, '_log_handler', cclogging.setup_new_cchandler(
+                log_file_name))
+            setattr(self.func, '_log', cclogging.getLogger(''))
+            self.func._log.addHandler(self.func._log_handler)
+            curframe = inspect.currentframe()
+            self.func._log.debug("{0} called from {1}".format(
+                self.__name__, inspect.getouterframes(curframe, 2)[2][3]))
+        except:
+            pass
 
     def _stop_logging(self):
-        self.func._log.removeHandler(self.func._log_handler)
+        try:
+            self.func._log.removeHandler(self.func._log_handler)
+        except:
+            pass
