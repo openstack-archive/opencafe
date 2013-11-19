@@ -59,8 +59,7 @@ class BaseSQLClient(BaseClient):
 
         try:
             self._connection = self._driver.connect(
-                data_source_name=data_source_name, user=user,
-                password=password, host=host, database=database)
+                data_source_name, user, password, host, database)
         except AttributeError as detail:
             message = "No connect method found in self._driver module."
             self._log.exception(detail)
@@ -91,7 +90,9 @@ class BaseSQLClient(BaseClient):
         if cursor is None:
             cursor = self._connection.cursor()
 
-        return cursor.execute(operation, parameters)
+        cursor.execute(operation, parameters)
+
+        return cursor
 
     def execute_many(self, operation, seq_of_parameters=None, cursor=None):
         """
@@ -117,7 +118,9 @@ class BaseSQLClient(BaseClient):
         if cursor is None:
             cursor = self._connection.cursor()
 
-        return cursor.executemany(operation, seq_of_parameters)
+        cursor.executemany(operation, seq_of_parameters)
+
+        return cursor
 
     def close(self):
         """
