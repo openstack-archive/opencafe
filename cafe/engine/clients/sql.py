@@ -59,8 +59,8 @@ class BaseSQLClient(BaseClient):
 
         try:
             self._connection = self._driver.connect(
-                data_source_name=data_source_name, user=user,
-                password=password, host=host, database=database)
+                dsn=data_source_name, username=user,
+                password=password, host=host, dbname=database)
         except AttributeError as detail:
             message = "No connect method found in self._driver module."
             self._log.exception(detail)
