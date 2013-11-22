@@ -113,10 +113,15 @@ class BaseModel(object):
         for key in self.__dict__.keys():
             if str(key) == '_log':
                 continue
-            strng = '{0}{1} = {2}{3}'.format(
-                strng, str(key), str(self.__dict__[key]),
-                self.__REPR_SEPARATOR__)
-        return strng
+            elif isinstance(self.__dict__[key], unicode):
+                strng = '{0}{1} = {2}{3}'.format(
+                    strng, key, "{0}".format(
+                        self.__dict__[key].encode("utf-8")),
+                    self.__REPR_SEPARATOR__)
+            else:
+                strng = '{0}{1} = {2}{3}'.format(
+                    strng, key, self.__dict__[key], self.__REPR_SEPARATOR__)
+        return '{0}'.format(strng)
 
     def __repr__(self):
         return self.__str__()
