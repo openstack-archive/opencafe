@@ -111,12 +111,18 @@ class BaseModel(object):
         strng = '<{0} object> {1}'.format(
             self.__class__.__name__, self.__REPR_SEPARATOR__)
         for key in self.__dict__.keys():
-            if str(key) == '_log':
+            val = self.__dict__[key]
+            if isinstance(val, cclogging.logging.Logger):
                 continue
-            strng = '{0}{1} = {2}{3}'.format(
-                strng, str(key), str(self.__dict__[key]),
-                self.__REPR_SEPARATOR__)
-        return strng
+            elif isinstance(val, unicode):
+                strng = '{0}{1} = {2}{3}'.format(
+                    strng, key, "{0}".format(
+                        val.encode("utf-8")),
+                    self.__REPR_SEPARATOR__)
+            else:
+                strng = '{0}{1} = {2}{3}'.format(
+                    strng, key, val, self.__REPR_SEPARATOR__)
+        return '{0}'.format(strng)
 
     def __repr__(self):
         return self.__str__()
