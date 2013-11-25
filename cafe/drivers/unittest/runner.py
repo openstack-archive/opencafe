@@ -914,7 +914,7 @@ class UnittestRunner(object):
             master_suite = builder.generate_suite(
                 self.product_repo_path)
             parallel_test_list = builder.generate_suite_list(
-                path, parallel_test_list)
+                self.product_repo_path)
 
         if self.cl_args.parallel:
             exit_code = self.run_parallel(
