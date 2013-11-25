@@ -906,7 +906,7 @@ class UnittestRunner(object):
         #Run tests
         if self.cl_args.parallel:
             exit_code = self.run_parallel(
-                master_suite.tests_,
+                master_suite,
                 test_runner,
                 result_type=self.cl_args.result,
                 results_path=self.cl_args.result_directory)
