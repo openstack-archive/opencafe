@@ -468,6 +468,14 @@ class SuiteBuilder(object):
                 master_suite.addTests(st)
         return master_suite
 
+    def generate_suite_list(self, path, suite_list=None):
+        master_suite_list = suite_list or []
+        for module_path in self.get_modules(path):
+            st = self.get_tests(module_path)
+            if st:
+                master_suite_list.append(st)
+        return master_suite_list
+
 
 class _UnittestRunnerCLI(object):
 
@@ -878,6 +886,7 @@ class UnittestRunner(object):
         the command line and runs them
         """
         master_suite = unittest.TestSuite()
+        parallel_test_list = []
 
         builder = SuiteBuilder(
             self.cl_args.module_regex,
@@ -899,14 +908,17 @@ class UnittestRunner(object):
                     print error_msg("PACKAGE", package_name)
                     continue
                 master_suite = builder.generate_suite(path, master_suite)
+                parallel_test_list = builder.generate_suite_list(
+                    path, parallel_test_list)
         else:
             master_suite = builder.generate_suite(
                 self.product_repo_path)
+            parallel_test_list = builder.generate_suite_list(
+                path, parallel_test_list)
 
-        #Run tests
         if self.cl_args.parallel:
             exit_code = self.run_parallel(
-                master_suite.tests_,
+                parallel_test_list,
                 test_runner,
                 result_type=self.cl_args.result,
                 results_path=self.cl_args.result_directory)
