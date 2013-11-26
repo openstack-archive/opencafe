@@ -103,7 +103,7 @@ class BaseCommandLineClient(BaseClient):
         try:
             os_process = subprocess.Popen(os_response.command,
                                           stdout=subprocess.PIPE,
-                                          stderr=subprocess.STDOUT,
+                                          stderr=subprocess.PIPE,
                                           shell=True)
         except subprocess.CalledProcessError() as cpe:
             self._log.exception(
