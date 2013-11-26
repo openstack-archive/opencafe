@@ -290,6 +290,7 @@ class EngineDirectoryManager(object):
         for _, directory_path in cls.OPENCAFE_SUB_DIRS.items():
             if not os.path.exists(directory_path):
                 os.makedirs(directory_path)
+                print cls.wrapper.fill('...created {0}'.format(directory_path))
                 if not PlatformManager.USING_WINDOWS:
                     uid = PlatformManager.get_user_uid()
                     gid = PlatformManager.get_user_gid()
@@ -300,8 +301,7 @@ class EngineDirectoryManager(object):
         if (os.path.exists(cls.OPENCAFE_ROOT_DIR) or
                 os.path.exists(cls._OLD_ROOT_DIR)):
             cls.update_existing_directories()
-        else:
-            cls.create_default_directories()
+        cls.create_default_directories()
 
 
 class EngineConfigManager(object):
@@ -450,6 +450,7 @@ class EngineConfigManager(object):
                 "OPENCAFE_ENGINE section of your engine.config".format(
                     EngineDirectoryManager.OPENCAFE_SUB_DIRS.CONFIG_DIR))
 
+        #Added 'master_log_file_name' was added as a configurable option
         config_keys = [key for key, _ in config.items('OPENCAFE_ENGINE')]
         if 'master_log_file_name' not in config_keys:
             update_tracker.register_update(config)
