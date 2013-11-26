@@ -21,6 +21,7 @@ import platform
 import sys
 import textwrap
 import getpass
+import shutil
 from ConfigParser import SafeConfigParser
 from cafe.engine.config import EngineConfig
 
@@ -537,3 +538,38 @@ class EngineConfigManager(object):
             config = cls.generate_default_engine_config()
 
         cls.write_and_chown_config(config, cls.ENGINE_CONFIG_PATH)
+
+    @classmethod
+    def install_optional_configs(cls, source_directory, print_progress=True):
+        if print_progress:
+            twrap = textwrap.TextWrapper(
+                initial_indent='* ', subsequent_indent='  ',
+                break_long_words=False)
+            print twrap.fill(
+                'Installing reference configuration files in ...'.format(
+                    EngineDirectoryManager.OPENCAFE_ROOT_DIR))
+            twrap = textwrap.TextWrapper(
+                initial_indent='  ', subsequent_indent='  ',
+                break_long_words=False)
+
+        _printed = []
+        for root, sub_folders, files in os.walk(source_directory):
+            for file_ in files:
+                source = os.path.join(root, file_)
+                destination_dir = os.path.join(
+                    EngineDirectoryManager.OPENCAFE_ROOT_DIR, root)
+                destination_file = os.path.join(destination_dir, file_)
+                PlatformManager.safe_create_dir(destination_dir)
+                PlatformManager.safe_chown(destination_dir)
+
+                if print_progress:
+                    'Installing {0} at {1}'.format(source, destination_dir)
+
+                shutil.copyfile(source, destination_file)
+
+                if print_progress:
+                    if destination_dir not in _printed:
+                        print twrap.fill('{0}'.format(destination_dir))
+                        _printed.append(destination_dir)
+
+                PlatformManager.safe_chown(destination_file)
