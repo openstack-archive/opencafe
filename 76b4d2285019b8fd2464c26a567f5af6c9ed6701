@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Approved+1: jose-idar <jose.idar@rackspace.com>
+Code-Review+1: jose-idar <jose.idar@rackspace.com>
+Approved+1: John Vrbanac <john.vrbanac@rackspace.com>
+Code-Review+2: John Vrbanac <john.vrbanac@rackspace.com>
+Code-Review+1: Nathan Buckner <nathan.buckner@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 26 Nov 2013 00:07:56 +0000
+Reviewed-on: https://review.openstack.org/58409
+Project: stackforge/opencafe
+Branch: refs/heads/master
