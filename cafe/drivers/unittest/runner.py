@@ -489,20 +489,47 @@ class _UnittestRunnerCLI(object):
                 test_env_mgr.engine_config_interface.config_directory,
                 product))
 
+            def _print_test_tree():
+                print "\n<[TEST REPO]>\n"
+                tree(test_dir, " ", print_files=True)
+
+            def _print_config_tree():
+                print "\n<[CONFIGS]>\n"
+                tree(product_config_dir, " ", print_files=True)
+
+            def _print_product_tree():
+                print "\n<[PRODUCTS]>\n"
+                tree(test_env_mgr.test_repo_path, " ", print_files=False)
+
+            def _print_product_list():
+                print "\n<[PRODUCTS]>\n"
+                print "+-{0}".format(product_config_dir)
+                print "\n".join(
+                    ["  +-{0}/".format(dirname) for dirname in os.listdir(
+                        product_config_dir)])
+
+            #If no values passed, print a default
+            if not values:
+                if namespace.product and namespace.config:
+                    _print_test_tree()
+                elif namespace.product and not namespace.config:
+                    _print_config_tree()
+                    _print_test_tree()
+                elif not namespace.product and not namespace.config:
+                    _print_product_list()
+
             # Loop through values so that the trees get printed in the order
             # the values where passed on the command line
             for arg in values:
                 if arg == 'products':
-                    print "\n<[PRODUCTS]>\n"
-                    tree(test_env_mgr.test_repo_path, " ")
+                    _print_product_tree()
 
                 if arg == 'configs':
-                    print "\n<[CONFIGS]>\n"
-                    tree(product_config_dir, " ", print_files=True)
+                    _print_config_tree()
 
                 if arg == 'tests':
-                    print "\n<[TEST REPO]>\n"
-                    tree(test_dir, " ", print_files=True)
+                    _print_test_tree()
+
             exit(0)
 
     class ProductAction(argparse.Action):
@@ -546,17 +573,16 @@ class _UnittestRunnerCLI(object):
     class DataAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
             dict_string = ""
-            data = values
-            data_range = len(data)
+            data_range = len(values)
 
             for i in range(data_range):
-                data[i] = data[i].replace("=", "': '")
-                data[i] = "'{0}'".format(data[i])
+                values[i] = values[i].replace("=", "': '")
+                values[i] = "'{0}'".format(values[i])
 
-            dict_string = ", ".join(data)
+            dict_string = ", ".join(values)
             dict_string = "{0}{1}{2}".format("{", dict_string, "}")
             os.environ["DICT_STRING"] = dict_string
-            setattr(namespace, self.dest, data)
+            setattr(namespace, self.dest, values)
 
     class DataDirectoryAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
@@ -569,16 +595,21 @@ class _UnittestRunnerCLI(object):
 
     class VerboseAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
-            if values < 0 or values > 3:
+
+            msg = None
+            if values is None:
+                msg = "-v/--verbose requires an integer value of 1, 2 or 3"
+
+            elif values not in (1, 2, 3):
+                msg = (
+                    "cafe-runner: error: {0} is not a valid argument for "
+                    "-v/--verbose".format(values))
+            if msg:
                 print parser.usage
-                print "cafe-runner: error: argument out of range: {0}".format(
-                    values)
+                print msg
                 exit(1)
 
-            verbose_flag = "false"
-            if values == 3:
-                verbose_flag = "true"
-            os.environ["VERBOSE"] = verbose_flag
+            os.environ["VERBOSE"] = "true" if values == 3 else "false"
             setattr(namespace, self.dest, values)
 
     def get_cl_args(self):
@@ -634,14 +665,25 @@ class _UnittestRunnerCLI(object):
         name pattern, method name pattern and matching tag(s)
         {baseargs} {package} {module} {method} {tags}
 
+        LIST:
+        format: -l/--list [products, configs, tests]
+        Can be used to list products, configs and tests if used as a flag or
+        as a replacement for any required argument.
+
+        As an optional flag:
+        -l/--list 'products', 'configs' or 'tests' can be used anywhere as an
+        optional flag to print the respective list.  The runner will exit
+        after the list is printed.
+
+        As a replacement for any positional flag:
+        *list all products
+            cafe-runner -l/--list
+
+        *list configs and tests for a product
+            cafe-runner <product> -l/--list
+
         *list tests for a product
-        cafe-runner <product> -l "tests"
-
-        *list configs for a product
-        cafe-runner <product> -l "configs"
-
-        *list tests and configs for a product
-        cafe-runner <product> -l "tests" "configs"
+            cafe-runner <product> <config> -l/--list
 
         TAGS:
         format: -t [+] tag1 tag2 tag3 key1=value key2=value
@@ -692,14 +734,13 @@ class _UnittestRunnerCLI(object):
             nargs="?",
             default=2,
             type=int,
-            help="verbosity")
+            help="set unittest output verbosity")
 
         argparser.add_argument(
             "-l", "--list",
             action=self.ListAction,
             nargs="*",
             choices=["products", "configs", "tests"],
-            metavar="'tests' 'configs'",
             help="list tests and or configs")
 
         argparser.add_argument(
