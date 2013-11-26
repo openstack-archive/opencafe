@@ -70,6 +70,19 @@ class PlatformManager(object):
             working_user = cls.get_current_user()
             return pwd.getpwnam(working_user).pw_gid
 
+    @classmethod
+    def safe_chown(cls, path):
+        if not PlatformManager.USING_WINDOWS:
+            uid = PlatformManager.get_user_uid()
+            gid = PlatformManager.get_user_gid()
+            os.chown(path, uid, gid)
+
+    @classmethod
+    def safe_create_dir(cls, directory_path):
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+            print cls.wrapper.fill('...created {0}'.format(directory_path))
+
 
 class TestEnvManager(object):
     """
@@ -257,7 +270,7 @@ class EngineDirectoryManager(object):
         CONFIG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'configs'))
 
     @classmethod
-    def update_existing_directories(cls):
+    def update_deprecated_engine_directories(cls):
         """
         Applies to an existing .cloudcafe (old) or .opencafe (new) directory
         all changes made to the default .opencafe directory structure since
@@ -282,26 +295,36 @@ class EngineDirectoryManager(object):
                         cls._OLD_ROOT_DIR, cls.OPENCAFE_ROOT_DIR))
 
     @classmethod
-    def create_default_directories(cls):
-        print cls.wrapper.fill(
-            'Creating default directories in {0}'.format(
-                cls.OPENCAFE_ROOT_DIR))
+    def create_engine_directories(cls):
+        print cls.wrapper.fill('Creating default directories in {0}'.format(
+            cls.OPENCAFE_ROOT_DIR))
 
+        #Create the opencafe root dir and sub dirs
+        PlatformManager.safe_create_dir(cls.OPENCAFE_ROOT_DIR)
         for _, directory_path in cls.OPENCAFE_SUB_DIRS.items():
-            if not os.path.exists(directory_path):
-                os.makedirs(directory_path)
-                if not PlatformManager.USING_WINDOWS:
-                    uid = PlatformManager.get_user_uid()
-                    gid = PlatformManager.get_user_gid()
-                    os.chown(directory_path, uid, gid)
+            PlatformManager.safe_create_dir(directory_path)
+
+    @classmethod
+    def set_engine_directory_permissions(cls):
+        """Recursively changes permissions default engine directory so that
+        everything is user-owned"""
+
+        PlatformManager.safe_chown(cls.OPENCAFE_ROOT_DIR)
+        for root, dirs, files in os.walk(cls.OPENCAFE_ROOT_DIR):
+            for d in dirs:
+                PlatformManager.safe_chown(os.path.join(root, d))
+            for f in files:
+                PlatformManager.safe_chown(os.path.join(root, f))
 
     @classmethod
     def build_engine_directories(cls):
+        """Updates, creates, and owns (as needed) all default directories"""
+
         if (os.path.exists(cls.OPENCAFE_ROOT_DIR) or
                 os.path.exists(cls._OLD_ROOT_DIR)):
-            cls.update_existing_directories()
-        else:
-            cls.create_default_directories()
+            cls.update_deprecated_engine_directories()
+        cls.create_engine_directories()
+        cls.set_engine_directory_permissions()
 
 
 class EngineConfigManager(object):
@@ -450,6 +473,7 @@ class EngineConfigManager(object):
                 "OPENCAFE_ENGINE section of your engine.config".format(
                     EngineDirectoryManager.OPENCAFE_SUB_DIRS.CONFIG_DIR))
 
+        #'master_log_file_name' was added as a configurable option
         config_keys = [key for key, _ in config.items('OPENCAFE_ENGINE')]
         if 'master_log_file_name' not in config_keys:
             update_tracker.register_update(config)
@@ -495,11 +519,7 @@ class EngineConfigManager(object):
         cfp = open(path, 'w+')
         config_parser_object.write(cfp)
         cfp.close()
-
-        if not PlatformManager.USING_WINDOWS:
-            uid = PlatformManager.get_user_uid()
-            gid = PlatformManager.get_user_gid()
-            os.chown(path, uid, gid)
+        PlatformManager.safe_chown(path)
 
     @classmethod
     def build_engine_config(cls):
