@@ -37,3 +37,4 @@ class CommandLineResponse(BaseModel):
         self.standard_out = []
         self.standard_error = []
         self.return_code = None
+        self.process = None
