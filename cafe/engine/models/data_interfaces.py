@@ -14,9 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import abc
+import json
 import os
 import ConfigParser
+
 from cafe.common.reporting import cclogging
+from cafe.engine.clients.mongo import BaseMongoClient
 
 
 class ConfigDataException(Exception):
@@ -58,34 +62,38 @@ def _get_path_from_env(os_env_var):
         raise exception
 
 
-class BaseConfigSectionInterface(object):
-    """
-    Base class for building an interface for the data contained in a
-    SafeConfigParser object, as loaded from the config file as defined
-    by the engine's config file.
+class DataSource(object):
 
-    @TODO:
-    This is meant to be a generic interface so that in the future
-    get() and getboolean() can be reimplemented to provide data from any
-    datasource, which is why we don't inherit from SafeConfigParser directly.
-    """
+    __metaclass__ = abc.ABCMeta
+
+    def get(self, item_name, default=None):
+        raise NotImplementedError
+
+    def get_raw(self, item_name, default=None):
+        raise NotImplementedError
+
+    def get_boolean(self, item_name, default=None):
+        raise NotImplementedError
+
+
+class ConfigParserDataSource(DataSource):
 
     def __init__(self, config_file_path, section_name):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
-        self._datasource = ConfigParser.SafeConfigParser()
+        self._data_source = ConfigParser.SafeConfigParser()
         self._section_name = section_name
 
-        #Check the path
+        # Check if the path exists
         if not os.path.exists(config_file_path):
             msg = 'Could not verify the existence of config file at {0}'\
                   .format(config_file_path)
             raise NonExistentConfigPathError(msg)
 
-        #Read the file in and turn it into a SafeConfigParser instance
+        # Read the file in and turn it into a SafeConfigParser instance
         try:
-            self._datasource.read(config_file_path)
+            self._data_source.read(config_file_path)
         except Exception as exception:
             self._log.exception(exception)
             raise exception
@@ -93,7 +101,7 @@ class BaseConfigSectionInterface(object):
     def get(self, item_name, default=None):
 
         try:
-            return self._datasource.get(self._section_name, item_name)
+            return self._data_source.get(self._section_name, item_name)
         except ConfigParser.NoOptionError as e:
             self._log.error(str(e))
             return default
@@ -102,12 +110,9 @@ class BaseConfigSectionInterface(object):
             pass
 
     def get_raw(self, item_name, default=None):
-        '''Performs a get() on SafeConfigParser object without interopolation
-        '''
-
         try:
-            return self._datasource.get(self._section_name, item_name,
-                                        raw=True)
+            return self._data_source.get(self._section_name, item_name,
+                                         raw=True)
         except ConfigParser.NoOptionError as e:
             self._log.error(str(e))
             return default
@@ -118,14 +123,126 @@ class BaseConfigSectionInterface(object):
     def get_boolean(self, item_name, default=None):
 
         try:
-            return self._datasource.getboolean(self._section_name,
-                                               item_name)
+            return self._data_source.getboolean(self._section_name,
+                                                item_name)
         except ConfigParser.NoOptionError as e:
             self._log.error(str(e))
             return default
         except ConfigParser.NoSectionError as e:
             self._log.error(str(e))
             pass
+
+
+class DictionaryDataSource(DataSource):
+
+    def get(self, item_name, default=None):
+        section = self._data_source.get(self._section_name)
+        if section is None:
+            self._log.error("No section: '{section_name}'".format(
+                section_name=self._section_name))
+            return None
+
+        if item_name not in section:
+            self._log.error(
+                "No option '{item_name}' in section: '{section_name}'".format(
+                    section_name=self._section_name, item_name=item_name))
+            return default
+
+        return section.get(item_name, default)
+
+    def get_raw(self, item_name, default=None):
+
+        section = self._data_source.get(self._section_name)
+        if section is None:
+            self._log.error("No section: '{section_name}'".format(
+                section_name=self._section_name))
+            return None
+
+        if item_name not in section:
+            self._log.error(
+                "No option '{item_name}' in section: '{section_name}'".format(
+                    section_name=self._section_name, item_name=item_name))
+            return default
+
+        return section.get(item_name, default)
+
+    def get_boolean(self, item_name, default=None):
+
+        section = self._data_source.get(self._section_name)
+        if section is None:
+            self._log.error("No section: '{section_name}'".format(
+                section_name=self._section_name))
+            return None
+
+        if item_name not in section:
+            self._log.error(
+                "No option '{item_name}' in section: '{section_name}'".format(
+                    section_name=self._section_name, item_name=item_name))
+            return default
+
+        item_value = section.get(item_name, default)
+        return bool(item_value) if item_value is not None else item_value
+
+
+class JSONDataSource(DictionaryDataSource):
+
+    def __init__(self, config_file_path, section_name):
+        self._log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
+
+        self._section_name = section_name
+
+        # Check if file path exists
+        if not os.path.exists(config_file_path):
+            msg = 'Could not verify the existence of config file at {0}'\
+                  .format(config_file_path)
+            raise NonExistentConfigPathError(msg)
+
+        with open(config_file_path) as config_file:
+            config_data = config_file.read()
+            try:
+                self._data_source = json.loads(config_data)
+            except Exception as exception:
+                self._log.exception(exception)
+                raise exception
+
+
+class MongoDataSource(DictionaryDataSource):
+
+    def __init__(self, hostname, db_name, username, password,
+                 config_name, section_name):
+        self._section_name = section_name
+
+        self.db = BaseMongoClient(
+            hostname=hostname, db_name=db_name,
+            username=username, password=password)
+        self.db.connect()
+        self.db.auth()
+        self._data_source = self.db.find_one({'config_name': config_name})
+
+
+class BaseConfigSectionInterface(object):
+    """
+    Base class for building an interface for the data contained in a
+    SafeConfigParser object, as loaded from the config file as defined
+    by the engine's config file.
+
+    """
+
+    def __init__(self, config_file_path, section_name):
+
+        self._data_source = ConfigParserDataSource(
+            config_file_path, section_name)
+        self._section_name = section_name
+
+    def get(self, item_name, default=None):
+        return self._data_source.get(item_name, default)
+
+    def get_raw(self, item_name, default=None):
+        return self._data_source.get(item_name, default)
+
+    def get_boolean(self, item_name, default=None):
+        return self._data_source.get_boolean(item_name, default)
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
