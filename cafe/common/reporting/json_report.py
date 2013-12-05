@@ -23,23 +23,44 @@ class JSONReport(BaseReport):
 
     def generate_report(self, result_parser, all_results=None, path=None):
         """ Generates a JSON report in the specified directory. """
-        # Convert Result objects to dicts for serialization
-        json_results = []
+
+        num_tests = len(vars(
+            result_parser.master_testsuite).get('_tests', []))
+        errors = 0
+        failures = 0
+        skips = 0
+        time = str(result_parser.execution_time)
+
+        # Convert Result objects to dicts for processing
+        individual_results = []
         for result in all_results:
             test_result = result.__dict__
             if test_result.get('failure_trace') is not None:
                 test_result['result'] = "FAILED"
+                failures += 1
             elif test_result.get('skipped_msg') is not None:
                 test_result['result'] = "SKIPPED"
+                skips += 1
             elif test_result.get('error_trace') is not None:
                 test_result['result'] = "ERROR"
+                errors += 1
             else:
                 test_result['result'] = "PASSED"
-            json_results.append(test_result)
+            individual_results.append(test_result)
+
+        # Build the result summary
+        test_results = {
+            'tests': num_tests,
+            'failures': failures,
+            'errors': errors,
+            'skips': skips,
+            'time': time,
+            'results': individual_results
+        }
 
         result_path = path or os.getcwd()
         if os.path.isdir(result_path):
             result_path += "/results.json"
 
         with open(result_path, 'wb') as result_file:
-            json.dump(json_results, result_file)
+            json.dump(test_results, result_file)
