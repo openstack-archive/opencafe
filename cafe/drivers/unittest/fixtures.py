@@ -162,9 +162,10 @@ class BaseTestFixture(unittest.TestCase):
         """ @todo: Get rid of this hard coded value for the statistics """
         # set up the stats log
         root_log_dir = os.environ['CAFE_ROOT_LOG_PATH']
+        class_name = self.__class__.__name__
         self.stats_log = PBStatisticsLog(
-            "{0}.statistics.csv".format(
-                self._testMethodName),
+            "{0}.{1}.statistics.csv".format(
+                class_name, self._testMethodName),
             "{0}/statistics/".format(root_log_dir))
 
         # Let the base handle whatever hoodoo it needs
