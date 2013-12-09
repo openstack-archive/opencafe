@@ -20,12 +20,12 @@ import imp
 import os
 import sys
 import time
-import unittest2 as unittest
-from re import search
-from multiprocessing import Process, Manager
-from inspect import getmembers, isclass
 from fnmatch import fnmatch
+from inspect import getmembers, isclass
+from multiprocessing import Process, Manager
+from re import search
 from traceback import extract_tb
+import unittest2 as unittest
 from cafe.drivers.unittest.fixtures import BaseTestFixture
 from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
@@ -193,8 +193,7 @@ class SuiteBuilder(object):
         try:
             position = len(path.split(split_token)) - 1
             temp_path = "{0}{1}".format(
-                split_token,
-                path.split(split_token)[position])
+                split_token, path.split(split_token)[position])
             split_path = os.path.split(temp_path)
             dotted_path = ".".join(split_path)
         except AttributeError:
@@ -326,14 +325,10 @@ class SuiteBuilder(object):
                 truth_values[len(truth_values):] = [method_val == attr_val]
             else:
                 truth_values[len(truth_values):] = [False]
-        temp = ""
-        if token == "+":
-            temp = "False not in"
-        else:
-            temp = "True in"
-        eval_string = "{0} {1}".format(temp, "truth_values")
 
-        return eval(eval_string)
+        return (
+            False not in truth_values if token == "+"
+            else True in truth_values)
 
     def _check_tags(self, method, tags, token):
         """
@@ -342,25 +337,9 @@ class SuiteBuilder(object):
         bar. if a "+" token is passed only method that contain
         foo and bar will be match
         """
-        truth_values = []
-        method_tags = []
-
-        method_tags = method.__dict__[TAGS_DECORATOR_TAG_LIST_NAME]
-
-        for tag in tags:
-            if tag in method_tags:
-                truth_values[len(truth_values):] = [True]
-            else:
-                truth_values[len(truth_values):] = [False]
-
-        temp = ""
-        if token == "+":
-            temp = "False not in"
-        else:
-            temp = "True in"
-        eval_string = "{0} {1}".format(temp, "truth_values")
-
-        return eval(eval_string)
+        method_tags = method.__dict__.get(TAGS_DECORATOR_TAG_LIST_NAME)
+        match = set(tags).intersection(method_tags)
+        return match == set(tags) if token == "+" else bool(match)
 
     def _check_method(self, class_, method_name, tags, attrs, token):
         load_test_flag = False
@@ -369,30 +348,21 @@ class SuiteBuilder(object):
 
         method = getattr(class_, method_name)
 
-        if dict(method.__dict__) \
-                and TAGS_DECORATOR_TAG_LIST_NAME in method.__dict__:
+        if (dict(method.__dict__)
+                and TAGS_DECORATOR_TAG_LIST_NAME in method.__dict__):
             if tags and not attrs:
-                tag_flag = self._check_tags(
-                    method,
-                    tags,
-                    token)
+                tag_flag = self._check_tags(method, tags, token)
                 load_test_flag = tag_flag
+
             elif not tags and attrs:
-                attr_flag = self._check_attrs(
-                    method,
-                    attrs,
-                    token)
+                attr_flag = self._check_attrs(method, attrs, token)
                 load_test_flag = attr_flag
+
             elif tags and attrs:
-                tag_flag = self._check_tags(
-                    method,
-                    tags,
-                    token)
-                attr_flag = self._check_attrs(
-                    method,
-                    attrs,
-                    token)
+                tag_flag = self._check_tags(method, tags, token)
+                attr_flag = self._check_attrs(method, attrs, token)
                 load_test_flag = attr_flag and tag_flag
+
         return load_test_flag
 
     def build_suite(self, loaded_module):
@@ -425,21 +395,9 @@ class SuiteBuilder(object):
                         load_test_flag = True
                     else:
                         load_test_flag = self._check_method(
-                            class_,
-                            method_name,
-                            tag_list,
-                            attrs,
-                            token)
-
+                            class_, method_name, tag_list, attrs, token)
                     if load_test_flag:
-                        try:
-                            suite.addTest(class_(method_name))
-                        except ImportError:
-                            raise
-                        except AttributeError:
-                            raise
-                        except Exception:
-                            raise
+                        suite.addTest(class_(method_name))
         return suite
 
     def get_tests(self, module_path):
@@ -452,8 +410,7 @@ class SuiteBuilder(object):
             return None
 
         try:
-            suite = self.build_suite(
-                loaded_module)
+            suite = self.build_suite(loaded_module)
         except Exception:
             print_traceback()
             return None
@@ -483,8 +440,8 @@ class _UnittestRunnerCLI(object):
         def __call__(self, parser, namespace, values, option_string=None):
             product = namespace.product or ""
             test_env_mgr = TestEnvManager(product, None)
-            test_dir = os.path.expanduser(os.path.join(
-                test_env_mgr.test_repo_path, product))
+            test_dir = os.path.expanduser(
+                os.path.join(test_env_mgr.test_repo_path, product))
             product_config_dir = os.path.expanduser(os.path.join(
                 test_env_mgr.engine_config_interface.config_directory,
                 product))
@@ -855,30 +812,24 @@ class UnittestRunner(object):
     def dump_results(start, finish, results):
         print "-" * 71
 
-        run = 0
+        tests_run = 0
         errors = 0
         failures = 0
         for result in results:
-            run += result.testsRun
+            tests_run += result.testsRun
             errors += len(result.errors)
             failures += len(result.failures)
 
-        print "Ran %d test%s in %.3fs" % (
-            run, run != 1 and "s" or "", finish - start)
+        print "Ran {0} test{1} in {2:.3f}s".format(
+            tests_run, "s" if tests_run != 1 else "", finish - start)
 
-        fail = ""
-        error = ""
-        space = ""
-        if failures:
-            fail = "Failures=%d" % failures
-        if errors:
-            error = "Errors=%d" % errors
         if failures or errors:
-            if failures and errors:
-                space = " "
-            print "\nFAILED ({0}{1}{2})".format(fail, space, error)
+            print "\nFAILED ({0}{1}{2})".format(
+                "Failures={0}".format(failures) if failures else "",
+                " " if failures and errors else "",
+                "Errors={0}".format(errors) if errors else "")
 
-        return errors, failures, run
+        return errors, failures, tests_run
 
     def run(self):
         """
