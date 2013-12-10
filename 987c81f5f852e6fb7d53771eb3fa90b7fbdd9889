@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Daryl Walleck <daryl.walleck@rackspace.com>
+Code-Review+2: Daryl Walleck <daryl.walleck@rackspace.com>
+Code-Review+1: John Vrbanac <john.vrbanac@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 10 Dec 2013 23:51:55 +0000
+Reviewed-on: https://review.openstack.org/61000
+Project: stackforge/opencafe
+Branch: refs/heads/master
