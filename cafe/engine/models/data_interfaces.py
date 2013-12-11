@@ -76,6 +76,33 @@ class DataSource(object):
         raise NotImplementedError
 
 
+class EnvironmentVariableDataSource(DataSource):
+
+    def __init__(self, section_name):
+        self._log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
+
+        self._section_name = section_name
+        self.key_name = '{section_name}_{key}'
+
+    def get(self, item_name, default=None):
+        return os.environ.get(
+            self.key_name.format(section_name=self._section_name,
+                                 key=item_name), default)
+
+    def get_raw(self, item_name, default=None):
+        return os.environ.get(
+            self.key_name.format(section_name=self._section_name,
+                                 key=item_name), default)
+
+    def get_boolean(self, item_name, default=None):
+        item_value = os.environ.get(
+            self.key_name.format(section_name=self._section_name,
+                                 key=item_name), default)
+        return bool(item_value) if item_value is not None else item_value
+
+
+
 class ConfigParserDataSource(DataSource):
 
     def __init__(self, config_file_path, section_name):
