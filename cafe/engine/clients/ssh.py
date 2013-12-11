@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import os
 import socket
 import StringIO
 import time
@@ -75,7 +76,8 @@ class BaseSSHClient(BaseClient):
     def connect(self, username=None, password=None,
                 accept_missing_host_key=True, tcp_timeout=30,
                 auth_strategy=SSHAuthStrategy.PASSWORD,
-                port=22, key=None, allow_agent=True, key_filename=None):
+                port=22, key=None, allow_agent=True,
+                key_filename=None, key_filename_password=None):
         """
         Attempts to connect to a remote server via SSH
 
@@ -91,6 +93,8 @@ class BaseSSHClient(BaseClient):
         @type key: string
         @param key_filename: Name of a file that contains a SSH key
         @type key_filename: string
+        @param key_filename_password: The password for the SSH key, if needed
+        @type key_filename_password: string
         @param allow_agent: Set to False to disable connecting to
                             the SSH agent
         @type allow_agent: bool
@@ -122,7 +126,10 @@ class BaseSSHClient(BaseClient):
             key = paramiko.RSAKey.from_private_key(key_file)
             connect_args['pkey'] = key
         if auth_strategy == SSHAuthStrategy.KEY_FILE_LIST:
-            connect_args['key_filename'] = key_filename
+            key_file_path = os.path.expanduser(key_filename)
+            key = paramiko.RSAKey.from_private_key_file(
+                filename=key_file_path, password=key_filename_password)
+            connect_args['pkey'] = key
 
         try:
             ssh.connect(**connect_args)
@@ -213,7 +220,8 @@ class SSHClient(BaseSSHClient):
     def __init__(self, username=None, password=None, host=None,
                  tcp_timeout=None, auth_strategy=None, port=22,
                  look_for_keys=None, key=None, key_filename=None,
-                 allow_agent=True, accept_missing_host_key=True):
+                 key_filename_password=None, allow_agent=True,
+                 accept_missing_host_key=True):
         """
         Initialization
         @param username: Username to be used for SSH connection
@@ -233,6 +241,8 @@ class SSHClient(BaseSSHClient):
         @type key: string
         @param key_filename: Name of a file that contains a SSH key
         @type key_filename: string
+        @param key_filename_password: The password for the SSH key, if needed
+        @type key_filename_password: string
         @param allow_agent: Set to False to disable connecting to
                             the SSH agent
         @type allow_agent: bool
@@ -251,6 +261,7 @@ class SSHClient(BaseSSHClient):
         self.look_for_keys = look_for_keys
         self.key = key
         self.key_filename = key_filename
+        self.key_filename_password = key_filename_password
         self.allow_agent = allow_agent
         self.port = port
         self.accept_missing_host_key = accept_missing_host_key
@@ -279,7 +290,8 @@ class SSHClient(BaseSSHClient):
                 auth_strategy=self.auth_strategy,
                 port=self.port, key=self.key,
                 allow_agent=self.allow_agent,
-                key_filename=self.key_filename)
+                key_filename=self.key_filename,
+                key_filename_password=self.key_filename_password)
             if self.is_connected():
                 return True
             time.sleep(cooldown)
@@ -309,7 +321,8 @@ class SSHClient(BaseSSHClient):
                 auth_strategy=self.auth_strategy,
                 port=self.port, key=self.key,
                 allow_agent=self.allow_agent,
-                key_filename=self.key_filename)
+                key_filename=self.key_filename,
+                key_filename_password=self.key_filename_password)
             if self.is_connected():
                 return True
             time.sleep(cooldown)
