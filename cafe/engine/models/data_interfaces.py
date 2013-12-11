@@ -99,7 +99,6 @@ class EnvironmentVariableDataSource(DataSource):
         return bool(item_value) if item_value is not None else item_value
 
 
-
 class ConfigParserDataSource(DataSource):
 
     def __init__(self, config_file_path, section_name):
@@ -255,18 +254,23 @@ class BaseConfigSectionInterface(object):
 
     def __init__(self, config_file_path, section_name):
 
+        self._override = EnvironmentVariableDataSource(
+            section_name)
         self._data_source = ConfigParserDataSource(
             config_file_path, section_name)
         self._section_name = section_name
 
     def get(self, item_name, default=None):
-        return self._data_source.get(item_name, default)
+        return self._override.get(item_name, None) or \
+            self._data_source.get(item_name, default)
 
     def get_raw(self, item_name, default=None):
-        return self._data_source.get(item_name, default)
+        return self._override.get_raw(item_name, None) or \
+            self._data_source.get(item_name, default)
 
     def get_boolean(self, item_name, default=None):
-        return self._data_source.get_boolean(item_name, default)
+        return self._override.get_boolean(item_name, None) or \
+            self._data_source.get_boolean(item_name, default)
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
