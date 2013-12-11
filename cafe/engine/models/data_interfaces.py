@@ -61,6 +61,9 @@ def _get_path_from_env(os_env_var):
                " environment variable.".format(os_env_var))
         raise exception
 
+# Standard format to for flat key/value data sources
+CONFIG_KEY = 'CAFE_{section_name}_{key}'
+
 
 class DataSource(object):
 
@@ -74,6 +77,27 @@ class DataSource(object):
 
     def get_boolean(self, item_name, default=None):
         raise NotImplementedError
+
+
+class EnvironmentVariableDataSource(DataSource):
+
+    def __init__(self, section_name):
+        self._log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
+
+        self._section_name = section_name
+
+    def get(self, item_name, default=None):
+        return os.environ.get(CONFIG_KEY.format(
+            section_name=self._section_name, key=item_name), default)
+
+    def get_raw(self, item_name, default=None):
+        return self.get(item_name, default)
+
+    def get_boolean(self, item_name, default=None):
+        item_value = self.get(item_name, default)
+        return bool(item_value) if item_value is not None else item_value
+
 
 
 class ConfigParserDataSource(DataSource):
