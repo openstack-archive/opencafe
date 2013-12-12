@@ -19,21 +19,18 @@ limitations under the License.
 @note: Corresponds DIRECTLY TO A unittest.TestCase
 @see: http://docs.python.org/library/unittest.html#unittest.TestCase
 """
-import unittest2 as unittest
 import os
 import re
+import unittest2 as unittest
 
-from cafe.common.reporting import cclogging
-from cafe.common.reporting.metrics import TestRunMetrics
-from cafe.common.reporting.metrics import TestResultTypes
-from cafe.common.reporting.metrics import PBStatisticsLog
+from cafe.drivers.base import FixtureReporter
+from cafe.common.reporting.cclogging import init_root_log_handler
 
 
 class BaseTestFixture(unittest.TestCase):
     """
-    @summary: Foundation for TestRepo Test Fixture.
-    @note: This is the base class for ALL test cases in TestRepo. Add new
-           functionality carefully.
+    @summary: This should be used as the base class for any unittest tests,
+              meant to be used instead of unittest.TestCase.
     @see: http://docs.python.org/library/unittest.html#unittest.TestCase
     """
     def shortDescription(self):
@@ -75,139 +72,40 @@ class BaseTestFixture(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super(BaseTestFixture, cls).setUpClass()
-
-        #Master Config Provider
-
-        #Setup root log handler if the root logger doesn't already have one
-        master_log_file_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
-        if cclogging.getLogger('').handlers == []:
-            cclogging.getLogger('').addHandler(
-                cclogging.setup_new_cchandler(master_log_file_name))
-
-        #Setup fixture log, which is really just a copy of the master log
-        #for the duration of this test fixture
-        cls.fixture_log = cclogging.getLogger('')
-        cls._fixture_log_handler = cclogging.setup_new_cchandler(
-            cclogging.get_object_namespace(cls))
-        cls.fixture_log.addHandler(cls._fixture_log_handler)
-
-        """
-        @todo: Upgrade the metrics to be more unittest compatible.
-        Currently the unittest results are not available at the fixture level,
-        only the test case or the test suite and runner level.
-        """
-        # Setup the fixture level metrics
-        cls.fixture_metrics = TestRunMetrics()
-        cls.fixture_metrics.timer.start()
-
-        # Report
-        cls.fixture_log.info("{0}".format('=' * 56))
-        cls.fixture_log.info("Fixture...: {0}".format(
-                             str(cclogging.get_object_namespace(cls))))
-        cls.fixture_log.info("Created At: {0}"
-                             .format(cls.fixture_metrics.timer.start_time))
-        cls.fixture_log.info("{0}".format('=' * 56))
+        #Move root log handler initialization to the runner!
+        init_root_log_handler()
+        cls._reporter = FixtureReporter(cls)
+        cls.fixture_log = cls._reporter.logger.log
+        cls._reporter.start()
 
     @classmethod
     def tearDownClass(cls):
-        # Kill the timers and calculate the metrics objects
-        cls.fixture_metrics.timer.stop()
-        if(cls.fixture_metrics.total_passed ==
-           cls.fixture_metrics.total_tests):
-            cls.fixture_metrics.result = TestResultTypes.PASSED
-        else:
-            cls.fixture_metrics.result = TestResultTypes.FAILED
-
-        # Report
-        cls.fixture_log.info("{0}".format('=' * 56))
-        cls.fixture_log.info("Fixture.....: {0}".format(
-                             str(cclogging.get_object_namespace(cls))))
-        cls.fixture_log.info("Result......: {0}"
-                             .format(cls.fixture_metrics.result))
-        cls.fixture_log.info("Start Time..: {0}"
-                             .format(cls.fixture_metrics.timer.start_time))
-        cls.fixture_log.info(
-            "Elapsed Time: {0}".format(
-                cls.fixture_metrics.timer.get_elapsed_time()))
-        cls.fixture_log.info("Total Tests.: {0}"
-                             .format(cls.fixture_metrics.total_tests))
-        cls.fixture_log.info("Total Passed: {0}"
-                             .format(cls.fixture_metrics.total_passed))
-        cls.fixture_log.info("Total Failed: {0}"
-                             .format(cls.fixture_metrics.total_failed))
-        cls.fixture_log.info("{0}".format('=' * 56))
-
-        #Remove the fixture log handler from the fixture log
-        cls.fixture_log.removeHandler(cls._fixture_log_handler)
-
-        #Call super teardown after we've finished out additions to teardown
+        cls._reporter.stop()
+        # Call super teardown after to avoid tearing down the class before we
+        # can run our own tear down stuff.
         super(BaseTestFixture, cls).tearDownClass()
 
     def setUp(self):
         self.shortDescription()
-
-        # Setup the timer and other custom init jazz
-        self.fixture_metrics.total_tests += 1
-        self.test_metrics = TestRunMetrics()
-        self.test_metrics.timer.start()
-
-        # Log header information
-        self.fixture_log.info("{0}".format('=' * 56))
-        self.fixture_log.info("Test Case.: {0}".format(self._testMethodName))
-        self.fixture_log.info("Created.At: {0}".format(self.test_metrics.timer.
-                                                       start_time))
-        self.fixture_log.info("{0}".format(self.logDescription()))
-        self.fixture_log.info("{0}".format('=' * 56))
-
-        """ @todo: Get rid of this hard coded value for the statistics """
-        # set up the stats log
-        root_log_dir = os.environ['CAFE_ROOT_LOG_PATH']
-        class_name = self.__class__.__name__
-        self.stats_log = PBStatisticsLog(
-            "{0}.{1}.statistics.csv".format(
-                class_name, self._testMethodName),
-            "{0}/statistics/".format(root_log_dir))
-
-        # Let the base handle whatever hoodoo it needs
-        unittest.TestCase.setUp(self)
+        self._reporter.start_test_metrics(
+            self.__class__.__name__, self._testMethodName,
+            self.logDescription())
+        super(BaseTestFixture, self).setUp()
 
     def tearDown(self):
-        # Kill the timer and other custom destroy jazz
-        self.test_metrics.timer.stop()
-
         """
         @todo: This MUST be upgraded this from resultForDoCleanups into a
                better pattern or working with the result object directly.
                This is related to the todo in L{TestRunMetrics}
         """
-        # Build metrics
         if any(r for r in self._resultForDoCleanups.failures
                if self._test_name_matches_result(self._testMethodName, r)):
-            self.fixture_metrics.total_failed += 1
-            self.test_metrics.result = TestResultTypes.FAILED
+            self._reporter.stop_test_metrics(self._testMethodName, 'Failed')
         elif any(r for r in self._resultForDoCleanups.errors
                  if self._test_name_matches_result(self._testMethodName, r)):
-            self.fixture_metrics.total_failed += 1
-            self.test_metrics.result = TestResultTypes.ERRORED
+            self._reporter.stop_test_metrics(self._testMethodName, 'ERRORED')
         else:
-            self.fixture_metrics.total_passed += 1
-            self.test_metrics.result = TestResultTypes.PASSED
-
-        # Report
-        self.fixture_log.info("{0}".format('=' * 56))
-        self.fixture_log.info("Test Case...: {0}".
-                              format(self._testMethodName))
-        self.fixture_log.info("Result......: {0}".
-                              format(self.test_metrics.result))
-        self.fixture_log.info("Start Time...: {0}".
-                              format(self.test_metrics.timer.start_time))
-        self.fixture_log.info(
-            "Elapsed Time: {0}".format(
-                self.test_metrics.timer.get_elapsed_time()))
-        self.fixture_log.info("{0}".format('=' * 56))
-
-        # Write out our statistics
-        self.stats_log.report(self.test_metrics)
+            self._reporter.stop_test_metrics(self._testMethodName, 'Passed')
 
         # Let the base handle whatever hoodoo it needs
         super(BaseTestFixture, self).tearDown()
@@ -240,11 +138,3 @@ class BaseBurnInTestFixture(BaseTestFixture):
     @classmethod
     def addTest(cls, test_case):
         cls.test_list.append(test_case)
-
-    def setUp(self):
-        # Let the base handle whatever hoodoo it needs
-        super(BaseBurnInTestFixture, self).setUp()
-
-    def tearDown(self):
-        # Let the base handle whatever hoodoo it needs
-        super(BaseBurnInTestFixture, self).tearDown()
