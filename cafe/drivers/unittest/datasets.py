@@ -47,6 +47,18 @@ class DatasetList(list):
         """Creates and appends a new Dataset"""
         self.append(_Dataset(name, data_dict))
 
+    def extend(self, dataset_list):
+        if not isinstance(dataset_list, DatasetList):
+            raise TypeError(
+                "extend() argument must be type DatasetList, not {0}".format(
+                    type(dataset_list)))
+
+        super(DatasetList, self).extend(dataset_list)
+
+    def extend_new_datasets(self, dataset_list):
+        """Creates and extends a new DatasetList"""
+        self.extend(dataset_list)
+
 
 class DatasetGenerator(DatasetList):
     """Generates Datasets from a list of dictionaries, which are named
