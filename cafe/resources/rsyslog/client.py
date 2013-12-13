@@ -135,16 +135,16 @@ class MessageHandler(object):
         if structured_data is not None:
             structured_data = cls.sd_dict_to_syslog_str(structured_data)
 
-        log = ('<{pri}> {ver} {time} {host} {app} {pid} {msgid} {sd} '
+        log = ('<{pri}>{ver} {time} {host} {app} {pid} {msgid} {sd} '
                '{msg}').format(
-                   pri=cee_dict.get('pri'),
-                   time=cee_dict.get('time', '-'),
-                   ver=cee_dict.get('ver'),
-                   host=cee_dict.get('host', '-'),
-                   app=cee_dict.get('pname', '-'),
-                   pid=cee_dict.get('pid', '-'),
-                   msgid=cee_dict.get('msgid', '-'),
-                   sd=structured_data or '-',
-                   msg=cee_dict.get('msg'))
+            pri=cee_dict.get('pri'),
+            time=cee_dict.get('time', '-'),
+            ver=cee_dict.get('ver'),
+            host=cee_dict.get('host', '-'),
+            app=cee_dict.get('pname', '-'),
+            pid=cee_dict.get('pid', '-'),
+            msgid=cee_dict.get('msgid', '-'),
+            sd=structured_data or '-',
+            msg=cee_dict.get('msg'))
 
         return b'{length} {syslog}'.format(length=len(log), syslog=log)
