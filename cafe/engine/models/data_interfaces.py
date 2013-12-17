@@ -101,12 +101,13 @@ class EnvironmentVariableDataSource(DataSource):
 
 class ConfigParserDataSource(DataSource):
 
-    def __init__(self, config_file_path, section_name):
+    def __init__(self, **kwargs):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
         self._data_source = ConfigParser.SafeConfigParser()
-        self._section_name = section_name
+        self._section_name = kwargs.get('section_name')
+        config_file_path = kwargs.get('config_file_path')
 
         # Check if the path exists
         if not os.path.exists(config_file_path):
@@ -209,11 +210,12 @@ class DictionaryDataSource(DataSource):
 
 class JSONDataSource(DictionaryDataSource):
 
-    def __init__(self, config_file_path, section_name):
+    def __init__(self, **kwargs):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
-        self._section_name = section_name
+        self._section_name = kwargs.get('section_name')
+        config_file_path = kwargs.get('config_file_path')
 
         # Check if file path exists
         if not os.path.exists(config_file_path):
@@ -232,16 +234,24 @@ class JSONDataSource(DictionaryDataSource):
 
 class MongoDataSource(DictionaryDataSource):
 
-    def __init__(self, hostname, db_name, username, password,
-                 config_name, section_name):
-        self._section_name = section_name
+    def __init__(self, **kwargs):
+        self._log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
 
-        self.db = BaseMongoClient(
-            hostname=hostname, db_name=db_name,
-            username=username, password=password)
+        connection_string = kwargs.get('connection_string')
+        config_name = kwargs.get('config_name')
+        self._section_name = kwargs.get('section_name')
+
+        self.db = BaseMongoClient.from_connection_string(connection_string)
         self.db.connect()
         self.db.auth()
-        self._data_source = self.db.find_one({'config_name': config_name})
+        self._data_source = self.db.find_one('configs', {'name': config_name})
+
+        # If the configuration was not found, fail fast
+        if self._data_source is None:
+            msg = ("Configuration with name '{name}' "
+                   "could not be found.".format(name=config_name))
+            raise KeyError(msg)
 
 
 class BaseConfigSectionInterface(object):
@@ -252,12 +262,11 @@ class BaseConfigSectionInterface(object):
 
     """
 
-    def __init__(self, config_file_path, section_name):
+    def __init__(self, data_source, section_name):
 
         self._override = EnvironmentVariableDataSource(
             section_name)
-        self._data_source = ConfigParserDataSource(
-            config_file_path, section_name)
+        self._data_source = data_source
         self._section_name = section_name
 
     def get(self, item_name, default=None):
@@ -281,6 +290,27 @@ class ConfigSectionInterface(BaseConfigSectionInterface):
 
         config_file_path = config_file_path or _get_path_from_env(
             'CAFE_CONFIG_FILE_PATH')
+        strategy = os.environ.get("CAFE_CONFIG_STRATEGY")
+        connection_string = os.environ.get("CAFE_CONFIG_CONNECTION_STRING")
+        config_name = os.environ.get("CAFE_CONFIG_NAME")
+
+        config_strategies = {'basic': ConfigParserDataSource,
+                             'mongo': MongoDataSource,
+                             'json': JSONDataSource}
+
+        config_args = {'config_file_path': config_file_path,
+                       'config_name': config_name,
+                       'section_name': section_name,
+                       'connection_string': connection_string}
+
+        if strategy.lower() not in config_strategies:
+            raise Exception(
+                "Unexpected configuration strategy. "
+                "Known strategies are {strategies}".format(
+                    strategies=config_strategies.keys()))
+
+        strategy_type = config_strategies.get(strategy.lower())
+        data_source = strategy_type(**config_args)
 
         super(ConfigSectionInterface, self).__init__(
-            config_file_path, section_name)
+            data_source, section_name)
