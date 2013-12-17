@@ -77,6 +77,7 @@ class BaseTestFixture(unittest.TestCase):
         cls._reporter = FixtureReporter(cls)
         cls.fixture_log = cls._reporter.logger.log
         cls._reporter.start()
+        cls._class_cleanup_tasks = []
 
     @classmethod
     def tearDownClass(cls):
@@ -123,6 +124,38 @@ class BaseTestFixture(unittest.TestCase):
             return result._testMethodName == name
         else:
             return False
+
+    @classmethod
+    def _do_class_cleanup_tasks(cls):
+        for func, args, kwargs in reversed(cls._class_cleanup_tasks):
+            cls.fixture_log.debug(
+                "Running class cleanup task: {0}({1}, {2})".format(
+                    func.__name__,
+                    ", ".join([str(arg) for arg in args]),
+                    ", ".join(["{0}={1}".format(
+                        str(k), str(kwargs[k])) for k in kwargs])))
+            try:
+                func(*args, **kwargs)
+            except Exception as exception:
+                #Pretty prints method signature in the following format:
+                #"classTearDown failure: Unable to execute FnName(a, b, c=42)"
+                cls.fixture_log.exception(exception)
+                cls.fixture_log.error(
+                    "classTearDown failure: Exception occured while trying to"
+                    " execute class teardown task: {0}({1}, {2})".format(
+                        func.__name__,
+                        ", ".join([str(arg) for arg in args]),
+                        ", ".join(["{0}={1}".format(
+                            str(k), str(kwargs[k])) for k in kwargs])))
+
+    @classmethod
+    def addClassCleanup(cls, function, *args, **kwargs):
+        """Named to match unittest's addCleanup.
+        ClassCleanup tasks run if setUpClass fails, or after tearDownClass.
+        (They don't depend on tearDownClass running)
+        """
+
+        cls._class_cleanup_tasks.append((function, args or [], kwargs or {}))
 
 
 class BaseBurnInTestFixture(BaseTestFixture):
