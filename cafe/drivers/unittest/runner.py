@@ -497,18 +497,13 @@ class _UnittestRunnerCLI(object):
 
     class ConfigAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
-            # Make sure user provided config name ends with '.config'
             if values is not None:
-                if not str(values).endswith('.config'):
-                    values = "{0}{1}".format(values, ".config")
-
                 test_env = TestEnvManager(namespace.product or "", values)
-                if not os.path.exists(test_env.test_config_file_path):
-                    print (
-                        "cafe-runner: error: config file at {0} does not "
-                        "exist".format(test_env.test_config_file_path))
+                try:
+                    test_env.verify_config_can_be_loaded()
+                except Exception as ex:
+                    print ex.message
                     exit(1)
-
             setattr(namespace, self.dest, values)
 
     class ModuleRegexAction(argparse.Action):
@@ -824,11 +819,12 @@ class UnittestRunner(object):
         print "=" * 150
         print "Percolated Configuration"
         print "-" * 150
-        print "BREWING FROM: ....: {0}".format(test_env.test_repo_path)
-        print "ENGINE CONFIG FILE: {0}".format(test_env.engine_config_path)
-        print "TEST CONFIG FILE..: {0}".format(test_env.test_config_file_path)
-        print "DATA DIRECTORY....: {0}".format(test_env.test_data_directory)
-        print "LOG PATH..........: {0}".format(test_env.test_log_dir)
+        print "BREWING FROM: ......: {0}".format(test_env.test_repo_path)
+        print "ENGINE CONFIG FILE..: {0}".format(test_env.engine_config_path)
+        print "TEST CONFIG LOCATION: {0}".format(test_env.config_location)
+        print "TEST CONFIG NAME....: {0}".format(test_env.config_name)
+        print "DATA DIRECTORY......: {0}".format(test_env.test_data_directory)
+        print "LOG PATH............: {0}".format(test_env.test_log_dir)
         print "=" * 150
 
     @staticmethod

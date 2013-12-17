@@ -14,20 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import abc
 import json
 import os
 import ConfigParser
 
 from cafe.common.reporting import cclogging
-try:
-    from cafe.engine.mongo.client import BaseMongoClient
-except:
-    """ We are temporarily ignoring errors due to plugin refactor.
-    The mongo data-source is currently not being used. and needs to be
-    abstracted out into a data-source plugin.
-    """
-    pass
+
+
+data_sources = []
+
+
+class DataSourceType(type):
+    def __new__(cls, clsname, bases, attrs):
+        data_source = super(DataSourceType, cls).__new__(
+            cls, clsname, bases, attrs)
+        if data_source.__strategy_name__:
+            data_sources.append(data_source)
+        return data_source
 
 
 class ConfigDataException(Exception):
@@ -74,7 +77,8 @@ CONFIG_KEY = 'CAFE_{section_name}_{key}'
 
 class DataSource(object):
 
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = DataSourceType
+    __strategy_name__ = None
 
     def get(self, item_name, default=None):
         raise NotImplementedError
@@ -87,6 +91,8 @@ class DataSource(object):
 
 
 class EnvironmentVariableDataSource(DataSource):
+
+    __strategy_name__ = 'env_variable'
 
     def __init__(self, section_name):
         self._log = cclogging.getLogger(
@@ -108,12 +114,20 @@ class EnvironmentVariableDataSource(DataSource):
 
 class ConfigParserDataSource(DataSource):
 
-    def __init__(self, config_file_path, section_name):
+    __strategy_name__ = 'config_parser'
+
+    def __init__(self, config_location, config_name, section_name):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
+        # Make sure user provided config name ends with '.config'
+        if not config_name.endswith('.config'):
+            config_name = "{0}{1}".format(config_name, ".config")
+
         self._data_source = ConfigParser.SafeConfigParser()
         self._section_name = section_name
+        config_file_path = "{file_path}/{config_name}".format(
+            file_path=config_location, config_name=config_name)
 
         # Check if the path exists
         if not os.path.exists(config_file_path):
@@ -127,6 +141,18 @@ class ConfigParserDataSource(DataSource):
         except Exception as exception:
             self._log.exception(exception)
             raise exception
+
+    @staticmethod
+    def verify_configuration_exists(config_location=None, config_name=None):
+        # Make sure user provided config name ends with '.config'
+        if not config_name.endswith('.config'):
+            config_name = "{0}{1}".format(config_name, ".config")
+
+        config_file_path = "{file_path}/{config_name}".format(
+            file_path=config_location, config_name=config_name)
+        if not os.path.exists(config_file_path):
+            raise Exception("Config file at {path} does not exist".format(
+                path=config_file_path))
 
     def get(self, item_name, default=None):
 
@@ -154,6 +180,10 @@ class ConfigParserDataSource(DataSource):
 
 
 class DictionaryDataSource(DataSource):
+
+    # This is a building block for other data sources. Setting it's name
+    # to None will cause it to skip registration
+    __strategy_name__ = None
 
     def get(self, item_name, default=None):
         section = self._data_source.get(self._section_name)
@@ -206,11 +236,19 @@ class DictionaryDataSource(DataSource):
 
 class JSONDataSource(DictionaryDataSource):
 
-    def __init__(self, config_file_path, section_name):
+    __strategy_name__ = 'json'
+
+    def __init__(self, config_location, config_name, section_name):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
+        # Make sure user provided config name ends with '.json'
+        if not config_name.endswith('.json'):
+            config_name = "{0}{1}".format(config_name, ".json")
+
         self._section_name = section_name
+        config_file_path = "{file_path}/{config_name}".format(
+            file_path=config_location, config_name=config_name)
 
         # Check if file path exists
         if not os.path.exists(config_file_path):
@@ -226,19 +264,17 @@ class JSONDataSource(DictionaryDataSource):
                 self._log.exception(exception)
                 raise exception
 
+    @staticmethod
+    def verify_configuration_exists(config_location=None, config_name=None):
+        # Make sure user provided config name ends with '.config'
+        if not config_name.endswith('.json'):
+            config_name = "{0}{1}".format(config_name, ".json")
 
-class MongoDataSource(DictionaryDataSource):
-
-    def __init__(self, hostname, db_name, username, password,
-                 config_name, section_name):
-        self._section_name = section_name
-
-        self.db = BaseMongoClient(
-            hostname=hostname, db_name=db_name,
-            username=username, password=password)
-        self.db.connect()
-        self.db.auth()
-        self._data_source = self.db.find_one({'config_name': config_name})
+        config_file_path = "{file_path}/{config_name}".format(
+            file_path=config_location, config_name=config_name)
+        if not os.path.exists(config_file_path):
+            raise Exception("Config file at {path} does not exist".format(
+                path=config_file_path))
 
 
 class BaseConfigSectionInterface(object):
@@ -249,12 +285,11 @@ class BaseConfigSectionInterface(object):
 
     """
 
-    def __init__(self, config_file_path, section_name):
+    def __init__(self, data_source, section_name):
 
         self._override = EnvironmentVariableDataSource(
             section_name)
-        self._data_source = ConfigParserDataSource(
-            config_file_path, section_name)
+        self._data_source = data_source
         self._section_name = section_name
 
     def get(self, item_name, default=None):
@@ -271,13 +306,32 @@ class BaseConfigSectionInterface(object):
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
-    def __init__(self, config_file_path=None, section_name=None):
+    def __init__(
+            self, config_location=None, config_name=None,
+            section_name=None, strategy=None):
+
         section_name = (section_name or
                         getattr(self, 'SECTION_NAME', None) or
                         getattr(self, 'CONFIG_SECTION_NAME', None))
 
-        config_file_path = config_file_path or _get_path_from_env(
+        config_location = config_location or _get_path_from_env(
             'CAFE_CONFIG_FILE_PATH')
+        strategy = strategy or os.environ.get("CAFE_CONFIG_STRATEGY")
+        config_name = config_name or os.environ.get("CAFE_CONFIG_NAME")
+
+        config_strategies = {data_source.__strategy_name__: data_source
+                             for data_source in data_sources}
+
+        if strategy.lower() not in config_strategies.keys():
+            raise Exception(
+                "{strategy} is an unregistered configuration strategy. "
+                "Known strategies are {strategies}".format(
+                    strategy=strategy, strategies=config_strategies.keys()))
+
+        strategy_type = config_strategies.get(strategy.lower())
+        data_source = strategy_type(
+            config_location=config_location, config_name=config_name,
+            section_name=section_name)
 
         super(ConfigSectionInterface, self).__init__(
-            config_file_path, section_name)
+            data_source, section_name)

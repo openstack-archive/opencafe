@@ -26,6 +26,7 @@ from subprocess import Popen, PIPE
 
 from ConfigParser import SafeConfigParser
 from cafe.engine.config import EngineConfig
+from cafe.engine.models.data_interfaces import data_sources
 
 if not platform.system().lower() == 'windows':
     import pwd
@@ -111,14 +112,29 @@ class TestEnvManager(object):
             return value
 
     def __init__(
-            self, product_name, test_config_file_name,
+            self, product_name, config_name,
             engine_config_path=None):
 
         self.product_name = product_name
-        self.test_config_file_name = test_config_file_name
+        self.config_name = config_name
         self.engine_config_path = engine_config_path or \
             EngineConfigManager.ENGINE_CONFIG_PATH
-        self.engine_config_interface = EngineConfig(self.engine_config_path)
+        self.engine_config_interface = EngineConfig(
+            config_location=EngineConfigManager.ENGINE_CONFIG_DIR,
+            config_name=EngineConfigManager.ENGINE_CONFIG_NAME)
+        self.config_location = self.engine_config_interface.config_location
+
+    def verify_config_can_be_loaded(self):
+        config_strategy = self.engine_config_interface.config_strategy
+        config_location = (
+            self.engine_config_interface.config_location or
+            self.test_default_config_dir)
+        data_source_list = [data_source for data_source in data_sources
+                            if data_source.__strategy_name__ == config_strategy]
+        data_source = data_source_list[0]
+        data_source.verify_configuration_exists(
+            config_location=config_location,
+            config_name=self.config_name)
 
     def finalize(self, create_log_dirs=True, set_os_env_vars=True):
         """
@@ -139,9 +155,10 @@ class TestEnvManager(object):
             if not os.path.exists(path):
                 os.makedirs(path)
 
+        self.verify_config_can_be_loaded()
+        self.config_location = self.config_location or self.test_default_config_dir
         _check(self.test_repo_path)
         _check(self.test_data_directory)
-        _check(self.test_config_file_path)
 
         if create_log_dirs:
             _create(self.test_root_log_dir)
@@ -158,10 +175,13 @@ class TestEnvManager(object):
             os.environ["CAFE_DATA_DIR_PATH"] = self.test_data_directory
             os.environ["CAFE_ROOT_LOG_PATH"] = self.test_root_log_dir
             os.environ["CAFE_TEST_LOG_PATH"] = self.test_log_dir
-            os.environ["CAFE_CONFIG_FILE_PATH"] = self.test_config_file_path
+            os.environ["CAFE_CONFIG_NAME"] = self.config_name
+            os.environ["CAFE_CONFIG_FILE_PATH"] = self.config_location
             os.environ["CAFE_LOGGING_VERBOSITY"] = self.test_logging_verbosity
             os.environ["CAFE_MASTER_LOG_FILE_NAME"] = \
                 self.test_master_log_file_name
+            os.environ["CAFE_CONFIG_STRATEGY"] = \
+                self.engine_config_interface.config_strategy
 
     @_lazy_property
     def test_repo_path(self):
@@ -198,7 +218,7 @@ class TestEnvManager(object):
         return os.path.expanduser(
             os.path.join(
                 self.engine_config_interface.log_directory, self.product_name,
-                self.test_config_file_name))
+                self.config_name))
 
     @_lazy_property
     def test_log_dir(self):
@@ -208,11 +228,11 @@ class TestEnvManager(object):
             os.path.join(self.test_root_log_dir, log_dir_name))
 
     @_lazy_property
-    def test_config_file_path(self):
+    def test_default_config_dir(self):
         return os.path.expanduser(
             os.path.join(
                 self.engine_config_interface.config_directory,
-                self.product_name, self.test_config_file_name))
+                self.product_name))
 
     @_lazy_property
     def test_logging_verbosity(self):
@@ -336,13 +356,18 @@ class EngineConfigManager(object):
     wrapper = textwrap.TextWrapper(
         initial_indent="* ", subsequent_indent="  ", break_long_words=False)
 
+    ENGINE_CONFIG_NAME = 'engine.config'
+    ENGINE_CONFIG_DIR = EngineDirectoryManager.OPENCAFE_ROOT_DIR
+
     #Old Config Stuff for backwards compatability testing only
     _OLD_ENGINE_CONFIG_PATH = os.path.join(
-        EngineDirectoryManager.OPENCAFE_ROOT_DIR, 'configs', 'engine.config')
+        EngineDirectoryManager.OPENCAFE_ROOT_DIR, 'configs', ENGINE_CONFIG_NAME)
 
     #Openafe config defaults
     ENGINE_CONFIG_PATH = os.path.join(
-        EngineDirectoryManager.OPENCAFE_ROOT_DIR, 'engine.config')
+        EngineDirectoryManager.OPENCAFE_ROOT_DIR, ENGINE_CONFIG_NAME)
+
+
 
     @staticmethod
     def rename_section(
