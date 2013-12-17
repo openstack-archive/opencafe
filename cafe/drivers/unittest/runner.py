@@ -502,13 +502,6 @@ class _UnittestRunnerCLI(object):
                 if not str(values).endswith('.config'):
                     values = "{0}{1}".format(values, ".config")
 
-                test_env = TestEnvManager(namespace.product or "", values)
-                if not os.path.exists(test_env.test_config_file_path):
-                    print (
-                        "cafe-runner: error: config file at {0} does not "
-                        "exist".format(test_env.test_config_file_path))
-                    exit(1)
-
             setattr(namespace, self.dest, values)
 
     class ModuleRegexAction(argparse.Action):
