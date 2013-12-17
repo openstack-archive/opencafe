@@ -13,9 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import pymongo
+from pymongo import MongoClient
+
 from cafe.common.reporting import cclogging
 from cafe.engine.clients.base import BaseClient
-from pymongo import MongoClient
 
 
 class BaseMongoClient(BaseClient):
@@ -33,6 +35,19 @@ class BaseMongoClient(BaseClient):
         self.password = password
         self.connection = None
         self.db = None
+
+    @classmethod
+    def from_connection_string(cls, uri):
+        params = pymongo.uri_parser.parse_uri(uri)
+        hosts = params.get('nodelist')
+
+        if len(hosts) == 0:
+            raise Exception("Invalid connection string: {uri}".format(
+                uri=uri))
+        host, port = hosts[0]
+        return cls(hostname=host, db_name=params.get('database'),
+                   username=params.get('username'),
+                   password=params.get('password'))
 
     def is_connected(self):
         if self.connection:
