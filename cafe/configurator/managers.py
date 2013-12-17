@@ -26,6 +26,7 @@ from subprocess import Popen, PIPE
 
 from ConfigParser import SafeConfigParser
 from cafe.engine.config import EngineConfig
+from cafe.engine.models.data_interfaces import data_sources
 
 if not platform.system().lower() == 'windows':
     import pwd
@@ -120,6 +121,17 @@ class TestEnvManager(object):
             EngineConfigManager.ENGINE_CONFIG_PATH
         self.engine_config_interface = EngineConfig(self.engine_config_path)
 
+    def verify_config_can_be_loaded(self):
+        config_strategy = self.engine_config_interface.config_strategy
+        connection_str = self.engine_config_interface.config_connection_string
+        data_source_list = [data_source for data_source in data_sources
+                            if data_source.__short_name__ == config_strategy]
+        data_source = data_source_list[0]
+        data_source.verify_configuration_exists(
+            config_file_path=self.test_config_file_path,
+            config_name=self.test_config_file_name,
+            connection_string=connection_str)
+
     def finalize(self, create_log_dirs=True, set_os_env_vars=True):
         """
         Sets all non-configured values to the defaults in the engine.config
@@ -139,9 +151,11 @@ class TestEnvManager(object):
             if not os.path.exists(path):
                 os.makedirs(path)
 
+        self.verify_config_can_be_loaded()
+        _check(self.test_config_file_path)
+
         _check(self.test_repo_path)
         _check(self.test_data_directory)
-        _check(self.test_config_file_path)
 
         if create_log_dirs:
             _create(self.test_root_log_dir)
@@ -158,10 +172,15 @@ class TestEnvManager(object):
             os.environ["CAFE_DATA_DIR_PATH"] = self.test_data_directory
             os.environ["CAFE_ROOT_LOG_PATH"] = self.test_root_log_dir
             os.environ["CAFE_TEST_LOG_PATH"] = self.test_log_dir
+            os.environ["CAFE_CONFIG_NAME"] = self.test_config_file_name
             os.environ["CAFE_CONFIG_FILE_PATH"] = self.test_config_file_path
             os.environ["CAFE_LOGGING_VERBOSITY"] = self.test_logging_verbosity
             os.environ["CAFE_MASTER_LOG_FILE_NAME"] = \
                 self.test_master_log_file_name
+            os.environ["CAFE_CONFIG_STRATEGY"] = \
+                self.engine_config_interface.config_strategy
+            os.environ["CAFE_CONFIG_CONNECTION_STRING"] = \
+                self.engine_config_interface.config_connection_string
 
     @_lazy_property
     def test_repo_path(self):

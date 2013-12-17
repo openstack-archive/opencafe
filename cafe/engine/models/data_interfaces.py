@@ -14,20 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import abc
 import json
 import os
 import ConfigParser
 
 from cafe.common.reporting import cclogging
-try:
-    from cafe.engine.mongo.client import BaseMongoClient
-except:
-    """ We are temporarily ignoring errors due to plugin refactor.
-    The mongo data-source is currently not being used. and needs to be
-    abstracted out into a data-source plugin.
-    """
-    pass
+
+
+data_sources = []
+
+
+class DataSourceType(type):
+    def __new__(cls, clsname, bases, attrs):
+        data_source = super(DataSourceType, cls).__new__(
+            cls, clsname, bases, attrs)
+        if data_source.__short_name__:
+            data_sources.append(data_source)
+        return data_source
 
 
 class ConfigDataException(Exception):
@@ -74,7 +77,9 @@ CONFIG_KEY = 'CAFE_{section_name}_{key}'
 
 class DataSource(object):
 
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = DataSourceType
+    __short_name__ = None
+    __default_strategy__ = False
 
     def get(self, item_name, default=None):
         raise NotImplementedError
@@ -85,8 +90,16 @@ class DataSource(object):
     def get_boolean(self, item_name, default=None):
         raise NotImplementedError
 
+    @staticmethod
+    def verify_configuration_exists(config_file_path=None, **kwargs):
+        if not os.path.exists(config_file_path):
+            raise Exception("Config file at {path} does not exist".format(
+                path=config_file_path))
+
 
 class EnvironmentVariableDataSource(DataSource):
+
+    __short_name__ = 'env_variable'
 
     def __init__(self, section_name):
         self._log = cclogging.getLogger(
@@ -108,12 +121,16 @@ class EnvironmentVariableDataSource(DataSource):
 
 class ConfigParserDataSource(DataSource):
 
-    def __init__(self, config_file_path, section_name):
+    __short_name__ = 'config_parser'
+    __default_strategy__ = True
+
+    def __init__(self, **kwargs):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
         self._data_source = ConfigParser.SafeConfigParser()
-        self._section_name = section_name
+        self._section_name = kwargs.get('section_name')
+        config_file_path = kwargs.get('config_file_path')
 
         # Check if the path exists
         if not os.path.exists(config_file_path):
@@ -154,6 +171,10 @@ class ConfigParserDataSource(DataSource):
 
 
 class DictionaryDataSource(DataSource):
+
+    # This is a building block for other data sources. Setting it's name
+    # to None will cause it to skip registration
+    __short_name__ = None
 
     def get(self, item_name, default=None):
         section = self._data_source.get(self._section_name)
@@ -206,11 +227,14 @@ class DictionaryDataSource(DataSource):
 
 class JSONDataSource(DictionaryDataSource):
 
-    def __init__(self, config_file_path, section_name):
+    __short_name__ = 'json'
+
+    def __init__(self, **kwargs):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
-        self._section_name = section_name
+        self._section_name = kwargs.get('section_name')
+        config_file_path = kwargs.get('config_file_path')
 
         # Check if file path exists
         if not os.path.exists(config_file_path):
@@ -227,20 +251,6 @@ class JSONDataSource(DictionaryDataSource):
                 raise exception
 
 
-class MongoDataSource(DictionaryDataSource):
-
-    def __init__(self, hostname, db_name, username, password,
-                 config_name, section_name):
-        self._section_name = section_name
-
-        self.db = BaseMongoClient(
-            hostname=hostname, db_name=db_name,
-            username=username, password=password)
-        self.db.connect()
-        self.db.auth()
-        self._data_source = self.db.find_one({'config_name': config_name})
-
-
 class BaseConfigSectionInterface(object):
     """
     Base class for building an interface for the data contained in a
@@ -249,12 +259,11 @@ class BaseConfigSectionInterface(object):
 
     """
 
-    def __init__(self, config_file_path, section_name):
+    def __init__(self, data_source, section_name):
 
         self._override = EnvironmentVariableDataSource(
             section_name)
-        self._data_source = ConfigParserDataSource(
-            config_file_path, section_name)
+        self._data_source = data_source
         self._section_name = section_name
 
     def get(self, item_name, default=None):
@@ -271,13 +280,35 @@ class BaseConfigSectionInterface(object):
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
-    def __init__(self, config_file_path=None, section_name=None):
+    def __init__(
+            self, config_file_path=None, section_name=None, strategy=None):
+
         section_name = (section_name or
                         getattr(self, 'SECTION_NAME', None) or
                         getattr(self, 'CONFIG_SECTION_NAME', None))
 
         config_file_path = config_file_path or _get_path_from_env(
             'CAFE_CONFIG_FILE_PATH')
+        strategy = strategy or os.environ.get("CAFE_CONFIG_STRATEGY")
+        connection_string = os.environ.get("CAFE_CONFIG_CONNECTION_STRING")
+        config_name = os.environ.get("CAFE_CONFIG_NAME")
+
+        config_strategies = {data_source.__short_name__: data_source
+                             for data_source in data_sources}
+
+        config_args = {'config_file_path': config_file_path,
+                       'config_name': config_name,
+                       'section_name': section_name,
+                       'connection_string': connection_string}
+
+        if strategy.lower() not in config_strategies.keys():
+            raise Exception(
+                "{strategy} is an unregistered configuration strategy. "
+                "Known strategies are {strategies}".format(
+                    strategy=strategy, strategies=config_strategies.keys()))
+
+        strategy_type = config_strategies.get(strategy.lower())
+        data_source = strategy_type(**config_args)
 
         super(ConfigSectionInterface, self).__init__(
-            config_file_path, section_name)
+            data_source, section_name)
