@@ -139,7 +139,10 @@ class TestEnvManager(object):
 
         _check(self.test_repo_path)
         _check(self.test_data_directory)
-        _check(self.test_config_file_path)
+
+        strategy = self.engine_config_interface.config_strategy
+        if strategy is not None and strategy in ['basic', 'json']:
+            _check(self.test_config_file_path)
 
         if create_log_dirs:
             _create(self.test_root_log_dir)
@@ -156,10 +159,15 @@ class TestEnvManager(object):
             os.environ["CAFE_DATA_DIR_PATH"] = self.test_data_directory
             os.environ["CAFE_ROOT_LOG_PATH"] = self.test_root_log_dir
             os.environ["CAFE_TEST_LOG_PATH"] = self.test_log_dir
+            os.environ["CAFE_CONFIG_NAME"] = self.test_config_file_name
             os.environ["CAFE_CONFIG_FILE_PATH"] = self.test_config_file_path
             os.environ["CAFE_LOGGING_VERBOSITY"] = self.test_logging_verbosity
             os.environ["CAFE_MASTER_LOG_FILE_NAME"] = \
                 self.test_master_log_file_name
+            os.environ["CAFE_CONFIG_STRATEGY"] = \
+                self.engine_config_interface.config_strategy
+            os.environ["CAFE_CONFIG_CONNECTION_STRING"] = \
+                self.engine_config_interface.config_connection_string
 
     @_lazy_property
     def test_repo_path(self):
