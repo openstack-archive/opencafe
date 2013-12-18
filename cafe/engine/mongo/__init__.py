@@ -13,10 +13,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from warnings import warn, simplefilter
-simplefilter("default", DeprecationWarning)
-warn("cafe.engine.clients.mongo has been moved to cafe.engine.mongo.client",
-     DeprecationWarning)
-
-from cafe.engine.mongo.client import (
-    pymongo, MongoClient, cclogging, BaseClient, BaseMongoClient)
