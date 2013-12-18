@@ -13,11 +13,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-from warnings import warn, simplefilter
-simplefilter("default", DeprecationWarning)
-warn("cafe.engine.clients.commandline has been moved to "
-     "cafe.engine.commandline.client", DeprecationWarning)
-
-from cafe.engine.commandline.client import BaseClient, BaseCommandLineClient
-from cafe.engine.commandline.models.response import CommandLineResponse
