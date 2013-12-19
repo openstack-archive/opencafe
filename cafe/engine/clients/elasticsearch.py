@@ -70,16 +70,28 @@ class BaseElasticSearchClient(BaseClient):
             return False
         return True
 
-    def wait_for_index(self, index_name):
+    def wait_for_index(self, index_name, wait=30):
         """ Checks to see if an index exists.
-        Checks every second for 30 seconds and returns True if successful
+        Checks every second for int(X) seconds and returns True if successful
         """
-        for i in range(0, 30):
+        for i in range(0, int(wait)):
             if self.has_index(index_name):
                 return True
 
             sleep(1)
         return False
+
+    def wait_for_messages(self, name, value, num=1, index=None, max_wait=30):
+        """ Wait for a specific number of messages to be returned within a
+        specified amount of time.
+        Checks every second for {max_wait} seconds and returns a list of msgs
+        """
+        for i in range(0, int(max_wait)):
+            msgs = self.find_term(name=name, value=value, size=1, index=index)
+            if len(msgs) == num:
+                return msgs
+            sleep(1)
+        return []
 
     def delete_index(self, index_name):
         self._log.info('ES: Deleting index {0}'.format(index_name))
