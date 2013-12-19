@@ -20,7 +20,10 @@ import os
 import ConfigParser
 
 from cafe.common.reporting import cclogging
-from cafe.engine.clients.mongo import BaseMongoClient
+try:
+    from cafe.engine.clients.mongo import BaseMongoClient
+except:
+    BaseMongoClient = 'Thou shall not pass'
 
 
 class ConfigDataException(Exception):

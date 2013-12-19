@@ -22,6 +22,8 @@ import sys
 import textwrap
 import getpass
 import shutil
+import subprocess
+
 from ConfigParser import SafeConfigParser
 from cafe.engine.config import EngineConfig
 
@@ -267,7 +269,8 @@ class EngineDirectoryManager(object):
         LOG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'logs'),
         DATA_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'data'),
         TEMP_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'temp'),
-        CONFIG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'configs'))
+        CONFIG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'configs'),
+        PLUGIN_CACHE=os.path.join(OPENCAFE_ROOT_DIR, 'plugin_cache'))
 
     @classmethod
     def update_deprecated_engine_directories(cls):
@@ -573,3 +576,38 @@ class EngineConfigManager(object):
                         _printed.append(destination_dir)
 
                 PlatformManager.safe_chown(destination_file)
+
+
+class EnginePluginManager(object):
+
+    @classmethod
+    def copy_plugin_to_cache(
+            cls, plugins_src_dir, plugins_dest_dir, plugin_name):
+
+        src_plugin_path = os.path.join(plugins_src_dir, plugin_name)
+        dest_plugin_path = os.path.join(plugins_dest_dir, plugin_name)
+
+        if os.path.exists(dest_plugin_path):
+            shutil.rmtree(dest_plugin_path)
+
+        shutil.copytree(src_plugin_path, dest_plugin_path)
+
+    @classmethod
+    def populate_plugin_cache(cls, plugins_src_dir):
+        default_dest = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
+        plugins = os.walk(plugins_src_dir).next()[1]
+
+        for plugin_name in plugins:
+            cls.copy_plugin_to_cache(
+                plugins_src_dir, default_dest, plugin_name)
+
+    @classmethod
+    def install_plugin(cls, plugin_name):
+        plugin_dir = os.path.join(
+            EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE, plugin_name)
+
+        if not os.path.exists(plugin_dir):
+            print ' * Failed to install plugin: {0}'.format(plugin_name)
+            return
+
+        subprocess.call(['pip', 'install', plugin_dir, '--upgrade'])

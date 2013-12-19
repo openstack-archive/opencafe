@@ -16,7 +16,7 @@ limitations under the License.
 
 import argparse
 from cafe.configurator.managers import (
-    EngineDirectoryManager, EngineConfigManager)
+    EngineDirectoryManager, EngineConfigManager, EnginePluginManager)
 
 
 class EngineActions(object):
@@ -27,6 +27,20 @@ class EngineActions(object):
             print "* Initializing Engine Install"
             EngineDirectoryManager.build_engine_directories()
             EngineConfigManager.build_engine_config()
+            print "================================="
+
+    class InstallPluginCache(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            print "================================="
+            print "* Installing Plugin Cache"
+            EnginePluginManager.populate_plugin_cache(values)
+            print "================================="
+
+    class InstallPlugin(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            print "================================="
+            print "* Installing Plugin {0}".format(values)
+            EnginePluginManager.install_plugin(values)
             print "================================="
 
 
@@ -42,6 +56,12 @@ class ConfiguratorCLI(object):
         subparser_engine_config = subparsers.add_parser('engine')
         subparser_engine_config.add_argument(
             '--init-install', action=EngineActions.InitInstall, nargs=0)
+        subparser_engine_config.add_argument(
+            '--install-plugin-cache', action=EngineActions.InstallPluginCache,
+            type=str)
+        subparser_engine_config.add_argument(
+            '--install-plugin', action=EngineActions.InstallPlugin,
+            type=str)
 
         return parser.parse_args()
 
