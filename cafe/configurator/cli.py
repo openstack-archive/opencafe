@@ -16,7 +16,7 @@ limitations under the License.
 
 import argparse
 from cafe.configurator.managers import (
-    EngineDirectoryManager, EngineConfigManager)
+    EngineDirectoryManager, EngineConfigManager, EnginePluginManager)
 
 
 class EngineActions(object):
@@ -27,6 +27,22 @@ class EngineActions(object):
             print "* Initializing Engine Install"
             EngineDirectoryManager.build_engine_directories()
             EngineConfigManager.build_engine_config()
+            print "================================="
+
+
+class PluginActions(object):
+    class AddPluginCache(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            print "================================="
+            print "* Adding Plugin Cache"
+            EnginePluginManager.populate_plugin_cache(values)
+            print "================================="
+
+    class InstallPlugin(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            print "================================="
+            print "* Installing Plugins"
+            EnginePluginManager.install_plugins(values)
             print "================================="
 
 
@@ -42,6 +58,20 @@ class ConfiguratorCLI(object):
         subparser_engine_config = subparsers.add_parser('engine')
         subparser_engine_config.add_argument(
             '--init-install', action=EngineActions.InitInstall, nargs=0)
+
+        # Plugin argument subparser
+        subparser_plugins = subparsers.add_parser('plugins')
+        plugin_args = subparser_plugins.add_subparsers(dest='plugin_args')
+
+        plugins_add_parser = plugin_args.add_parser('add')
+        plugins_add_parser.add_argument(
+            'plugin_dir', action=PluginActions.AddPluginCache,
+            type=str)
+
+        plugins_install_parser = plugin_args.add_parser('install')
+        plugins_install_parser.add_argument(
+            'plugin-name', action=PluginActions.InstallPlugin,
+            type=str, nargs='*')
 
         return parser.parse_args()
 
