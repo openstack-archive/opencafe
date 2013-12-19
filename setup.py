@@ -34,6 +34,8 @@ if sys.argv[-1] == 'publish':
 #Post-install engine configuration
 def _post_install(dir):
     call(['cafe-config', 'engine', '--init-install'])
+    call(['cafe-config', 'plugins', 'add', 'plugins'])
+    call(['cafe-config', 'plugins', 'install', 'http'])
     print(
         """
          ( (

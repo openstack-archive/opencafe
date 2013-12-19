@@ -1,13 +1,13 @@
-decorator
-paramiko
-requests==1.2.0
-pymongo==2.6
-argparse==1.2.1
-unittest2==0.5.1
-launchpadlib==1.10.2
-pygithub==1.17.0
-pyes==0.20.0
-thrift==0.9.1
+#decorator
+#paramiko
+#requests==1.2.0
+#pymongo==2.6
+#argparse==1.2.1
+#unittest2==0.5.1
+#launchpadlib==1.10.2
+#pygithub==1.17.0
+#pyes==0.20.0
+#thrift==0.9.1
 
 # Keep this turned off unless your using the rsyslog client
 # i.e. you know what you're doing :)

@@ -20,7 +20,14 @@ import os
 import ConfigParser
 
 from cafe.common.reporting import cclogging
-from cafe.engine.mongo.client import BaseMongoClient
+try:
+    from cafe.engine.mongo.client import BaseMongoClient
+except:
+    """ We are temporarily ignoring errors due to plugin refactor.
+    The mongo data-source is currently not being used. and needs to be
+    abstracted out into a data-source plugin.
+    """
+    pass
 
 
 class ConfigDataException(Exception):
