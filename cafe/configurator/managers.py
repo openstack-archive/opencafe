@@ -22,6 +22,8 @@ import sys
 import textwrap
 import getpass
 import shutil
+from subprocess import Popen, PIPE
+
 from ConfigParser import SafeConfigParser
 from cafe.engine.config import EngineConfig
 
@@ -267,7 +269,8 @@ class EngineDirectoryManager(object):
         LOG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'logs'),
         DATA_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'data'),
         TEMP_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'temp'),
-        CONFIG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'configs'))
+        CONFIG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'configs'),
+        PLUGIN_CACHE=os.path.join(OPENCAFE_ROOT_DIR, 'plugin_cache'))
 
     @classmethod
     def update_deprecated_engine_directories(cls):
@@ -573,3 +576,82 @@ class EngineConfigManager(object):
                         _printed.append(destination_dir)
 
                 PlatformManager.safe_chown(destination_file)
+
+
+class EnginePluginManager(object):
+
+    @classmethod
+    def copy_plugin_to_cache(
+            cls, plugins_src_dir, plugins_dest_dir, plugin_name):
+        """ Copies an individual plugin to the .opencafe plugin cache """
+        src_plugin_path = os.path.join(plugins_src_dir, plugin_name)
+        dest_plugin_path = os.path.join(plugins_dest_dir, plugin_name)
+
+        if os.path.exists(dest_plugin_path):
+            shutil.rmtree(dest_plugin_path)
+
+        shutil.copytree(src_plugin_path, dest_plugin_path)
+
+    @classmethod
+    def populate_plugin_cache(cls, plugins_src_dir):
+        """ Handles moving all plugin src data from package into the user's
+        .opencafe folder for installation by the cafe-config tool.
+        """
+        default_dest = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
+        plugins = os.walk(plugins_src_dir).next()[1]
+
+        for plugin_name in plugins:
+            cls.copy_plugin_to_cache(
+                plugins_src_dir, default_dest, plugin_name)
+
+    @classmethod
+    def list_plugins(cls):
+        """ Lists all plugins currently available in user's .opencafe cache"""
+        plugin_cache = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
+        plugin_folders = os.walk(plugin_cache).next()[1]
+        wrap = textwrap.TextWrapper(initial_indent="  ",
+                                    subsequent_indent="  ",
+                                    break_long_words=False).fill
+
+        for plugin_folder in plugin_folders:
+            print wrap('... {name}'.format(name=plugin_folder))
+
+    @classmethod
+    def install_plugins(cls, plugin_names):
+        """ Installs a list of plugins into the current environment"""
+        for plugin_name in plugin_names:
+            cls.install_plugin(plugin_name)
+
+    @classmethod
+    def install_plugin(cls, plugin_name):
+        """ Install a single plugin by name into the current environment"""
+        plugin_cache = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
+        plugin_dir = os.path.join(plugin_cache, plugin_name)
+        wrap = textwrap.TextWrapper(initial_indent="  ",
+                                    subsequent_indent="  ",
+                                    break_long_words=False).fill
+
+        # Pretty output of plugin name
+        print wrap('... {name}'.format(name=plugin_name))
+
+        # Verify that the plugin exists
+        if not os.path.exists(plugin_dir):
+            print wrap('* Failed to install plugin: {0}'.format(plugin_name))
+            return
+
+        # Install Plugin
+        process, standard_out, standard_error = None, None, None
+        cmd = 'pip install {name} --upgrade'.format(name=plugin_dir)
+
+        try:
+            process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+            standard_out, standard_error = process.communicate()
+        except Exception as e:
+            msg = '* Plugin install failed {0}\n{1}\n'.format(cmd, e)
+            print wrap(msg)
+
+        # Print failure if we receive an error code
+        if process and process.returncode != 0:
+            print wrap(standard_out)
+            print wrap(standard_error)
+            print wrap('* Failed to install plugin: {0}'.format(plugin_name))

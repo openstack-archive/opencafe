@@ -34,6 +34,8 @@ if sys.argv[-1] == 'publish':
 #Post-install engine configuration
 def _post_install(dir):
     call(['cafe-config', 'engine', '--init-install'])
+    call(['cafe-config', 'plugins', 'add', 'plugins'])
+    call(['cafe-config', 'plugins', 'install', 'http'])
     print(
         """
          ( (
@@ -45,7 +47,15 @@ def _post_install(dir):
         |      |___|
         |______|
     === OpenCAFE ===
-        """)
+
+    -----------------------------------------------------------------
+    If you wish to install additional plugins, you can do so through
+    the cafe-config tool.
+
+    Example:
+    $ cafe-config plugins install mongo
+    -----------------------------------------------------------------
+    """)
 
 
 #cmdclass hook allows setup to make post install call
