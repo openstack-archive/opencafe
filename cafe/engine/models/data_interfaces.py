@@ -20,7 +20,7 @@ import os
 import ConfigParser
 
 from cafe.common.reporting import cclogging
-from cafe.engine.clients.mongo import BaseMongoClient
+from cafe.engine.mongo.client import BaseMongoClient
 
 
 class ConfigDataException(Exception):
