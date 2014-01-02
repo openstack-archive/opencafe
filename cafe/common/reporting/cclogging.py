@@ -19,8 +19,6 @@ import os
 import sys
 from collections import OrderedDict
 
-log = logging.getLogger('RunnerLog')
-
 
 def logsafe_str(data):
     return "{0}".format(data).decode('utf-8', 'replace')
@@ -245,3 +243,12 @@ def log_info_block(
         log.log(log_level, "\n{0}".format("\n".join(output)))
     else:
         [log.log(log_level, line) for line in output]
+
+
+class ParallelRecordHandler(logging.Handler):
+    def __init__(self):
+        super(ParallelRecordHandler, self).__init__()
+        self._records = []
+
+    def emit(self, record):
+        self._records.append(record)
