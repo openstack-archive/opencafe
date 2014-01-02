@@ -17,22 +17,28 @@ limitations under the License.
 
 import argparse
 import imp
+import logging
 import os
 import sys
 import time
+import traceback
+import unittest2 as unittest
 from fnmatch import fnmatch
 from inspect import getmembers, isclass
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Queue, active_children
 from re import search
+from StringIO import StringIO
 from traceback import extract_tb
-import unittest2 as unittest
-from cafe.drivers.unittest.fixtures import BaseTestFixture
-from cafe.common.reporting.cclogging import log_results
-from cafe.drivers.unittest.parsers import SummarizeResults
-from cafe.drivers.unittest.decorators import (
-    TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME)
+from unittest.signals import registerResult
+
+from cafe.common.reporting.cclogging import (init_root_log_handler,
+                                             ParallelRecordHandler)
 from cafe.common.reporting.reporter import Reporter
 from cafe.configurator.managers import TestEnvManager
+from cafe.drivers.unittest.decorators import (TAGS_DECORATOR_TAG_LIST_NAME,
+                                              TAGS_DECORATOR_ATTR_DICT_NAME)
+from cafe.drivers.unittest.fixtures import BaseTestFixture
+from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
 
 
@@ -68,6 +74,49 @@ def tree(directory, padding, print_files=False):
         else:
             if (not file_name.endswith(".pyc") and file_name != "__init__.py"):
                 print "{0}{1}".format(padding, file_name)
+
+
+class TextTestRunner(unittest.TextTestRunner):
+    def run(self, test):
+        "Run the given test case or test suite."
+        result = self._makeResult()
+        registerResult(result)
+        result.failfast = self.failfast
+        result.buffer = self.buffer
+        startTestRun = getattr(result, 'startTestRun', None)
+        if startTestRun is not None:
+            startTestRun()
+        try:
+            test(result)
+        finally:
+            stopTestRun = getattr(result, 'stopTestRun', None)
+            if stopTestRun is not None:
+                stopTestRun()
+        expectedFails = unexpectedSuccesses = skipped = 0
+        try:
+            results = map(len, (result.expectedFailures,
+                                result.unexpectedSuccesses,
+                                result.skipped))
+        except AttributeError:
+            pass
+        else:
+            expectedFails, unexpectedSuccesses, skipped = results
+
+        infos = []
+        if not result.wasSuccessful():
+            failed, errored = map(len, (result.failures, result.errors))
+            if failed:
+                infos.append("failures=%d" % failed)
+            if errored:
+                infos.append("errors=%d" % errored)
+
+        if skipped:
+            infos.append("skipped=%d" % skipped)
+        if expectedFails:
+            infos.append("expected failures=%d" % expectedFails)
+        if unexpectedSuccesses:
+            infos.append("unexpected successes=%d" % unexpectedSuccesses)
+        return result
 
 
 def error_msg(e_type, e_msg):
@@ -110,24 +159,6 @@ class _WritelnDecorator(object):
         if arg:
             self.write(arg)
         self.write("\n")
-
-
-class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
-    def __init__(self, stream=sys.stderr, descriptions=1, verbosity=1):
-        self.stream = _WritelnDecorator(stream)
-        self.descriptions = descriptions
-        self.verbosity = verbosity
-
-    def run(self, test):
-        """Run the given test case or test suite."""
-        result = self._makeResult()
-        startTime = time.time()
-        test(result)
-        stopTime = time.time()
-        timeTaken = stopTime - startTime
-        result.printErrors()
-        run = result.testsRun
-        return result
 
 
 class LoadedTestClass(object):
@@ -412,6 +443,9 @@ class SuiteBuilder(object):
 
         try:
             suite = self.build_suite(loaded_module)
+            #removes suites with no tests
+            suite = suite if len(suite._tests) else None
+
         except Exception:
             print_traceback()
             return None
@@ -490,11 +524,6 @@ class _UnittestRunnerCLI(object):
 
             exit(0)
 
-    class ProductAction(argparse.Action):
-        def __call__(self, parser, namespace, values, option_string=None):
-            # Add the product to the namespace
-            setattr(namespace, self.dest, values)
-
     class ConfigAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
             # Make sure user provided config name ends with '.config'
@@ -508,7 +537,6 @@ class _UnittestRunnerCLI(object):
                         "cafe-runner: error: config file at {0} does not "
                         "exist".format(test_env.test_config_file_path))
                     exit(1)
-
             setattr(namespace, self.dest, values)
 
     class ModuleRegexAction(argparse.Action):
@@ -516,16 +544,13 @@ class _UnittestRunnerCLI(object):
             # Make sure user-specified module name has a .py at the end of it
             if ".py" not in str(values):
                 values = "{0}{1}".format(values, ".py")
-
             setattr(namespace, self.dest, values)
 
     class MethodRegexAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
             # Make sure user-specified method name has test_ at the start of it
-
             if 'test_' not in str(values):
                 values = "{0}{1}".format("test_", values)
-
             setattr(namespace, self.dest, values)
 
     class DataAction(argparse.Action):
@@ -553,22 +578,15 @@ class _UnittestRunnerCLI(object):
 
     class VerboseAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
-
-            msg = None
-            if values is None:
-                msg = "-v/--verbose requires an integer value of 1, 2 or 3"
-
-            elif values not in (1, 2, 3):
-                msg = (
-                    "cafe-runner: error: {0} is not a valid argument for "
-                    "-v/--verbose".format(values))
-            if msg:
-                print parser.usage
-                print msg
-                exit(1)
-
             os.environ["VERBOSE"] = "true" if values == 3 else "false"
             setattr(namespace, self.dest, values)
+
+    class ParallelAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            if self.dest == "parallel":
+                setattr(namespace, "parallel_suites", 100)
+            else:
+                setattr(namespace, self.dest, values)
 
     def get_cl_args(self):
         """
@@ -672,9 +690,7 @@ class _UnittestRunnerCLI(object):
 
         argparser.add_argument(
             "product",
-            action=self.ProductAction,
             nargs='?',
-            default=None,
             metavar="<product>",
             help="product name")
 
@@ -682,7 +698,6 @@ class _UnittestRunnerCLI(object):
             "config",
             action=self.ConfigAction,
             nargs='?',
-            default=None,
             metavar="<config_file>",
             help="product test config")
 
@@ -691,15 +706,17 @@ class _UnittestRunnerCLI(object):
             action=self.VerboseAction,
             nargs="?",
             default=2,
+            choices=range(4),
+            metavar="VERBOSE",
             type=int,
-            help="set unittest output verbosity")
+            help="Verbose level 0-3 ")
 
         argparser.add_argument(
             "-l", "--list",
             action=self.ListAction,
             nargs="*",
             choices=["products", "configs", "tests"],
-            help="list tests and or configs")
+            help="lists 'products' and/or 'configs' and/or 'tests'")
 
         argparser.add_argument(
             "-f", "--fail-fast",
@@ -716,8 +733,7 @@ class _UnittestRunnerCLI(object):
 
         argparser.add_argument(
             "-p", "--packages",
-            nargs="*",
-            default=None,
+            nargs="+",
             metavar="[package(s)]",
             help="test package(s) in the product's "
                  "test repo")
@@ -727,48 +743,65 @@ class _UnittestRunnerCLI(object):
             action=self.ModuleRegexAction,
             default="*.py",
             metavar="<module>",
-            help="test module regex - defaults to '*.py'")
+            help="filters modules using a shell-style pattern default: *.py")
 
         argparser.add_argument(
             "-M", "--method-regex",
             action=self.MethodRegexAction,
             default="test_*",
             metavar="<method>",
-            help="test method regex defaults to 'test_'")
+            help="filters methods using a shell-style pattern default: test_*")
 
         argparser.add_argument(
             "-t", "--tags",
             nargs="*",
-            default=None,
             metavar="tags",
-            help="tags")
+            help="filters tests by tags added with the tag decorator")
 
         argparser.add_argument(
             "--result",
             choices=["json", "xml"],
-            help="generates a specified formatted result file")
+            help="format of result file. Used with --result-directory")
 
         argparser.add_argument(
             "--result-directory",
-            help="directory for result file to be stored")
-
-        argparser.add_argument(
-            "--parallel",
-            action="store_true",
-            default=False)
+            help="directory to write results file. Used with --result")
 
         argparser.add_argument(
             "--data-directory",
             action=self.DataDirectoryAction,
-            help="directory for tests to get data from")
+            help="overrides the engine.config data directory")
 
         argparser.add_argument(
             "-d", "--data",
             action=self.DataAction,
             nargs="*",
-            default=None,
             metavar="data",
             help="arbitrary test data")
+
+        group = argparser.add_mutually_exclusive_group()
+        group.add_argument(
+            "--parallel-suites",
+            action=self.ParallelAction,
+            type=int,
+            nargs="?",
+            default=1,
+            help="Runs test suites in parallel can't be used with"
+            " --parallel-tests")
+
+        group.add_argument(
+            "--parallel-tests",
+            action=self.ParallelAction,
+            type=int,
+            nargs="?",
+            default=None,
+            help="Runs tests in parallel can't be used with --parallel-suites")
+
+        group.add_argument(
+            "--parallel",
+            action=self.ParallelAction,
+            nargs=0,
+            help="Runs --parallel-suites 100")
 
         args = argparser.parse_args()
 
@@ -807,6 +840,7 @@ class UnittestRunner(object):
         self.product_repo_path = os.path.join(
             self.test_env.test_repo_path, self.cl_args.product)
         self.test_env.finalize()
+        init_root_log_handler()
         self.print_mug_and_paths(self.test_env)
 
     @staticmethod
@@ -832,25 +866,6 @@ class UnittestRunner(object):
         print "=" * 150
 
     @staticmethod
-    def execute_test(runner, test, results):
-        result = runner.run(test)
-        results.append(result)
-
-    @staticmethod
-    def get_runner(parallel, fail_fast, verbosity):
-        test_runner = None
-
-        # Use the parallel text runner so the console logs look correct
-        if parallel:
-            test_runner = OpenCafeParallelTextTestRunner(
-                verbosity=int(verbosity))
-        else:
-            test_runner = unittest.TextTestRunner(verbosity=int(verbosity))
-
-        test_runner.failfast = fail_fast
-        return test_runner
-
-    @staticmethod
     def dump_results(start, finish, results):
         print "-" * 71
 
@@ -861,13 +876,16 @@ class UnittestRunner(object):
             tests_run += result.testsRun
             errors += len(result.errors)
             failures += len(result.failures)
+            if len(result.failures) + len(result.errors):
+                result.stream = _WritelnDecorator(sys.stderr)
+                result.printErrors()
 
         print "Ran {0} test{1} in {2:.3f}s".format(
             tests_run, "s" if tests_run != 1 else "", finish - start)
 
         if failures or errors:
             print "\nFAILED ({0}{1}{2})".format(
-                "Failures={0}".format(failures) if failures else "",
+                "failures={0}".format(failures) if failures else "",
                 " " if failures and errors else "",
                 "Errors={0}".format(errors) if errors else "")
 
@@ -878,19 +896,13 @@ class UnittestRunner(object):
         loops through all the packages, modules, and methods sent in from
         the command line and runs them
         """
-        master_suite = OpenCafeUnittestTestSuite()
-        parallel_test_list = []
 
+        self.suite_list = []
         builder = SuiteBuilder(
             self.cl_args.module_regex,
             self.cl_args.method_regex,
             self.cl_args.tags,
             self.cl_args.supress_flag)
-
-        test_runner = self.get_runner(
-            self.cl_args.parallel,
-            self.cl_args.fail_fast,
-            self.cl_args.verbose)
 
         #Build master test suite
         if self.cl_args.packages:
@@ -900,61 +912,66 @@ class UnittestRunner(object):
                 if path is None:
                     print error_msg("PACKAGE", package_name)
                     continue
-                master_suite = builder.generate_suite(path, master_suite)
-                if self.cl_args.parallel:
-                    parallel_test_list = builder.generate_suite_list(
-                        path, parallel_test_list)
+                self.suite_list += builder.generate_suite_list(path)
         else:
-            master_suite = builder.generate_suite(
+            self.suite_list += builder.generate_suite_list(
                 self.product_repo_path)
-            if self.cl_args.parallel:
-                parallel_test_list = builder.generate_suite_list(
-                    self.product_repo_path)
 
-        if self.cl_args.parallel:
-            exit_code = self.run_parallel(
-                parallel_test_list,
-                test_runner,
-                result_type=self.cl_args.result,
-                results_path=self.cl_args.result_directory)
-            exit(exit_code)
-        else:
-            exit_code = self.run_serialized(
-                master_suite,
-                test_runner,
-                result_type=self.cl_args.result,
-                results_path=self.cl_args.result_directory)
-            exit(exit_code)
+        exit_code = self.process_suites()
+        exit(exit_code)
 
-    def run_parallel(
-            self, test_suites, test_runner, result_type=None,
-            results_path=None):
-
+    def process_suites(self):
+        max_modules = self.cl_args.parallel_suites or 1
+        max_tests = self.cl_args.parallel_tests
         exit_code = 0
         proc = None
         unittest.installHandler()
         processes = []
-        manager = Manager()
-        results = manager.list()
+        self.results = []
+        self.queue = Queue()
         start = time.time()
+        if not max_tests:
+            for test_suite in self.suite_list:
+                if max_modules == 1:
+                    runner = TextTestRunner(
+                        verbosity=int(self.cl_args.verbose))
+                    self.results.append(runner.run(test_suite))
+                    continue
+                children = len(active_children())
+                while children == max_modules:
+                    if len(processes) - children > 0:
+                        self.process_queue()
+                        processes.pop()
+                    time.sleep(.2)
+                proc = Process(target=self.execute_suite, args=(test_suite, ))
+                processes.append(proc)
+                proc.start()
+        else:
+            for test_suite in self.suite_list:
+                tests = test_suite._tests
+                children = len(active_children())
+                for test in tests:
+                    while len(active_children()) == max_tests:
+                        if len(processes) - children > 0:
+                            self.process_queue()
+                            processes.pop()
+                        time.sleep(.2)
+                    test_suite._tests = [test]
+                    proc = Process(target=self.execute_suite,
+                                   args=(test_suite, ))
+                    processes.append(proc)
+                    proc.start()
 
-        for test_suite in test_suites:
-            proc = Process(
-                target=self.execute_test,
-                args=(test_runner, test_suite, results))
-            processes.append(proc)
-            proc.start()
 
-        for proc in processes:
-            proc.join()
+        for i in range(len(processes)):
+            self.process_queue()
 
         finish = time.time()
+        errors, failures, _ = self.dump_results(start, finish, self.results)
 
-        errors, failures, _ = self.dump_results(start, finish, results)
-
-        if result_type is not None:
+        if self.cl_args.result is not None:
             all_results = []
-            for tests, result in zip(test_suites, results):
+            for tests, result in zip(self.suite_list, self.results):
                 result_parser = SummarizeResults(
                     vars(result), tests, (finish - start))
                 all_results += result_parser.gather_results()
@@ -962,37 +979,41 @@ class UnittestRunner(object):
             reporter = Reporter(
                 result_parser=result_parser, all_results=all_results)
             reporter.generate_report(
-                result_type=result_type, path=results_path)
+                result_type=self.cl_args.result,
+                path=self.cl_args.result_directory)
 
         if failures or errors:
             exit_code = 1
 
         return exit_code
 
-    def run_serialized(
-            self, master_suite, test_runner, result_type=None,
-            results_path=None):
+    def process_queue(self):
+        ret_val = self.queue.get()
+        handlers = logging.getLogger().handlers
+        for record in ret_val["logs"]:
+            for handler in handlers:
+                handler.emit(record)
+        self.results.append(ret_val["results"])
+        print ret_val.get("stdout")
 
-        exit_code = 0
-        unittest.installHandler()
-        start_time = time.time()
-        result = test_runner.run(master_suite)
-        total_execution_time = time.time() - start_time
-
-        if result_type is not None:
-            result_parser = SummarizeResults(vars(result), master_suite,
-                                             total_execution_time)
-            all_results = result_parser.gather_results()
-            reporter = Reporter(result_parser=result_parser,
-                                all_results=all_results)
-            reporter.generate_report(result_type=result_type,
-                                     path=results_path)
-
-        log_results(result)
-        if not result.wasSuccessful():
-            exit_code = 1
-
-        return exit_code
+    def execute_suite(self, suite):
+        logger = logging.getLogger('')
+        handler = ParallelRecordHandler()
+        logger.handlers = [handler]
+        stream = StringIO()
+        runner = TextTestRunner(verbosity=int(self.cl_args.verbose))
+        runner.stream = _WritelnDecorator(stream)
+        result = runner.run(suite)
+        runner.stream.seek(0)
+        for record in handler._records:
+            if record.exc_info:
+                msg = "{0}\n{1}".format(
+                    msg,traceback.format_exc(record.exc_info))
+            record.exc_info = None
+        dic = {"results": result,
+               "stdout": runner.stream.read().strip(),
+               "logs": handler._records}
+        self.queue.put(dic)
 
 
 def entry_point():

@@ -179,7 +179,7 @@ class AutoMarshallingModel(
                 deserialize_method = '_{0}_to_obj'.format(format_type)
                 model_object = getattr(cls, deserialize_method)(serialized_str)
             except Exception as deserialization_exception:
-                cls._log.exception(deserialization_exception)
+                cls._log.exception()
 
         #Try to log string and format_type if deserialization broke
         if deserialization_exception is not None:
