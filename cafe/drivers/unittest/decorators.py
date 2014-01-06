@@ -43,8 +43,8 @@ def tags(*tags, **attrs):
     def decorator(func):
         setattr(func, TAGS_DECORATOR_TAG_LIST_NAME, [])
         setattr(func, TAGS_DECORATOR_ATTR_DICT_NAME, {})
-        func.__test_tags__.extend(tags)
-        func.__test_attrs__.update(attrs)
+        getattr(func, TAGS_DECORATOR_TAG_LIST_NAME).extend(tags)
+        getattr(func, TAGS_DECORATOR_ATTR_DICT_NAME).update(attrs)
         return func
     return decorator
 
