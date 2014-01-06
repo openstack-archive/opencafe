@@ -61,7 +61,7 @@ def behavior(*required_clients):
                                      else "instances")
                     msg = ("Behavior {0} expected {1} of {2} but couldn't"
                            " find one".format(
-                           func, msg_plurality, missing_clients))
+                               func, msg_plurality, missing_clients))
                     raise RequiredClientNotDefinedError(msg)
             return func(self, *args, **kwargs)
         return _wrap

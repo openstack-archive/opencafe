@@ -17,5 +17,27 @@ limitations under the License.
 from warnings import warn, simplefilter
 simplefilter("default", DeprecationWarning)
 warn("cafe.engine.models.ssh_response has been moved to "
-    "cafe.engine.ssh.models.ssh_response", DeprecationWarning)
+     "cafe.engine.ssh.models.ssh_response", DeprecationWarning)
 from cafe.engine.ssh.models.ssh_response import SSHKeyResponse, ExecResponse
+
+
+class ExecResponse(object):
+
+    def __init__(self, stdin=None, stdout=None,
+                 stderr=None, exit_status=None):
+        """
+        Initialization
+
+        @param stdin: stdin stream resulting from a command execution
+        @type stdin: stream
+        @param stdout: Text from the stdout stream
+        @type stdout: string
+        @param stderr: Text from the stderr stream
+        @type stderr: string
+        @param exit_status: Exit status code of the command
+        @type exit_status: int
+        """
+        self.stdin = stdin
+        self.stdout = stdout
+        self.stderr = stderr
+        self.exit_status = exit_status
