@@ -17,5 +17,5 @@ limitations under the License.
 from warnings import warn, simplefilter
 simplefilter("default", DeprecationWarning)
 warn("cafe.engine.models.ssh_response has been moved to "
-    "cafe.engine.ssh.models.ssh_response", DeprecationWarning)
+     "cafe.engine.ssh.models.ssh_response", DeprecationWarning)
 from cafe.engine.ssh.models.ssh_response import SSHKeyResponse, ExecResponse
