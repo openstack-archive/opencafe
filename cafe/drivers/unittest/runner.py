@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#!/usr/bin/env python
 """
 Copyright 2013 Rackspace
 
@@ -232,6 +233,26 @@ class SuiteBuilder(object):
                 if target in dir_name:
                     return os.path.join(root, dir_name)
 
+    def find_subdir_path(self, path, target):
+        """
+        walks the path searching for the target subdirectory path.
+        The full path to the target subdirectory path is returned
+        """
+
+        subdir_paths = []
+        path_str_len = len(path)
+
+        for root, dirs, _ in os.walk(path):
+            for dir_name in dirs:
+                new_root = root if root[-1] != os.sep else root[:-1]
+                curr_path = os.sep.join([new_root, dir_name])
+
+                if curr_path[path_str_len:].find(target) != -1:
+                    subdir_paths.append(curr_path)
+                    break
+
+        return subdir_paths
+
     def drill_path(self, path, target):
         """
         walks the path searching for the last instance of the target path.
@@ -422,6 +443,7 @@ class SuiteBuilder(object):
         master_suite = suite or OpenCafeUnittestTestSuite()
         for module_path in self.get_modules(path):
             st = self.get_tests(module_path)
+
             if st:
                 master_suite.addTests(st)
         return master_suite
@@ -580,6 +602,7 @@ class _UnittestRunnerCLI(object):
         mthd = "{0} {1}".format("-M", "<test method>")
         testtag = "{0} {1}".format("-t", "[tag tag...]")
         pkg = "{0} {1}".format("-p", "[package package...]")
+        pkg_path = "{0} {1}".format("-P", "[package_path package_path...]")
 
         usage_string = """
         *run all the tests for a product
@@ -623,6 +646,11 @@ class _UnittestRunnerCLI(object):
         name pattern, method name pattern and matching tag(s)
         {baseargs} {package} {module} {method} {tags}
 
+        **run all modules in a package subpath for a product, where a package
+        subpath is a partial path to the package such as 'folder/package_dir/'
+        which would be the directory structure for the tests
+        {baseargs} {package_path}
+
         LIST:
         format: -l/--list [products, configs, tests]
         Can be used to list products, configs and tests if used as a flag or
@@ -663,7 +691,8 @@ class _UnittestRunnerCLI(object):
         will be run under the products test repo folder or packages (if
         specified).
         """.format(
-            baseargs=base, package=pkg, module=mod, method=mthd, tags=testtag)
+            baseargs=base, package=pkg, package_path=pkg_path,
+            module=mod, method=mthd, tags=testtag)
 
         desc = "Cloud Common Automated Engine Framework"
 
@@ -720,6 +749,14 @@ class _UnittestRunnerCLI(object):
             default=None,
             metavar="[package(s)]",
             help="test package(s) in the product's "
+                 "test repo")
+
+        argparser.add_argument(
+            "-P", "--package-paths",
+            nargs="*",
+            default=None,
+            metavar="[nested_package(s)]",
+            help="test package path(s) in the product's "
                  "test repo")
 
         argparser.add_argument(
@@ -893,10 +930,31 @@ class UnittestRunner(object):
             self.cl_args.verbose)
 
         #Build master test suite
-        if self.cl_args.packages:
+        if not self.cl_args.packages and self.cl_args.package_paths:
+            # package paths allow the use of subpath structure
+            # such as 'folder/package_dir'
+            # this allows a directory structure for the tests to be organized
+
+            for package_path in self.cl_args.package_paths:
+                dir_paths = builder.find_subdir_path(self.product_repo_path,
+                                                     package_path)
+
+                if not dir_paths:
+                    print error_msg("PACKAGE PATH", package_path)
+                    continue
+
+                for dir_path in dir_paths:
+                    master_suite = builder.generate_suite(dir_path,
+                                                          master_suite)
+
+                    if self.cl_args.parallel:
+                        parallel_test_list = builder.generate_suite_list(
+                            dir_path, parallel_test_list)
+        elif self.cl_args.packages and not self.cl_args.package_paths:
             for package_name in self.cl_args.packages:
                 path = builder.find_subdir(
                     self.product_repo_path, package_name)
+
                 if path is None:
                     print error_msg("PACKAGE", package_name)
                     continue
