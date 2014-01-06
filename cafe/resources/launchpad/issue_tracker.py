@@ -48,4 +48,3 @@ class LaunchpadTracker(object):
         log.info('Bug does not affect project {0} '
                  'or project name is not correct.'.format(config.project))
         return False
-
