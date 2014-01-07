@@ -23,7 +23,7 @@ import textwrap
 import getpass
 import shutil
 from ConfigParser import SafeConfigParser
-from cafe.engine.config import EngineConfig
+from cafe.engine.config import EngineConfig, RoastConfig
 
 if not platform.system().lower() == 'windows':
     import pwd
@@ -117,6 +117,9 @@ class TestEnvManager(object):
         self.engine_config_path = engine_config_path or \
             EngineConfigManager.ENGINE_CONFIG_PATH
         self.engine_config_interface = EngineConfig(self.engine_config_path)
+        self.roast_config_interface = RoastConfig(
+            self.engine_config_interface.config_directory,
+            self.product_name)
 
     def finalize(self, create_log_dirs=True, set_os_env_vars=True):
         """
@@ -184,8 +187,11 @@ class TestEnvManager(object):
         reason, it sets the CAFE_TEST_REPO_PATH directly as well as
         CAFE_TEST_REPO_PACKAGE
         """
-        return os.path.expanduser(
-            self.engine_config_interface.default_test_repo)
+
+        default_test_repo = self.roast_config_interface.default_test_repo or \
+            self.engine_config_interface.default_test_repo
+
+        return os.path.expanduser(default_test_repo)
 
     @_lazy_property
     def test_data_directory(self):
