@@ -14,8 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import os
+
 from cafe.engine.models.data_interfaces import (
     ConfigSectionInterface, _get_path_from_env)
+
+
+ROAST_REPO_CONFIG_FILE_NAME = 'roast.repo'
 
 
 class EngineConfig(ConfigSectionInterface):
@@ -90,3 +95,26 @@ class EngineConfig(ConfigSectionInterface):
         """
 
         return self.get_raw("default_test_repo")
+
+
+class RoastConfig(ConfigSectionInterface):
+
+    SECTION_NAME = 'ROAST'
+
+    def __init__(self, config_path=None, product_name=None):
+        self.product_config_path = None
+
+        if config_path and product_name:
+            self.product_config_path = '{0}{1}{2}{3}{4}'.format(
+                config_path, os.sep, product_name, os.sep,
+                ROAST_REPO_CONFIG_FILE_NAME)
+
+            if os.path.exists(self.product_config_path):
+                super(RoastConfig, self).__init__(
+                    config_file_path=self.product_config_path)
+
+    @property
+    def default_test_repo(self):
+        return self.get_raw("default_test_repo") \
+            if (self.product_config_path and
+                os.path.exists(self.product_config_path)) else None
