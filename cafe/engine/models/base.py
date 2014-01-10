@@ -160,7 +160,7 @@ class AutoMarshallingModel(
                         format_type, serialization_exception))
                 self._log.exception(serialization_exception)
             except Exception as exception:
-                self._log.exception(exception)
+                self._log.exception("")
                 self._log.debug(
                     "Unable to log information regarding the "
                     "deserialization exception due to '{0}'".format(
@@ -179,7 +179,7 @@ class AutoMarshallingModel(
                 deserialize_method = '_{0}_to_obj'.format(format_type)
                 model_object = getattr(cls, deserialize_method)(serialized_str)
             except Exception as deserialization_exception:
-                cls._log.exception(deserialization_exception)
+                cls._log.exception("")
 
         #Try to log string and format_type if deserialization broke
         if deserialization_exception is not None:
@@ -193,7 +193,7 @@ class AutoMarshallingModel(
                     "following:\n{0}".format(serialized_str.decode(
                         encoding='UTF-8', errors='ignore')))
             except Exception as exception:
-                cls._log.exception(exception)
+                cls._log.exception("")
                 cls._log.debug(
                     "Unable to log information regarding the "
                     "deserialization exception")
