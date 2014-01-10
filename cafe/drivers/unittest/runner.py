@@ -19,6 +19,7 @@ import argparse
 import imp
 import logging
 import os
+import pickle
 import sys
 import time
 import traceback
@@ -826,6 +827,38 @@ class _UnittestRunnerCLI(object):
         return args
 
 
+class Consumer(Process):
+    def __init__(self, to_worker, from_worker, verbose):
+        Process.__init__(self)
+        self.to_worker = to_worker
+        self.from_worker = from_worker
+        self.verbose = verbose
+
+    def run(self):
+        logger = logging.getLogger('')
+        runner = TextTestRunner(verbosity=int(self.verbose))
+        while True:
+            suite = pickle.loads(self.to_worker.get())
+            handler = ParallelRecordHandler()
+            logger.handlers = [handler]
+            stream = StringIO()
+            runner.stream = _WritelnDecorator(stream)
+            if suite:
+                result = runner.run(suite)
+            else:
+                return
+            runner.stream.seek(0)
+            for record in handler._records:
+                if record.exc_info:
+                    record.msg = "{0}\n{1}".format(
+                        record.msg, traceback.format_exc(record.exc_info))
+                record.exc_info = None
+            dic = {"results": result,
+                   "stdout": runner.stream.read().strip(),
+                   "logs": handler._records}
+            self.from_worker.put(dic)
+
+
 class UnittestRunner(object):
     def __init__(self):
         self.cl_args = _UnittestRunnerCLI().get_cl_args()
@@ -921,57 +954,56 @@ class UnittestRunner(object):
         exit(exit_code)
 
     def process_suites(self):
-        max_modules = self.cl_args.parallel_suites or 1
-        max_tests = self.cl_args.parallel_tests
-        exit_code = 0
-        proc = None
-        unittest.installHandler()
-        processes = []
-        self.results = []
-        # Queue used for multiprocess communication
-        self.queue = Queue()
-        start = time.time()
-        if not max_tests:  # if the parallel_tests flag wasn't passed in
-            for test_suite in self.suite_list:
-                if max_modules == 1:  # Runs the non parallel case
-                    runner = TextTestRunner(
-                        verbosity=int(self.cl_args.verbose))
-                    self.results.append(runner.run(test_suite))
-                else:  # Runs the parallel suite case
-                    children = len(active_children())
-                    while children == max_modules:
-                        if len(processes) - children > 0:
-                            self.process_queue()
-                            processes.pop()
-                        time.sleep(.2)
-                    proc = Process(target=self.execute_suite, args=(test_suite, ))
-                    processes.append(proc)
-                    proc.start()
-        else:  # Runs the parallel tests case
-            for test_suite in self.suite_list:
-                tests = test_suite._tests
-                children = len(active_children())
-                for test in tests:
-                    while len(active_children()) == max_tests:
-                        if len(processes) - children > 0:
-                            self.process_queue()
-                            processes.pop()
-                        time.sleep(.2)
-                    test_suite._tests = [test]
-                    proc = Process(target=self.execute_suite,
-                                   args=(test_suite, ))
-                    processes.append(proc)
-                    proc.start()
+        def process_queue(dic):
+            handlers = logging.getLogger().handlers
+            for record in dic.get("logs"):
+                for handler in handlers:
+                    handler.emit(record)
+            print dic.get("stdout")
+            return dic.get("results")
 
-        for i in range(len(processes)):
-            self.process_queue()
+        parallel_tests = bool(self.cl_args.parallel_tests)
+        workers = (self.cl_args.parallel_tests if self.cl_args.parallel_tests
+                   else self.cl_args.parallel_suites or 1)
+        verbose = self.cl_args.verbose
+        unittest.installHandler()
+        results = []
+        # Queue used for multiprocess communication
+        from_worker = Queue()
+        to_worker = Queue()
+        start = time.time()
+
+        if workers == 1:  # Runs the non parallel case
+            for test_suite in self.suite_list:
+                runner = TextTestRunner(verbosity=int(self.cl_args.verbose))
+                results.append(runner.run(test_suite))
+        else:
+            for worker in range(workers):
+                Consumer(to_worker, from_worker, verbose).start()
+            for test_suite in self.suite_list:
+                if parallel_tests:
+                    tests = test_suite._tests
+                    for test in tests:
+                        test_suite._tests = [test]
+                        to_worker.put(pickle.dumps(test_suite))
+                else:
+                    to_worker.put(pickle.dumps(test_suite))
+
+            for worker in range(workers):
+                to_worker.put(pickle.dumps(None))
+
+            while active_children():
+                time.sleep(.1)
+                while not from_worker.empty():
+                    dic = from_worker.get()
+                    results.append(process_queue(dic))
 
         finish = time.time()
-        errors, failures, _ = self.dump_results(start, finish, self.results)
+        errors, failures, _ = self.dump_results(start, finish, results)
 
         if self.cl_args.result is not None:
             all_results = []
-            for tests, result in zip(self.suite_list, self.results):
+            for tests, result in zip(self.suite_list, results):
                 result_parser = SummarizeResults(
                     vars(result), tests, (finish - start))
                 all_results += result_parser.gather_results()
@@ -983,37 +1015,9 @@ class UnittestRunner(object):
                 path=self.cl_args.result_directory)
 
         if failures or errors:
-            exit_code = 1
-
-        return exit_code
-
-    def process_queue(self):
-        ret_val = self.queue.get()
-        handlers = logging.getLogger().handlers
-        for record in ret_val["logs"]:
-            for handler in handlers:
-                handler.emit(record)
-        self.results.append(ret_val["results"])
-        print ret_val.get("stdout")
-
-    def execute_suite(self, suite):
-        logger = logging.getLogger('')
-        handler = ParallelRecordHandler()
-        logger.handlers = [handler]
-        stream = StringIO()
-        runner = TextTestRunner(verbosity=int(self.cl_args.verbose))
-        runner.stream = _WritelnDecorator(stream)
-        result = runner.run(suite)
-        runner.stream.seek(0)
-        for record in handler._records:
-            if record.exc_info:
-                record.msg = "{0}\n{1}".format(
-                    record.msg, traceback.format_exc(record.exc_info))
-            record.exc_info = None
-        dic = {"results": result,
-               "stdout": runner.stream.read().strip(),
-               "logs": handler._records}
-        self.queue.put(dic)
+            return 1
+        else:
+            return 0
 
 
 def entry_point():
