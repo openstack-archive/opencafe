@@ -1,6 +1,5 @@
 decorator
 paramiko
-argparse==1.2.1
 unittest2==0.5.1
 pyes==0.20.0
 thrift==0.9.1
