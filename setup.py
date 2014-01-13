@@ -47,19 +47,23 @@ def _post_install(dir):
     === OpenCAFE ===
         """)
 
+# Reading Requires
+requires = open('pip-requires').readlines()
+
 
 #cmdclass hook allows setup to make post install call
 class install(_install):
     def run(self):
+        # Add additional requires for Python 2.6 support
+        if sys.version_info < (2, 7):
+            requires.append('argparse==1.2.1')
+
         _install.run(self)
         self.execute(
             _post_install, (self.install_lib,),
             msg="\nRunning post install tasks...")
 
-
 #Normal setup stuff
-requires = open('pip-requires').readlines()
-
 setup(
     name='cafe',
     version='0.1.0',
