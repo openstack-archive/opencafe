@@ -2,8 +2,6 @@ decorator
 paramiko
 argparse==1.2.1
 unittest2==0.5.1
-pyes==0.20.0
-thrift==0.9.1
 
 # Keep this turned off unless your using the rsyslog client
 # i.e. you know what you're doing :)
