@@ -82,7 +82,7 @@ setup(
     url='http://rackspace.com',
     packages=find_packages(),
     package_data={'': ['LICENSE', 'NOTICE']},
-    package_dir={'cafe': 'cafe'},
+    namespace_packages=['cafe'],
     include_package_data=True,
     install_requires=requires,
     license=open('LICENSE').read(),

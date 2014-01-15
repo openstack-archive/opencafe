@@ -18,3 +18,5 @@ __title__ = 'cafe'
 __author__ = 'Rackspace Cloud QE'
 __license__ = 'Apache License Version 2.0'
 __copyright__ = 'Copyright 2013 Rackspace Inc.'
+
+__import__('pkg_resources').declare_namespace(__name__)

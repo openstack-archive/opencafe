@@ -24,6 +24,6 @@ setup(
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://rackspace.com',
     packages=find_packages(),
-    package_dir={'cafe': 'cafe'},
+    namespace_packages=['cafe'],
     install_requires=['launchpadlib==1.10.2', 'pygithub==1.17.0'],
     zip_safe=False)
