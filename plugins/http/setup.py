@@ -23,6 +23,6 @@ setup(
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://rackspace.com',
     packages=find_packages(),
-    package_dir={'cafe': 'cafe'},
+    namespace_packages=['cafe'],
     install_requires=['requests'],
     zip_safe=False)
