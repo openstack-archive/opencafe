@@ -19,11 +19,10 @@ import inspect
 import itertools
 
 from types import FunctionType
-from unittest2 import TestCase, skip
+from unittest2 import TestCase
+from warnings import warn, simplefilter
 
 from cafe.common.reporting import cclogging
-from cafe.resources.github.issue_tracker import GitHubTracker
-from cafe.resources.launchpad.issue_tracker import LaunchpadTracker
 
 TAGS_DECORATOR_TAG_LIST_NAME = "__test_tags__"
 TAGS_DECORATOR_ATTR_DICT_NAME = "__test_attrs__"
@@ -121,17 +120,17 @@ def DataDrivenFixture(cls):
 
 
 def skip_open_issue(type, bug_id):
-    """ Skips the test if there is an open issue for that test.
+    simplefilter('default', DeprecationWarning)
+    warn('cafe.drivers.unittest.decorators.skip_open_issue() has been moved '
+         'to cafe.drivers.unittest.issue.skip_open_issue()',
+         DeprecationWarning)
 
-    @param type: The issue tracker type (e.g., Launchpad, GitHub).
-    @param bug_id: ID of the issue for the test.
-    """
-    if type.lower() == 'launchpad' and LaunchpadTracker.is_bug_open(
-            bug_id=bug_id):
-        return skip('Launchpad Bug #{0}'.format(bug_id))
-    elif type.lower() == 'github' and GitHubTracker.is_bug_open(
-            issue_id=bug_id):
-        return skip('GitHub Issue #{0}'.format(bug_id))
+    try:
+        from cafe.drivers.unittest.issue import skip_open_issue as skip_issue
+        skip_issue(type, bug_id)
+    except ImportError:
+        print ('* Skip on issue plugin is not installed. Please install '
+               'the plugin to use this functionality')
     return lambda obj: obj
 
 
