@@ -127,7 +127,7 @@ def skip_open_issue(type, bug_id):
 
     try:
         from cafe.drivers.unittest.issue import skip_open_issue as skip_issue
-        skip_issue(type, bug_id)
+        return skip_issue(type, bug_id)
     except ImportError:
         print ('* Skip on issue plugin is not installed. Please install '
                'the plugin to use this functionality')
