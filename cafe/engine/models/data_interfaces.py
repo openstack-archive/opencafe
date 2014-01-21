@@ -132,35 +132,25 @@ class ConfigParserDataSource(DataSource):
 
         try:
             return self._data_source.get(self._section_name, item_name)
-        except ConfigParser.NoOptionError as e:
+        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
             self._log.error(str(e))
             return default
-        except ConfigParser.NoSectionError as e:
-            self._log.error(str(e))
-            pass
 
     def get_raw(self, item_name, default=None):
         try:
-            return self._data_source.get(self._section_name, item_name,
-                                         raw=True)
-        except ConfigParser.NoOptionError as e:
+            return self._data_source.get(
+                self._section_name, item_name, raw=True)
+        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
             self._log.error(str(e))
             return default
-        except ConfigParser.NoSectionError as e:
-            self._log.error(str(e))
-            pass
 
     def get_boolean(self, item_name, default=None):
 
         try:
-            return self._data_source.getboolean(self._section_name,
-                                                item_name)
-        except ConfigParser.NoOptionError as e:
+            return self._data_source.getboolean(self._section_name, item_name)
+        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
             self._log.error(str(e))
             return default
-        except ConfigParser.NoSectionError as e:
-            self._log.error(str(e))
-            pass
 
 
 class DictionaryDataSource(DataSource):
