@@ -26,6 +26,8 @@ from multiprocessing import Process, Manager
 from re import search
 from traceback import extract_tb
 import unittest2 as unittest
+import uuid
+
 from cafe.drivers.unittest.fixtures import BaseTestFixture
 from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
@@ -832,9 +834,9 @@ class UnittestRunner(object):
         print "=" * 150
 
     @staticmethod
-    def execute_test(runner, test, results):
+    def execute_test(runner, test_id, test, results):
         result = runner.run(test)
-        results.append(result)
+        results.update({test_id: result})
 
     @staticmethod
     def get_runner(parallel, fail_fast, verbosity):
@@ -857,7 +859,7 @@ class UnittestRunner(object):
         tests_run = 0
         errors = 0
         failures = 0
-        for result in results:
+        for key, result in results.items():
             tests_run += result.testsRun
             errors += len(result.errors)
             failures += len(result.failures)
@@ -935,13 +937,20 @@ class UnittestRunner(object):
         unittest.installHandler()
         processes = []
         manager = Manager()
-        results = manager.list()
+        results = manager.dict()
+        manager.dict()
         start = time.time()
 
+        test_mapping = {}
         for test_suite in test_suites:
+            # Give each test suite an uuid so it can be
+            # matched to the correct test result
+            test_id = str(uuid.uuid4())
+            test_mapping[test_id] = test_suite
+
             proc = Process(
                 target=self.execute_test,
-                args=(test_runner, test_suite, results))
+                args=(test_runner, test_id, test_suite, results))
             processes.append(proc)
             proc.start()
 
@@ -954,7 +963,8 @@ class UnittestRunner(object):
 
         if result_type is not None:
             all_results = []
-            for tests, result in zip(test_suites, results):
+            for test_id, result in results.items():
+                tests = test_mapping[test_id]
                 result_parser = SummarizeResults(
                     vars(result), tests, (finish - start))
                 all_results += result_parser.gather_results()

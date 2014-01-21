@@ -24,11 +24,13 @@ class JSONReport(BaseReport):
     def generate_report(self, result_parser, all_results=None, path=None):
         """ Generates a JSON report in the specified directory. """
 
-        num_tests = len(vars(
-            result_parser.master_testsuite).get('_tests', []))
-        errors = 0
-        failures = 0
-        skips = 0
+        num_tests = len(all_results)
+        errors = len([result.error_trace for result in all_results
+                      if result.error_trace])
+        failures = len([result.failure_trace for result in all_results
+                        if result.failure_trace])
+        skips = len([result.skipped_msg for result in all_results
+                     if result.skipped_msg])
         time = str(result_parser.execution_time)
 
         # Convert Result objects to dicts for processing
@@ -37,13 +39,10 @@ class JSONReport(BaseReport):
             test_result = result.__dict__
             if test_result.get('failure_trace') is not None:
                 test_result['result'] = "FAILED"
-                failures += 1
             elif test_result.get('skipped_msg') is not None:
                 test_result['result'] = "SKIPPED"
-                skips += 1
             elif test_result.get('error_trace') is not None:
                 test_result['result'] = "ERROR"
-                errors += 1
             else:
                 test_result['result'] = "PASSED"
             individual_results.append(test_result)

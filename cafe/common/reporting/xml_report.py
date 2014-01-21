@@ -22,19 +22,24 @@ from cafe.common.reporting.base_report import BaseReport
 class XMLReport(BaseReport):
 
     def generate_report(self, result_parser, all_results=None, path=None):
-        """ Generates an XML report in the specified directory. """
-        executed_tests = result_parser.gather_results()
-        summary_result = result_parser.summary_result()
-        num_tests = len(vars(result_parser.master_testsuite).get('_tests'))
+        """Generates an XML report in the specified directory."""
+        num_tests = len(all_results)
         root = ET.Element("testsuite")
         root.attrib['name'] = ''
         root.attrib['tests'] = str(num_tests)
-        root.attrib['errors'] = summary_result['errors']
-        root.attrib['failures'] = summary_result['failures']
-        root.attrib['skips'] = summary_result['skipped']
+
+        root.attrib['errors'] = str(len(
+            [result.error_trace for result in all_results
+             if result.error_trace]))
+        root.attrib['failures'] = str(len(
+            [result.failure_trace for result in all_results
+             if result.failure_trace]))
+        root.attrib['skips'] = str(len(
+            [result.skipped_msg for result in all_results
+             if result.skipped_msg]))
         root.attrib['time'] = str(result_parser.execution_time)
 
-        for testcase in executed_tests:
+        for testcase in all_results:
             testcase_tag = ET.SubElement(root, 'testcase')
             testcase_tag.attrib['classname'] = testcase.test_class_name
             testcase_tag.attrib['name'] = testcase.test_method_name
