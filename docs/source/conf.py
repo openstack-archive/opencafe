@@ -36,8 +36,9 @@ pygments_style = 'friendly'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
+theme_path = sphinx_rtd_theme.get_html_theme_path()
 html_theme = "sphinx_rtd_theme"
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme_path = [theme_path]
 
 # If true, links to the reST sources are added to the pages.
 html_show_sourcelink = True
