@@ -54,10 +54,8 @@ def entry_point():
     product_root_test_path = os.path.join(
         test_env_manager.test_repo_path, product)
 
-
     # Attempts to use first positional argument after product config as a
     # sub-path to the test repo path. If not a sub-path, raise exception.
-
     if vows_opts and not vows_opts[0].startswith('-'):
         user_provided_path = vows_opts[0]
         attempted_sub_path = os.path.join(

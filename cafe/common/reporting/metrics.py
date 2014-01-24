@@ -134,7 +134,7 @@ class CSVWriter(object):
             try:
                 os.remove(self.full_path)
             except OSError:
-                sys.stderr.write('File not writable\n')                
+                sys.stderr.write('File not writable\n')
 
         if os.path.exists(self.full_path) is False:
             ''' Write out the header to the stats log '''
@@ -148,7 +148,7 @@ class CSVWriter(object):
             try:
                 csv_writer.writerow(row_list)
             except OSError:
-                sys.stderr.write('File not writable\n')                
+                sys.stderr.write('File not writable\n')
             fp.close()
 
 
