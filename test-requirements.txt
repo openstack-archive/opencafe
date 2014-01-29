@@ -1,3 +1,4 @@
-unittest2
+tox
 mock
 flake8
+nose
