@@ -62,7 +62,8 @@ requires = open('pip-requires').readlines()
 
 # Add additional requires for Python 2.6 support
 if sys.version_info < (2, 7):
-    requires.append('argparse==1.2.1')
+    oldpy_requires = ['argparse>=1.2.1', 'unittest2>=0.5.1']
+    requires.extend(oldpy_requires)
 
 
 #cmdclass hook allows setup to make post install call
