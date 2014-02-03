@@ -45,9 +45,12 @@ class PlatformManager(object):
         effective_user = os.getenv("USER")
 
         if not cls.USING_WINDOWS and not cls.USING_VIRTUALENV:
-            if effective_user == 'root' and real_user != 'root':
+            if effective_user == 'root' and real_user not in ['root', None]:
                 # Running 'sudo'.
                 return real_user
+            elif effective_user == 'root' and real_user is None:
+                # Running as root
+                return effective_user
 
         elif cls.USING_WINDOWS:
             return getpass.getuser()
