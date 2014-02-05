@@ -12,6 +12,7 @@ Review Etiquette
 ----------------
 
 * Keep feedback constructive. All comments should be civil.
+* Votes from at least two reviewers are required for the approval of a pull request. Being a core reviewer allows for pull requests to be merged by that person alone, but doing so should be reserved for the most severe of emergency patches.
 * Don't review your own requests.
 * Comments should be descriptive. If alternate solutions need to be proposed, describe alternatives either as a snippet in the comment or in a linked gist.
 * There should not be undocumented standards that submitters are held to. You should be able to point a submitter to
