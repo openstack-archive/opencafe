@@ -145,27 +145,8 @@ class AutoMarshallingModel(
             cclogging.get_object_namespace(self.__class__))
 
     def serialize(self, format_type):
-        serialization_exception = None
-        try:
-            serialize_method = '_obj_to_{0}'.format(format_type)
-            return getattr(self, serialize_method)()
-        except Exception as serialization_exception:
-            pass
-
-        if serialization_exception:
-            try:
-                self._log.error(
-                    'Error occured during serialization of a data model into'
-                    'the "{0}: \n{1}" format'.format(
-                        format_type, serialization_exception))
-                self._log.exception(serialization_exception)
-            except Exception as exception:
-                self._log.exception(exception)
-                self._log.debug(
-                    "Unable to log information regarding the "
-                    "deserialization exception due to '{0}'".format(
-                        serialization_exception))
-        return None
+        serialize_method = '_obj_to_{0}'.format(format_type)
+        return getattr(self, serialize_method)()
 
     @classmethod
     def deserialize(cls, serialized_str, format_type):
