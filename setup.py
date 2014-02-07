@@ -70,9 +70,9 @@ if sys.version_info < (2, 7):
 class install(_install):
     def run(self):
         _install.run(self)
-        self.execute(
-            _post_install, (self.install_lib,),
-            msg="\nRunning post install tasks...")
+        #self.execute(
+        #    _post_install, (self.install_lib,),
+        #    msg="\nRunning post install tasks...")
 
 #Normal setup stuff
 setup(
