@@ -51,7 +51,8 @@ class PlatformManager(object):
         elif cls.USING_WINDOWS:
             return getpass.getuser()
 
-        return effective_user
+        # Return the effective user, or root if all else fails
+        return effective_user or 'root'
 
     @classmethod
     def get_user_home_path(cls):
