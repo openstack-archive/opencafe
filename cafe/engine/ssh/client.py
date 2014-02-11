@@ -445,7 +445,7 @@ class SSHClient(BaseSSHClient):
             sftp_conn.put(local_path, remote_path)
         except IOError, exception:
             self._log.warning("Error during file transfer: {error}".format(
-                exception))
+                error=exception))
             return False
         else:
             sftp_conn.close()
@@ -468,7 +468,7 @@ class SSHClient(BaseSSHClient):
             sftp_conn.get(remote_path, local_path)
         except IOError, exception:
             self._log.warning("Error during file transfer: {error}".format(
-                exception))
+                error=exception))
             return False
         else:
             sftp_conn.close()
