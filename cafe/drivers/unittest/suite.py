@@ -35,7 +35,8 @@ class OpenCafeUnittestTestSuite(TestSuite):
             # Monkeypatch: run class cleanup tasks regardless of whether
             # tearDownClass succeeds or not
             finally:
-                previousClass._do_class_cleanup_tasks()
+                if hasattr(previousClass, '_do_class_cleanup_tasks'):
+                    previousClass._do_class_cleanup_tasks()
 
         # Monkeypatch: run class cleanup tasks regardless of whether
         # tearDownClass exists or not
