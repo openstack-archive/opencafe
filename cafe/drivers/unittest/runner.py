@@ -28,6 +28,7 @@ from traceback import extract_tb
 import unittest2 as unittest
 import uuid
 
+from result import TaggedTextTestResult
 from cafe.drivers.unittest.fixtures import BaseTestFixture
 from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
@@ -97,6 +98,7 @@ def print_traceback():
 
 
 class _WritelnDecorator(object):
+
     """Used to decorate file-like objects with a handy "writeln" method"""
 
     def __init__(self, stream):
@@ -115,7 +117,11 @@ class _WritelnDecorator(object):
 
 
 class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
-    def __init__(self, stream=sys.stderr, descriptions=1, verbosity=1):
+
+    def __init__(self, stream=sys.stderr, descriptions=1, verbosity=1,
+                 resultclass=None):
+        super(OpenCafeParallelTextTestRunner, self).__init__(
+            stream, descriptions, verbosity, resultclass=resultclass)
         self.stream = _WritelnDecorator(stream)
         self.descriptions = descriptions
         self.verbosity = verbosity
@@ -133,6 +139,7 @@ class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
 
 
 class LoadedTestClass(object):
+
     def __init__(self, loaded_module):
         self.module = loaded_module
         self.module_path = self._get_module_path(loaded_module)
@@ -183,6 +190,7 @@ class LoadedTestClass(object):
 
 
 class SuiteBuilder(object):
+
     def __init__(self, module_regex, method_regex, cl_tags, supress_flag):
         self.module_regex = module_regex
         self.method_regex = method_regex
@@ -440,6 +448,7 @@ class SuiteBuilder(object):
 class _UnittestRunnerCLI(object):
 
     class ListAction(argparse.Action):
+
         def __call__(self, parser, namespace, values, option_string=None):
             product = namespace.product or ""
             test_env_mgr = TestEnvManager(product, None)
@@ -468,7 +477,7 @@ class _UnittestRunnerCLI(object):
                     ["  +-{0}/".format(dirname) for dirname in os.listdir(
                         product_config_dir)])
 
-            #If no values passed, print a default
+            # If no values passed, print a default
             if not values:
                 if namespace.product and namespace.config:
                     _print_test_tree()
@@ -493,11 +502,13 @@ class _UnittestRunnerCLI(object):
             exit(0)
 
     class ProductAction(argparse.Action):
+
         def __call__(self, parser, namespace, values, option_string=None):
             # Add the product to the namespace
             setattr(namespace, self.dest, values)
 
     class ConfigAction(argparse.Action):
+
         def __call__(self, parser, namespace, values, option_string=None):
             # Make sure user provided config name ends with '.config'
             if values is not None:
@@ -514,6 +525,7 @@ class _UnittestRunnerCLI(object):
             setattr(namespace, self.dest, values)
 
     class ModuleRegexAction(argparse.Action):
+
         def __call__(self, parser, namespace, values, option_string=None):
             # Make sure user-specified module name has a .py at the end of it
             if ".py" not in str(values):
@@ -522,6 +534,7 @@ class _UnittestRunnerCLI(object):
             setattr(namespace, self.dest, values)
 
     class MethodRegexAction(argparse.Action):
+
         def __call__(self, parser, namespace, values, option_string=None):
             # Make sure user-specified method name has test_ at the start of it
 
@@ -531,6 +544,7 @@ class _UnittestRunnerCLI(object):
             setattr(namespace, self.dest, values)
 
     class DataAction(argparse.Action):
+
         def __call__(self, parser, namespace, values, option_string=None):
             dict_string = ""
             data_range = len(values)
@@ -545,6 +559,7 @@ class _UnittestRunnerCLI(object):
             setattr(namespace, self.dest, values)
 
     class DataDirectoryAction(argparse.Action):
+
         def __call__(self, parser, namespace, values, option_string=None):
             if not os.path.exists(values):
                 print (
@@ -554,6 +569,7 @@ class _UnittestRunnerCLI(object):
             setattr(namespace, self.dest, values)
 
     class VerboseAction(argparse.Action):
+
         def __call__(self, parser, namespace, values, option_string=None):
 
             msg = None
@@ -796,6 +812,7 @@ class _UnittestRunnerCLI(object):
 
 
 class UnittestRunner(object):
+
     def __init__(self):
         self.cl_args = _UnittestRunnerCLI().get_cl_args()
         self.test_env = TestEnvManager(
@@ -836,6 +853,11 @@ class UnittestRunner(object):
     @staticmethod
     def execute_test(runner, test_id, test, results):
         result = runner.run(test)
+
+        # Inject tag mapping and log results to console
+        UnittestRunner._inject_tag_mapping(result)
+        log_results(result, test_id)
+
         results.update({test_id: result})
 
     @staticmethod
@@ -843,11 +865,13 @@ class UnittestRunner(object):
         test_runner = None
 
         # Use the parallel text runner so the console logs look correct
+        # Use custom test result object to keep track of tags
         if parallel:
             test_runner = OpenCafeParallelTextTestRunner(
-                verbosity=int(verbosity))
+                verbosity=int(verbosity), resultclass=TaggedTextTestResult)
         else:
-            test_runner = unittest.TextTestRunner(verbosity=int(verbosity))
+            test_runner = unittest.TextTestRunner(
+                verbosity=int(verbosity), resultclass=TaggedTextTestResult)
 
         test_runner.failfast = fail_fast
         return test_runner
@@ -875,6 +899,17 @@ class UnittestRunner(object):
 
         return errors, failures, tests_run
 
+    @staticmethod
+    def _inject_tag_mapping(result):
+        """Inject tag mapping into the result __dict__ object if available"""
+        if hasattr(result, 'mapping'):
+            mapping = result.get_tag_mapping().get_test_to_tag_mapping()
+
+            if not mapping is None and len(mapping) > 0:
+                result.__dict__['tags'] = mapping
+            else:
+                result.__dict__['tags'] = []
+
     def run(self):
         """
         loops through all the packages, modules, and methods sent in from
@@ -894,7 +929,7 @@ class UnittestRunner(object):
             self.cl_args.fail_fast,
             self.cl_args.verbose)
 
-        #Build master test suite
+        # Build master test suite
         if self.cl_args.packages:
             for package_name in self.cl_args.packages:
                 path = builder.find_subdir(
@@ -928,9 +963,9 @@ class UnittestRunner(object):
                 results_path=self.cl_args.result_directory)
             exit(exit_code)
 
-    def run_parallel(
-            self, test_suites, test_runner, result_type=None,
-            results_path=None):
+    @staticmethod
+    def run_parallel(test_suites, test_runner, result_type=None,
+                     results_path=None):
 
         exit_code = 0
         proc = None
@@ -949,7 +984,7 @@ class UnittestRunner(object):
             test_mapping[test_id] = test_suite
 
             proc = Process(
-                target=self.execute_test,
+                target=UnittestRunner.execute_test,
                 args=(test_runner, test_id, test_suite, results))
             processes.append(proc)
             proc.start()
@@ -959,7 +994,8 @@ class UnittestRunner(object):
 
         finish = time.time()
 
-        errors, failures, _ = self.dump_results(start, finish, results)
+        errors, failures, _ = UnittestRunner.dump_results(
+            start, finish, results)
 
         if result_type is not None:
             all_results = []
@@ -979,8 +1015,9 @@ class UnittestRunner(object):
 
         return exit_code
 
+    @staticmethod
     def run_serialized(
-            self, master_suite, test_runner, result_type=None,
+            master_suite, test_runner, result_type=None,
             results_path=None):
 
         exit_code = 0
@@ -988,6 +1025,9 @@ class UnittestRunner(object):
         start_time = time.time()
         result = test_runner.run(master_suite)
         total_execution_time = time.time() - start_time
+
+        # Inject tag mapping
+        UnittestRunner._inject_tag_mapping(result)
 
         if result_type is not None:
             result_parser = SummarizeResults(vars(result), master_suite,
