@@ -19,6 +19,9 @@ from cafe.common.reporting.xml_report import XMLReport
 
 class Reporter:
 
+    JSON_REPORT = 'json'
+    XML_REPORT = 'xml'
+
     def __init__(self, result_parser, all_results):
         self.result_parser = result_parser
         self.all_results = all_results
@@ -27,9 +30,9 @@ class Reporter:
         """ Creates a report object based on what type is given and generates
         the report in the specified directory.
         """
-        if result_type == 'json':
+        if result_type == Reporter.JSON_REPORT:
             report = JSONReport()
-        elif result_type == 'xml':
+        elif result_type == Reporter.XML_REPORT:
             report = XMLReport()
 
         report.generate_report(result_parser=self.result_parser,
