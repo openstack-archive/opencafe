@@ -36,9 +36,8 @@ class DataDrivenFixtureError(Exception):
 
 def tags(*tags, **attrs):
     """Adds tags and attributes to tests, which are interpreted by the
-    cafe-runner at run time
+    cafe-runner at run time and by result generator during reporting
     """
-
     def decorator(func):
         setattr(func, TAGS_DECORATOR_TAG_LIST_NAME, [])
         setattr(func, TAGS_DECORATOR_ATTR_DICT_NAME, {})
@@ -135,6 +134,7 @@ def skip_open_issue(type, bug_id):
 
 
 class memoized(object):
+
     """
     Decorator.
     @see: https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
