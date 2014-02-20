@@ -20,9 +20,13 @@ from uuid import uuid4
 
 from cafe.common.reporting.reporter import Reporter
 from cafe.drivers.unittest.parsers import SummarizeResults
+from cafe.drivers.unittest.decorators import tags
+from cafe.drivers.unittest.runner import UnittestRunner
+from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
 
 
 class FakeTests(unittest.TestCase):
+
     """ These tests are only used only to create a SummarizeResults object
     and will not actually run as a part of the suite.
     """
@@ -41,6 +45,7 @@ class FakeTests(unittest.TestCase):
 
 
 class ReportingTests(unittest.TestCase):
+
     def setUp(self):
         """ Creates a SummarizeResults parser with fake tests and initializes
         the reporter. Also creates a directory for the created reports.
@@ -93,6 +98,7 @@ class ReportingTests(unittest.TestCase):
                 return True
         return False
 
+    @tags('test tag1', 'test tag1')
     def test_create_json_report(self):
         """ Creates a json report and checks that the created report contains
         the proper test information.
@@ -103,6 +109,7 @@ class ReportingTests(unittest.TestCase):
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
 
+    @tags("T3")
     def test_create_xml_report(self):
         """ Creates an xml report and checks that the created report contains
         the proper test information.
@@ -113,6 +120,7 @@ class ReportingTests(unittest.TestCase):
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
 
+    @tags('T1', 'T2', 'T3')
     def test_create_json_report_w_file_name(self):
         """ Creates a json report with a specified file name and checks that
         the created report contains the proper test information.
@@ -123,6 +131,7 @@ class ReportingTests(unittest.TestCase):
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
 
+    @tags('T2', 'T3')
     def test_create_xml_report_w_file_name(self):
         """ Creates an xml report with a specified file name and checks that
         the created report contains the proper test information.
@@ -141,10 +150,15 @@ class ReportingTests(unittest.TestCase):
 if __name__ == '__main__':
     # Creates a suite of only the actual unit tests so that
     # fake tests are not a part of the unit test results.
-    suite = unittest.suite.TestSuite()
-    suite.addTest(ReportingTests('test_create_json_report'))
-    suite.addTest(ReportingTests('test_create_xml_report'))
-    suite.addTest(ReportingTests('test_create_json_report_w_file_name'))
-    suite.addTest(ReportingTests('test_create_xml_report_w_file_name'))
-
-    unittest.TextTestRunner().run(suite)
+    test_runner_serial = UnittestRunner.get_runner(False, True, 1)
+    test_runner_parallel = UnittestRunner.get_runner(True, True, 1)
+    master_suite = OpenCafeUnittestTestSuite()
+    master_suite.addTest(ReportingTests('test_create_json_report'))
+    master_suite.addTest(ReportingTests('test_create_xml_report'))
+    master_suite.addTest(ReportingTests('test_create_json_report_w_file_name'))
+    master_suite.addTest(ReportingTests('test_create_xml_report_w_file_name'))
+    UnittestRunner.run_serialized(
+        master_suite, test_runner_serial, Reporter.JSON_REPORT, verbosity=1)
+    UnittestRunner.run_parallel(
+        [master_suite], test_runner_parallel, Reporter.XML_REPORT, verbosity=1)
+    exit(0)
