@@ -47,9 +47,9 @@ def get_object_namespace(obj):
     except:
         pass
 
-    #mro name wasn't availble, generate a unique name
-    #By default, name is set to the memory address of the passed in object
-    #since it's guaranteed to work.
+    # mro name wasn't availble, generate a unique name
+    # By default, name is set to the memory address of the passed in object
+    # since it's guaranteed to work.
 
     name = str(id(obj))
     try:
@@ -76,17 +76,17 @@ def getLogger(log_name, log_level=None):
     Log level defaults to logging.DEBUG
     '''
 
-    #Create new log
+    # Create new log
     new_log = logging.getLogger(name=log_name)
     new_log.setLevel(log_level or logging.DEBUG)
     verbosity = os.getenv('CAFE_LOGGING_VERBOSITY')
 
     if verbosity == 'VERBOSE':
         if logging.getLogger(log_name).handlers == []:
-            #Special case for root log handler
+            # Special case for root log handler
             if log_name == "":
                 log_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
-            #Add handler by default for all new loggers
+            # Add handler by default for all new loggers
             new_log.addHandler(setup_new_cchandler(log_name))
 
     # Add support for adding null log handlers by default when
@@ -120,7 +120,7 @@ def setup_new_cchandler(
 
     log_path = os.path.join(log_dir, "{0}.log".format(log_file_name))
 
-    #Set up handler with encoding and msg formatter in log directory
+    # Set up handler with encoding and msg formatter in log directory
     log_handler = logging.FileHandler(log_path, "a+",
                                       encoding=encoding or "UTF-8", delay=True)
 
@@ -130,7 +130,7 @@ def setup_new_cchandler(
     return log_handler
 
 
-def log_results(result):
+def log_results(result, test_id=None, verbosity=0):
     """
         @summary: Replicates the printing functionality of unittest's
         runner.run() but log's instead of prints
@@ -179,6 +179,13 @@ def log_results(result):
         os.getenv("CAFE_TEST_LOG_PATH"))
     print '-' * 150
 
+    # Print the tag to test mapping if available and verbosity is > 0
+    if verbosity > 0 and hasattr(result, 'mapping'):
+        if test_id is not None:
+            result.mapping.write_to_stream(
+                "Test Suite ID: " + test_id + "\n")
+        result.mapping.print_tag_to_test_mapping()
+
 
 def log_errors(label, result, errors):
     border1 = '=' * 45
@@ -190,7 +197,7 @@ def log_errors(label, result, errors):
 
 
 def init_root_log_handler():
-    #Setup root log handler if the root logger doesn't already have one
+    # Setup root log handler if the root logger doesn't already have one
     if not getLogger('').handlers:
         master_log_file_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
         getLogger('').addHandler(
@@ -220,12 +227,12 @@ def log_info_block(
     try:
         info = info if isinstance(info, OrderedDict) else OrderedDict(info)
     except:
-        #Something went wrong, log what can be logged
+        # Something went wrong, log what can be logged
         output.append(str(info))
         return
 
     separator = str(separator or "{0}".format('=' * 56))
-    max_length = len(max([k for k in info.keys() if info.get(k)], key=len))+3
+    max_length = len(max([k for k in info.keys() if info.get(k)], key=len)) + 3
 
     output.append(separator)
     if heading:
@@ -236,7 +243,7 @@ def log_info_block(
         value = str(info.get(k, None))
         if value:
             output.append(
-                "{0}{1}: {2}".format(k, "." * (max_length-len(k)), value))
+                "{0}{1}: {2}".format(k, "." * (max_length - len(k)), value))
         else:
             output.append("{0}".format(k))
     output.append(separator)

@@ -65,7 +65,9 @@ class XMLReport(BaseReport):
                     error_tag.text = testcase.error_trace
                 else:
                     testcase_tag.attrib['result'] = "PASSED"
-
+            if testcase.tags is not None:
+                comment = "Test Tags: {tags}".format(tags=testcase.tags)
+                testcase_tag.attrib['comment'] = comment
         result_path = path or os.getcwd()
         if os.path.isdir(result_path):
             result_path += "/results.xml"
