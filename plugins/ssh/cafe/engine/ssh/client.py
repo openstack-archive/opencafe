@@ -24,7 +24,6 @@ from paramiko.client import SSHClient as ParamikoSSHClient
 from paramiko.resource import ResourceManager
 
 from cafe.engine.clients.base import BaseClient
-from cafe.common.reporting import cclogging
 from cafe.engine.ssh.models.ssh_response import ExecResponse
 
 
@@ -59,8 +58,6 @@ class ExtendedParamikoSSHClient(ParamikoSSHClient):
 
 
 class BaseSSHClient(BaseClient):
-
-    _log = cclogging.getLogger(__name__)
 
     def __init__(self, host):
         """
