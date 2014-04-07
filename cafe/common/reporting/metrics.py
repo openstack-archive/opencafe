@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-'''
+"""
 @summary: Generic Classes for test statistics
-'''
+"""
 from datetime import datetime
 import os
 import csv
@@ -24,7 +24,7 @@ import sys
 
 
 class TestRunMetrics(object):
-    '''
+    """
     @summary: Generic Timer used to track any time span
     @ivar start_time: Timestamp from the start of the timer
     @type start_time: C{datetime}
@@ -34,7 +34,7 @@ class TestRunMetrics(object):
            of the runner and the default unittest.TestCase architecture to make
            this auto-magically work with unittest properly.
            This should be a child of unittest.TestResult
-    '''
+    """
     def __init__(self):
         self.total_tests = 0
         self.total_passed = 0
@@ -45,7 +45,7 @@ class TestRunMetrics(object):
 
 
 class TestResultTypes(object):
-    '''
+    """
     @summary: Types dictating an individual Test Case result
     @cvar PASSED: Test has passed
     @type PASSED: C{str}
@@ -58,7 +58,8 @@ class TestResultTypes(object):
     @cvar ERRORED: Test has errored
     @type ERRORED: C{str}
     @note: This is essentially an Enumerated Type
-    '''
+    """
+
     PASSED = "Passed"
     FAILED = "Failed"
     SKIPPED = "Skipped"    # Not Supported Yet
@@ -68,39 +69,43 @@ class TestResultTypes(object):
 
 
 class TestTimer(object):
-    '''
+    """
     @summary: Generic Timer used to track any time span
     @ivar start_time: Timestamp from the start of the timer
     @type start_time: C{datetime}
     @ivar stop_time: Timestamp of the end of the timer
     @type stop_time: C{datetime}
-    '''
+    """
+
     def __init__(self):
         self.start_time = None
         self.stop_time = None
 
     def start(self):
-        '''
+        """
         @summary: Starts this timer
         @return: None
         @rtype: None
-        '''
+        """
+
         self.start_time = datetime.now()
 
     def stop(self):
-        '''
+        """
         @summary: Stops this timer
         @return: None
         @rtype: None
-        '''
+        """
+
         self.stop_time = datetime.now()
 
     def get_elapsed_time(self):
-        '''
+        """
         @summary: Convenience method for total elapsed time
         @rtype: C{datetime}
         @return: Elapsed time for this timer. C{None} if timer has not started
-        '''
+        """
+
         elapsedTime = None
         if self.start_time is not None:
             if self.stop_time is not None:
@@ -108,36 +113,36 @@ class TestTimer(object):
             else:
                 elapsedTime = (datetime.now() - self.start_time)
         else:
-            ''' Timer hasn't started, error on the side of caution '''
+            # Timer hasn't started, error on the side of caution
             rightNow = datetime.now()
             elapsedTime = (rightNow - rightNow)
         return(elapsedTime)
 
 
 class CSVWriter(object):
-    '''
-    '''
+    """CSVWriter"""
+
     def __init__(self, headers, file_name, log_dir='.', start_clean=False):
         self.file_mode = 'a'
         self.headers = headers
 
-        #create the dir if it does not exist
+        # create the dir if it does not exist
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
-        #get full path
+        # get full path
         self.full_path = os.path.normpath(os.path.join(log_dir, file_name))
 
-        #remove file if you want a clean log file
+        # remove file if you want a clean log file
         if start_clean:
-            ''' Force the file to be overwritten before any writing '''
+            # Force the file to be overwritten before any writing
             try:
                 os.remove(self.full_path)
             except OSError:
                 sys.stderr.write('File not writable\n')
 
         if os.path.exists(self.full_path) is False:
-            ''' Write out the header to the stats log '''
+            # Write out the header to the stats log
             self.writerow(self.headers)
 
     def writerow(self, row_list):

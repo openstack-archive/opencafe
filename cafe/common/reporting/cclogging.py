@@ -27,7 +27,7 @@ def logsafe_str(data):
 
 
 def get_object_namespace(obj):
-    '''Attempts to return a dotted string name representation of the general
+    """Attempts to return a dotted string name representation of the general
     form 'package.module.class.obj' for an object that has an __mro__ attribute
 
     Designed to let you to name loggers inside objects in such a way
@@ -40,7 +40,7 @@ def get_object_namespace(obj):
     and is then further improved by a series of functions until
     one of them fails.
     The value of the last successful name-setting method is returned.
-    '''
+    """
 
     try:
         return parse_class_namespace_string(str(obj.__mro__[0]))
@@ -61,9 +61,10 @@ def get_object_namespace(obj):
 
 
 def parse_class_namespace_string(class_string):
-    '''Parses the dotted namespace out of an object's __mro__.
-    Returns a string
-    '''
+    """
+    Parses the dotted namespace out of an object's __mro__. Returns a string
+    """
+
     class_string = str(class_string)
     class_string = class_string.replace("'>", "")
     class_string = class_string.replace("<class '", "")
@@ -71,10 +72,9 @@ def parse_class_namespace_string(class_string):
 
 
 def getLogger(log_name, log_level=None):
-    '''Convenience function to create a logger and set it's log level at the
-    same time.
-    Log level defaults to logging.DEBUG
-    '''
+    """Convenience function to create a logger and set it's log level at the
+    same time. Log level defaults to logging.DEBUG
+    """
 
     # Create new log
     new_log = logging.getLogger(name=log_name)
@@ -97,11 +97,11 @@ def getLogger(log_name, log_level=None):
 
 def setup_new_cchandler(
         log_file_name, log_dir=None, encoding=None, msg_format=None):
-    '''Creates a log handler named <log_file_name> configured to save the log
+    """Creates a log handler named <log_file_name> configured to save the log
     in <log_dir> or <os environment variable 'CAFE_TEST_LOG_PATH'>,
     in that order or precedent.
     File handler defaults: 'a+', encoding=encoding or "UTF-8", delay=True
-    '''
+    """
 
     log_dir = log_dir or os.getenv('CAFE_TEST_LOG_PATH')
 
@@ -131,10 +131,10 @@ def setup_new_cchandler(
 
 
 def log_results(result, test_id=None, verbosity=0):
+    """Replicates the printing functionality of unittest's runner.run() but
+    log's instead of prints
     """
-        @summary: Replicates the printing functionality of unittest's
-        runner.run() but log's instead of prints
-    """
+
     infos = []
     expected_fails = unexpected_successes = skipped = 0
 
@@ -198,7 +198,8 @@ def log_errors(label, result, errors):
 
 
 def init_root_log_handler():
-    # Setup root log handler if the root logger doesn't already have one
+    """Setup root log handler if the root logger doesn't already have one"""
+
     if not getLogger('').handlers:
         master_log_file_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
         getLogger('').addHandler(
@@ -224,6 +225,7 @@ def log_info_block(
     using newlines.  Otherwise, each line of the info block will be logged
     as seperate log lines (with seperate timestamps, etc.)
     """
+
     output = []
     try:
         info = info if isinstance(info, OrderedDict) else OrderedDict(info)
@@ -233,7 +235,8 @@ def log_info_block(
         return
 
     separator = str(separator or "{0}".format('=' * 56))
-    max_length = len(max([k for k in info.keys() if info.get(k)], key=len)) + 3
+    max_length = \
+        len(max([k for k in info.keys() if info.get(k)], key=len)) + 3
 
     output.append(separator)
     if heading:

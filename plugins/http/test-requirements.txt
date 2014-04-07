@@ -1,0 +1,4 @@
+tox
+mock
+flake8
+nose
