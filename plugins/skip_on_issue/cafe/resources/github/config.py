@@ -20,12 +20,12 @@ class GitHubConfig(ConfigSectionInterface):
 
     SECTION_NAME = 'GITHUB'
 
-    #Access or authorization token
+    # Access or authorization token
     @property
     def token(self):
         return self.get('token')
 
-    #Full repository name (e.g., 'organization/repo')
+    # Full repository name (e.g., 'organization/repo')
     @property
     def repo(self):
         return self.get('repo')

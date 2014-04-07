@@ -15,7 +15,7 @@ limitations under the License.
 """
 import os
 import shutil
-import unittest2 as unittest
+import unittest
 from uuid import uuid4
 
 from cafe.common.reporting.reporter import Reporter
@@ -23,6 +23,15 @@ from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.decorators import tags
 from cafe.drivers.unittest.runner import UnittestRunner
 from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
+
+
+# def load_tests(*args, **kwargs):
+#     suite = unittest.suite.TestSuite()
+#     suite.addTest(ReportingTests('test_create_json_report'))
+#     suite.addTest(ReportingTests('test_create_xml_report'))
+#     suite.addTest(ReportingTests('test_create_json_report_w_file_name'))
+#     suite.addTest(ReportingTests('test_create_xml_report_w_file_name'))
+#     return suite
 
 
 class FakeTests(unittest.TestCase):
@@ -59,22 +68,20 @@ class ReportingTests(unittest.TestCase):
         self.failure_trace = 'Traceback: ' + str(uuid4())
         self.skip_msg = str(uuid4())
         self.error_trace = 'Traceback: ' + str(uuid4())
-        result = {'testsRun': 4,
-                  'errors': [(FakeTests('test_report_error'),
-                             self.error_trace)],
-                  'skipped': [(FakeTests('test_report_skip'),
-                               self.skip_msg)],
-                  'failures': [(FakeTests('test_report_fail'),
-                                self.failure_trace)]}
+        result = {
+            'testsRun': 4,
+            'errors': [(FakeTests('test_report_error'), self.error_trace)],
+            'skipped': [(FakeTests('test_report_skip'), self.skip_msg)],
+            'failures': [(FakeTests('test_report_fail'), self.failure_trace)]}
 
-        self.result_parser = SummarizeResults(master_testsuite=test_suite,
-                                              result_dict=result,
-                                              execution_time=1.23)
+        self.result_parser = SummarizeResults(
+            master_testsuite=test_suite, result_dict=result,
+            execution_time=1.23)
         self.all_results = self.result_parser.gather_results()
-        self.reporter = Reporter(result_parser=self.result_parser,
-                                 all_results=self.all_results,)
+        self.reporter = Reporter(
+            result_parser=self.result_parser, all_results=self.all_results,)
 
-        self.results_dir = os.getcwd() + '/test-reporting-results'
+        self.results_dir = os.getcwd() + os.path.sep + 'test-reporting-results'
         if not os.path.exists(self.results_dir):
             os.makedirs(self.results_dir)
 
@@ -82,12 +89,11 @@ class ReportingTests(unittest.TestCase):
         """ Checks for generic test information (names and messages)
         in the specified report file.
         """
-        return self._file_contains(file_path=file_path,
-                                   target_strings=
-                                   ['test_report_pass', 'test_report_fail',
-                                    'test_report_skip', 'test_report_error',
-                                    self.failure_trace, self.skip_msg,
-                                    self.error_trace])
+        return self._file_contains(
+            file_path=file_path, target_strings=[
+                'test_report_pass', 'test_report_fail', 'test_report_skip',
+                'test_report_error', self.failure_trace, self.skip_msg,
+                self.error_trace])
 
     def _file_contains(self, file_path, target_strings):
         """ Checks that the specified file contains all strings in the
@@ -103,9 +109,9 @@ class ReportingTests(unittest.TestCase):
         """ Creates a json report and checks that the created report contains
         the proper test information.
         """
-        self.reporter.generate_report(result_type='json',
-                                      path=self.results_dir)
-        results_file = self.results_dir + '/results.json'
+        self.reporter.generate_report(
+            result_type='json', path=self.results_dir)
+        results_file = self.results_dir + os.path.sep + 'results.json'
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
 
@@ -114,9 +120,8 @@ class ReportingTests(unittest.TestCase):
         """ Creates an xml report and checks that the created report contains
         the proper test information.
         """
-        self.reporter.generate_report(result_type='xml',
-                                      path=self.results_dir)
-        results_file = self.results_dir + '/results.xml'
+        self.reporter.generate_report(result_type='xml', path=self.results_dir)
+        results_file = self.results_dir + os.path.sep + 'results.xml'
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
 
@@ -125,9 +130,8 @@ class ReportingTests(unittest.TestCase):
         """ Creates a json report with a specified file name and checks that
         the created report contains the proper test information.
         """
-        results_file = self.results_dir + str(uuid4()) + '.json'
-        self.reporter.generate_report(result_type='json',
-                                      path=results_file)
+        results_file = self.results_dir + os.path.sep + str(uuid4()) + '.json'
+        self.reporter.generate_report(result_type='json', path=results_file)
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
 
@@ -136,9 +140,8 @@ class ReportingTests(unittest.TestCase):
         """ Creates an xml report with a specified file name and checks that
         the created report contains the proper test information.
         """
-        results_file = self.results_dir + str(uuid4()) + '.xml'
-        self.reporter.generate_report(result_type='xml',
-                                      path=results_file)
+        results_file = self.results_dir + os.path.sep + str(uuid4()) + '.xml'
+        self.reporter.generate_report(result_type='xml', path=results_file)
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
 

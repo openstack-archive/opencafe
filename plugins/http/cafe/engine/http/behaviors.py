@@ -40,4 +40,4 @@ def get_range_data(data, bytes_):
             start = int(bytes_.strip('-'))
     else:
         (start, end) = [int(x) for x in bytes_.split('-')]
-    return data[start:end+1]
+    return data[start:end + 1]

@@ -1,1 +1,1 @@
-include README.md LICENSE NOTICE HISTORY.md pip-requires
+include README.md LICENSE pip-requires plugins

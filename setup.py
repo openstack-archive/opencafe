@@ -14,24 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import os
 import sys
 from subprocess import call
-
-try:
-    from setuptools import setup, find_packages
-    from setuptools.command.install import install as _install
-except ImportError:
-    #currently broken, this really only works with setuptools
-    from distutils.core import setup, find_packages
-    from distutils.command.install import install as _install
-
-if sys.argv[-1] == 'publish':
-    os.system('python setup.py sdist upload')
-    sys.exit()
+from setuptools import setup, find_packages
+from setuptools.command.install import install as _install
+from setuptools.command.test import test as TestCommand
 
 
-#Post-install engine configuration
+# Post-install engine configuration
 def _post_install(dir):
     call(['cafe-config', 'engine', '--init-install'])
     call(['cafe-config', 'plugins', 'add', 'plugins'])
@@ -66,7 +56,7 @@ if sys.version_info < (2, 7):
     requires.extend(oldpy_requires)
 
 
-#cmdclass hook allows setup to make post install call
+# cmdclass hook allows setup to make post install call
 class install(_install):
     def run(self):
         _install.run(self)
@@ -74,21 +64,31 @@ class install(_install):
             _post_install, (self.install_lib,),
             msg="\nRunning post install tasks...")
 
-#Normal setup stuff
+
+# tox integration
+class Tox(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import tox
+        errno = tox.cmdline(self.test_args)
+        sys.exit(errno)
+
+# Normal setup stuff
 setup(
     name='cafe',
     version='0.1.0',
     description='The Common Automation Framework Engine',
-    long_description='{0}\n\n{1}'.format(
-        open('README.md').read(),
-        open('HISTORY.md').read()),
+    long_description='{0}'.format(open('README.md').read()),
     author='Rackspace Cloud QE',
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://rackspace.com',
     packages=find_packages(),
-    package_data={'': ['LICENSE', 'NOTICE']},
     namespace_packages=['cafe'],
-    include_package_data=True,
     install_requires=requires,
     license=open('LICENSE').read(),
     zip_safe=False,
@@ -109,4 +109,7 @@ setup(
          'vows-runner = cafe.drivers.pyvows.runner:entry_point',
          'specter-runner = cafe.drivers.specter.runner:entry_point',
          'cafe-config = cafe.configurator.cli:entry_point']},
-    cmdclass={'install': install})
+    tests_require=['tox'],
+    cmdclass={
+        'install': install,
+        'test': Tox})

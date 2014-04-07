@@ -20,7 +20,7 @@ from cafe.resources.rsyslog.client import RSyslogClient, MessageHandler
 
 class TestSyslogClient(TestCase):
     DEFAULT_SD_DICT = {
-        'meniscus': {
+        'test_project': {
             'token': 'test-token',
             'tenant': 'test-tenant'
         }
@@ -28,7 +28,7 @@ class TestSyslogClient(TestCase):
 
     SAMPLE_SD_DICT = {
         'origin': {
-            'software': 'cloudcafe-rsyslog'
+            'software': 'opencafe-rsyslog'
         }
     }
 
@@ -41,7 +41,7 @@ class TestSyslogClient(TestCase):
 
     def test_conversion_between_sd_dict_to_syslog_str(self):
         result = MessageHandler.sd_dict_to_syslog_str(self.SAMPLE_SD_DICT)
-        self.assertEqual(result, '[origin software="cloudcafe-rsyslog"]')
+        self.assertEqual(result, '[origin software="opencafe-rsyslog"]')
 
     def test_send_basic_message(self):
         result = self.client.send(priority=1, msg='bam',

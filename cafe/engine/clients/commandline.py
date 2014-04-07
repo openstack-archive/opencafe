@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-'''Provides low level connectivity to the commandline via popen()
+"""Provides low level connectivity to the commandline via popen()
 @note: Primarily intended to serve as base classes for a specific
        command line client Class
-'''
+"""
 import os
 import sys
 from subprocess import Popen, PIPE, CalledProcessError
@@ -29,49 +29,54 @@ from cafe.engine.models.commandline_response import CommandLineResponse
 
 
 class BaseCommandLineClient(BaseClient):
-    '''Wrapper for driving/parsing a command line program
+    """Wrapper for driving/parsing a command line program
     @ivar base_command: This processes base command string. (I.E. 'ls', 'pwd')
     @type base_command: C{str}
     @note: This class is dependent on a local installation of the wrapped
            client process.  The thing you run has to be there!
-    '''
+    """
+
     def __init__(self, base_command=None, env_var_dict=None):
-        '''
+        """
         @param base_command: This processes base command string.
                              (I.E. 'ls', 'pwd')
         @type base_command: C{str}
-        '''
+        """
+
         super(BaseCommandLineClient, self).__init__()
         self.base_command = base_command
         self.env_var_dict = env_var_dict or {}
         self.set_environment_variables(self.env_var_dict)
 
     def set_environment_variables(self, env_var_dict=None):
-        '''Sets all os environment variables provided in env_var_dict'''
+        """Sets all os environment variables provided in env_var_dict"""
+
         self.env_var_dict = env_var_dict
         for key, value in self.env_var_dict.items():
             self._log.debug('setting {0}={1}'.format(key, value))
             os.environ[str(key)] = str(value)
 
     def update_environment_variables(self, env_var_dict=None):
-        '''Sets all os environment variables provided in env_var_dict'''
+        """Sets all os environment variables provided in env_var_dict"""
+
         self.env_var_dict = self.env_var_dict.update(env_var_dict or {})
         for key, value in self.env_var_dict.items():
             self._log.debug('setting {0}={1}'.format(key, value))
             os.environ[str(key)] = str(value)
 
     def unset_environment_variables(self, env_var_list=None):
-        '''Unsets all os environment variables provided in env_var_dict
+        """Unsets all os environment variables provided in env_var_dict
         by default.
         If env_var_list is passed, attempts to unset all environment vars in
-        list'''
+        list"""
+
         env_var_list = env_var_list or self.env_var_dict.keys() or []
         for key, _ in env_var_list:
             self._log.debug('unsetting {0}'.format(key))
             os.unsetenv(str(key))
 
     def _build_command(self, cmd, *args):
-        #Process command we received
+        # Process command we received
         command = "{0} {1}".format(
             self.base_command, cmd) if self.base_command else cmd
         if args and args[0]:
@@ -93,7 +98,7 @@ class BaseCommandLineClient(BaseClient):
         return command
 
     def _execute_command(self, command):
-        #Run the command
+        # Run the command
         process = None
         try:
             process = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
@@ -107,13 +112,14 @@ class BaseCommandLineClient(BaseClient):
         """Running a command asynchronously returns a CommandLineResponse
         objecct with a running subprocess.Process object in it.  This process
         needs to be closed or killed manually after execution."""
+
         os_response = CommandLineResponse()
         os_response.command = self._build_command(cmd, *args)
         os_response.process = self._execute_command(os_response.command)
         return os_response
 
     def run_command(self, cmd, *args):
-        '''Sends a command directly to this instance's command line
+        """Sends a command directly to this instance's command line
         @param cmd: Command to sent to command line
         @type cmd: C{str}
         @param args: Optional list of args to be passed with the command
@@ -122,8 +128,9 @@ class BaseCommandLineClient(BaseClient):
         @return: The full response details from the command line
         @rtype: L{CommandLineResponse}
         @note: PRIVATE. Can be over-ridden in a child class
-        '''
-        #Wait for the process to complete and then read the output
+        """
+
+        # Wait for the process to complete and then read the output
         os_response = self.run_command_async(cmd, *args)
         std_out, std_err = os_response.process.communicate()
         os_response.standard_out = str(std_out).splitlines()
@@ -140,12 +147,13 @@ class BaseCommandLineClient(BaseClient):
             self._log, info, heading='COMMAND LINE RESPONSE',
             log_level=DEBUG, one_line=True)
 
-        #Clean up the process to avoid any leakage/wonkiness with stdout/stderr
+        # Clean up the process to avoid any leakage/wonkiness with
+        # stdout/stderr
         try:
             os_response.process.kill()
         except OSError:
-            #An OS Error is valid if the process has exited. We only
-            #need to be concerned about other exceptions
+            # An OS Error is valid if the process has exited. We only
+            # need to be concerned about other exceptions
             sys.exc_clear()
 
         os_response.process = None

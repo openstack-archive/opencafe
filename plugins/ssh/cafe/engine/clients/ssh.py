@@ -16,8 +16,9 @@ limitations under the License.
 
 from warnings import warn, simplefilter
 simplefilter("default", DeprecationWarning)
-warn("cafe.engine.clients.ssh has been moved to "
-    "cafe.engine.ssh.client", DeprecationWarning)
-from cafe.engine.ssh.client import SSHAuthStrategy, ExtendedParamikoSSHClient,\
-BaseSSHClient,SSHClient
+warn(
+    "cafe.engine.clients.ssh has been moved to cafe.engine.ssh.client",
+    DeprecationWarning)
 
+from cafe.engine.ssh.client import \
+    SSHAuthStrategy, ExtendedParamikoSSHClient, BaseSSHClient, SSHClient
