@@ -32,7 +32,7 @@ class Tox(TestCommand):
         sys.exit(errno)
 
 setup(
-    name='cafe_http_plugin',
+    name='cafe_rsyslog_plugin',
     version='0.0.1',
     description='The Common Automation Framework Engine',
     author='Rackspace Cloud QE',
@@ -40,7 +40,7 @@ setup(
     url='http://rackspace.com',
     packages=find_packages(),
     namespace_packages=['cafe'],
-    install_requires=['requests'],
+    install_requires=['portal'],
     tests_require=['tox'],
     cmdclass={'test': Tox},
     zip_safe=False)

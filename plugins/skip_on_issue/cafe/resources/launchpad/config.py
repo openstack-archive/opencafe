@@ -20,7 +20,7 @@ class LaunchpadTrackerConfig(ConfigSectionInterface):
 
     SECTION_NAME = 'LAUNCHPAD'
 
-    #Project name in Launchpad (name in URL of project, not display name)
+    # Project name in Launchpad (name in URL of project, not display name)
     @property
     def project(self):
         return self.get('project')

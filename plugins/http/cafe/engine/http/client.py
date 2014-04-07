@@ -38,13 +38,13 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             try:
                 log.debug(logline.decode('utf-8', 'replace'))
             except Exception as exception:
-                #Ignore all exceptions that happen in logging, then log them
+                # Ignore all exceptions that happen in logging, then log them
                 log.info(
                     'Exception occured while logging signature of calling'
                     'method in http client')
                 log.exception(exception)
 
-            #Make the request and time it's execution
+            # Make the request and time it's execution
             response = None
             elapsed = None
             try:
@@ -56,7 +56,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 log.exception(exception)
                 raise exception
 
-            #requests lib 1.0.0 renamed body to data in the request object
+            # requests lib 1.0.0 renamed body to data in the request object
             request_body = ''
             if 'body' in dir(response.request):
                 request_body = response.request.body
@@ -67,7 +67,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                     "Unable to log request body, neither a 'data' nor a "
                     "'body' object could be found")
 
-            #requests lib 1.0.4 removed params from response.request
+            # requests lib 1.0.4 removed params from response.request
             request_params = ''
             request_url = response.request.url
             if 'params' in dir(response.request):
@@ -85,7 +85,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             try:
                 log.log(level, logline.decode('utf-8', 'replace'))
             except Exception as exception:
-                #Ignore all exceptions that happen in logging, then log them
+                # Ignore all exceptions that happen in logging, then log them
                 log.log(level, '\n{0}\nREQUEST INFO\n{0}\n'.format('-' * 12))
                 log.exception(exception)
 
@@ -99,7 +99,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             try:
                 log.log(level, logline.decode('utf-8', 'replace'))
             except Exception as exception:
-                #Ignore all exceptions that happen in logging, then log them
+                # Ignore all exceptions that happen in logging, then log them
                 log.log(level, '\n{0}\nRESPONSE INFO\n{0}\n'.format('-' * 13))
                 log.exception(exception)
             return response
@@ -217,45 +217,43 @@ class HTTPClient(BaseHTTPClient):
             self, method, url, headers=None, params=None, data=None,
             requestslib_kwargs=None):
 
-        #set requestslib_kwargs to an empty dict if None
+        # set requestslib_kwargs to an empty dict if None
         requestslib_kwargs = requestslib_kwargs if (
             requestslib_kwargs is not None) else {}
 
-        #Set defaults
+        # Set defaults
         params = params if params is not None else {}
         verify = False
 
-        #If headers are provided by both, headers "wins" over default_headers
+        # If headers are provided by both, headers "wins" over default_headers
         headers = dict(self.default_headers, **(headers or {}))
 
-        #Override url if present in requestslib_kwargs
+        # Override url if present in requestslib_kwargs
         if 'url' in requestslib_kwargs.keys():
             url = requestslib_kwargs.get('url', None) or url
             del requestslib_kwargs['url']
 
-        #Override method if present in requestslib_kwargs
+        # Override method if present in requestslib_kwargs
         if 'method' in requestslib_kwargs.keys():
             method = requestslib_kwargs.get('method', None) or method
             del requestslib_kwargs['method']
 
-        #The requests lib already removes None key/value pairs, but we force it
-        #here in case that behavior ever changes
+        # The requests lib already removes None key/value pairs, but we force
+        # it here in case that behavior ever changes
         for key in requestslib_kwargs.keys():
             if requestslib_kwargs[key] is None:
                 del requestslib_kwargs[key]
 
-        #Create the final parameters for the call to the base request()
-        #Wherever a parameter is provided both by the calling method AND
-        #the requests_lib kwargs dictionary, requestslib_kwargs "wins"
-        requestslib_kwargs = dict({'headers': headers,
-                                   'params': params,
-                                   'verify': verify,
-                                   'data': data},
-                                  **requestslib_kwargs)
+        # Create the final parameters for the call to the base request()
+        # Wherever a parameter is provided both by the calling method AND
+        # the requests_lib kwargs dictionary, requestslib_kwargs "wins"
+        requestslib_kwargs = dict(
+            {'headers': headers, 'params': params, 'verify': verify,
+             'data': data}, **requestslib_kwargs)
 
-        #Make the request
-        return super(HTTPClient, self).request(method, url,
-                                               **requestslib_kwargs)
+        # Make the request
+        return super(HTTPClient, self).request(
+            method, url, **requestslib_kwargs)
 
 
 class AutoMarshallingHTTPClient(HTTPClient):
@@ -269,32 +267,33 @@ class AutoMarshallingHTTPClient(HTTPClient):
         self.default_headers = {'Content-Type': 'application/{format}'.format(
             format=serialize_format)}
 
-    def request(self, method, url, headers=None, params=None, data=None,
-                response_entity_type=None, request_entity=None,
-                requestslib_kwargs=None):
+    def request(
+            self, method, url, headers=None, params=None, data=None,
+            response_entity_type=None, request_entity=None,
+            requestslib_kwargs=None):
 
-        #defaults requestslib_kwargs to a dictionary if it is None
+        # defaults requestslib_kwargs to a dictionary if it is None
         requestslib_kwargs = requestslib_kwargs if (requestslib_kwargs is not
                                                     None) else {}
 
-        #set the 'data' parameter of the request to either what's already in
-        #requestslib_kwargs, or the deserialized output of the request_entity
+        # set the 'data' parameter of the request to either what's already in
+        # requestslib_kwargs, or the deserialized output of the request_entity
         if request_entity is not None:
             requestslib_kwargs = dict(
                 {'data': request_entity.serialize(self.serialize_format)},
                 **requestslib_kwargs)
 
-        #Make the request
+        # Make the request
         response = super(AutoMarshallingHTTPClient, self).request(
             method, url, headers=headers, params=params, data=data,
             requestslib_kwargs=requestslib_kwargs)
 
-        #Append the deserialized data object to the response
+        # Append the deserialized data object to the response
         response.request.__dict__['entity'] = None
         response.__dict__['entity'] = None
 
-        #If present, append the serialized request data object to
-        #response.request
+        # If present, append the serialized request data object to
+        # response.request
         if response.request is not None:
             response.request.__dict__['entity'] = request_entity
 

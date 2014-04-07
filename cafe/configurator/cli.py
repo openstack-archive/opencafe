@@ -61,7 +61,7 @@ class ConfiguratorCLI(object):
         parser = argparse.ArgumentParser()
         subparsers = parser.add_subparsers(dest="subcommand")
 
-        #Engine configuration subparser
+        # Engine configuration subparser
         subparser_engine_config = subparsers.add_parser('engine')
         subparser_engine_config.add_argument(
             '--init-install', action=EngineActions.InitInstall, nargs=0)
@@ -72,8 +72,7 @@ class ConfiguratorCLI(object):
 
         plugins_add_parser = plugin_args.add_parser('add')
         plugins_add_parser.add_argument(
-            'plugin_dir', action=PluginActions.AddPluginCache,
-            type=str)
+            'plugin_dir', action=PluginActions.AddPluginCache, type=str)
 
         plugins_add_parser = plugin_args.add_parser('list')
         plugins_add_parser.add_argument(
@@ -81,8 +80,8 @@ class ConfiguratorCLI(object):
 
         plugins_install_parser = plugin_args.add_parser('install')
         plugins_install_parser.add_argument(
-            'plugin-name', action=PluginActions.InstallPlugin,
-            type=str, nargs='*')
+            'plugin-name', action=PluginActions.InstallPlugin, type=str,
+            nargs='*')
 
         return parser.parse_args()
 
