@@ -19,30 +19,35 @@ from cafe.common.reporting import cclogging
 
 class CommonToolsMixin(object):
     """Methods used to make building data models easier, common to all types"""
+
     @staticmethod
     def _bool_to_string(value, true_string='true', false_string='false'):
         """Returns a string representation of a boolean value, or the value
         provided if the value is not an instance of bool
         """
+
         if isinstance(value, bool):
             return true_string if value is True else false_string
         return value
 
     @staticmethod
     def _remove_empty_values(dictionary):
-        '''Returns a new dictionary based on 'dictionary', minus any keys with
+        """Returns a new dictionary based on 'dictionary', minus any keys with
         values that are None
-        '''
+        """
+
         return dict((k, v) for k, v in dictionary.iteritems() if v is not None)
 
 
 class JSON_ToolsMixin(object):
     """Methods used to make building json data models easier"""
+
     pass
 
 
 class XML_ToolsMixin(object):
     """Methods used to make building xml data models easier"""
+
     _XML_VERSION = '1.0'
     _ENCODING = 'UTF-8'
 
@@ -69,6 +74,7 @@ class XML_ToolsMixin(object):
     @staticmethod
     def _remove_xml_etree_namespace(doc, namespace):
         """Remove namespace in the passed document in place."""
+
         ns = u'{%s}' % namespace
         nsl = len(ns)
         for elem in doc.getiterator():
@@ -126,10 +132,10 @@ class BaseModel(object):
         return self.__str__()
 
 
-#Splitting the xml and json stuff into mixins cleans up the code but still
-#muddies the AutoMarshallingModel namespace.  We could create
-#tool objects in the AutoMarshallingModel, which would just act as
-#sub-namespaces, to keep it clean. --Jose
+# Splitting the xml and json stuff into mixins cleans up the code but still
+# muddies the AutoMarshallingModel namespace.  We could create
+# tool objects in the AutoMarshallingModel, which would just act as
+# sub-namespaces, to keep it clean. --Jose
 class AutoMarshallingModel(
         BaseModel, CommonToolsMixin, JSON_ToolsMixin, XML_ToolsMixin):
     """
@@ -137,6 +143,7 @@ class AutoMarshallingModel(
              to automatically create serialized requests and automatically
              deserialize responses in a format-agnostic way.
     """
+
     _log = cclogging.getLogger(__name__)
 
     def __init__(self):
@@ -181,7 +188,7 @@ class AutoMarshallingModel(
             except Exception as deserialization_exception:
                 cls._log.exception(deserialization_exception)
 
-        #Try to log string and format_type if deserialization broke
+        # Try to log string and format_type if deserialization broke
         if deserialization_exception is not None:
             try:
                 cls._log.debug(
@@ -200,14 +207,14 @@ class AutoMarshallingModel(
 
         return model_object
 
-    #Serialization Functions
+    # Serialization Functions
     def _obj_to_json(self):
         raise NotImplementedError
 
     def _obj_to_xml(self):
         raise NotImplementedError
 
-    #Deserialization Functions
+    # Deserialization Functions
     @classmethod
     def _xml_to_obj(cls, serialized_str):
         raise NotImplementedError
@@ -219,11 +226,13 @@ class AutoMarshallingModel(
 
 class AutoMarshallingListModel(list, AutoMarshallingModel):
     """List-like AutoMarshallingModel used for some special cases"""
+
     def __str__(self):
         return list.__str__(self)
 
 
 class AutoMarshallingDictModel(dict, AutoMarshallingModel):
     """Dict-like AutoMarshallingModel used for some special cases"""
+
     def __str__(self):
         return dict.__str__(self)

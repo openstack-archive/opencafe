@@ -75,7 +75,7 @@ class BaseTestFixture(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super(BaseTestFixture, cls).setUpClass()
-        #Move root log handler initialization to the runner!
+        # TODO: Move root log handler initialization to the runner!
         init_root_log_handler()
         cls._reporter = FixtureReporter(cls)
         cls.fixture_log = cls._reporter.logger.log
@@ -140,8 +140,8 @@ class BaseTestFixture(unittest.TestCase):
             try:
                 func(*args, **kwargs)
             except Exception as exception:
-                #Pretty prints method signature in the following format:
-                #"classTearDown failure: Unable to execute FnName(a, b, c=42)"
+                # Pretty prints method signature in the following format:
+                # "classTearDown failure: Unable to execute FnName(a, b, c=42)"
                 cls.fixture_log.exception(exception)
                 cls.fixture_log.error(
                     "classTearDown failure: Exception occured while trying to"

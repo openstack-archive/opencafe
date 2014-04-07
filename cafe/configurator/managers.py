@@ -186,6 +186,7 @@ class TestEnvManager(object):
         reason, it sets the CAFE_TEST_REPO_PATH directly as well as
         CAFE_TEST_REPO_PACKAGE
         """
+
         return os.path.expanduser(
             self.engine_config_interface.default_test_repo)
 
@@ -218,8 +219,8 @@ class TestEnvManager(object):
     def test_logging_verbosity(self):
         """Currently supports STANDARD and VERBOSE.
         TODO: Implement 'OFF' option that adds null handlers to all loggers
-
         """
+
         return self.engine_config_interface.logging_verbosity
 
     @_lazy_property
@@ -234,6 +235,7 @@ class EngineDirectoryManager(object):
         Converts the top-level keys of this dictionary into a namespace.
         Raises exception if any self.keys() collide with internal attributes.
         """
+
         def __init__(self, **kwargs):
             dict.__init__(self, **kwargs)
             collisions = set(kwargs) & set(dir(self))
@@ -279,7 +281,8 @@ class EngineDirectoryManager(object):
         all changes made to the default .opencafe directory structure since
         opencafe's release.
         """
-        #Rename .cloudcafe to .opencafe
+
+        # Rename .cloudcafe to .opencafe
         if os.path.exists(cls._OLD_ROOT_DIR):
             if os.path.exists(cls.OPENCAFE_ROOT_DIR):
                 print cls.wrapper.fill("* * ERROR * * *")
@@ -312,7 +315,8 @@ class EngineDirectoryManager(object):
     @classmethod
     def set_engine_directory_permissions(cls):
         """Recursively changes permissions default engine directory so that
-        everything is user-owned"""
+        everything is user-owned
+        """
 
         PlatformManager.safe_chown(cls.OPENCAFE_ROOT_DIR)
         for root, dirs, files in os.walk(cls.OPENCAFE_ROOT_DIR):
@@ -336,11 +340,11 @@ class EngineConfigManager(object):
     wrapper = textwrap.TextWrapper(
         initial_indent="* ", subsequent_indent="  ", break_long_words=False)
 
-    #Old Config Stuff for backwards compatability testing only
+    # Old Config Stuff for backwards compatability testing only
     _OLD_ENGINE_CONFIG_PATH = os.path.join(
         EngineDirectoryManager.OPENCAFE_ROOT_DIR, 'configs', 'engine.config')
 
-    #Openafe config defaults
+    # Openafe config defaults
     ENGINE_CONFIG_PATH = os.path.join(
         EngineDirectoryManager.OPENCAFE_ROOT_DIR, 'engine.config')
 
@@ -419,7 +423,7 @@ class EngineConfigManager(object):
                 "Moving engine.config file from {0} to {1}".format(
                     cls._OLD_ENGINE_CONFIG_PATH, cls.ENGINE_CONFIG_PATH))
             config = cls.read_config_file(cls._OLD_ENGINE_CONFIG_PATH)
-            #Move to new location
+            # Move to new location
             os.rename(cls._OLD_ENGINE_CONFIG_PATH, cls.ENGINE_CONFIG_PATH)
 
         # Read config from current default location ('.opencafe/engine.config)
@@ -597,6 +601,7 @@ class EnginePluginManager(object):
         """ Handles moving all plugin src data from package into the user's
         .opencafe folder for installation by the cafe-config tool.
         """
+
         default_dest = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
         plugins = os.walk(plugins_src_dir).next()[1]
 
@@ -607,6 +612,7 @@ class EnginePluginManager(object):
     @classmethod
     def list_plugins(cls):
         """ Lists all plugins currently available in user's .opencafe cache"""
+
         plugin_cache = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
         plugin_folders = os.walk(plugin_cache).next()[1]
         wrap = textwrap.TextWrapper(initial_indent="  ",
@@ -619,12 +625,14 @@ class EnginePluginManager(object):
     @classmethod
     def install_plugins(cls, plugin_names):
         """ Installs a list of plugins into the current environment"""
+
         for plugin_name in plugin_names:
             cls.install_plugin(plugin_name)
 
     @classmethod
     def install_plugin(cls, plugin_name):
         """ Install a single plugin by name into the current environment"""
+
         plugin_cache = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
         plugin_dir = os.path.join(plugin_cache, plugin_name)
         wrap = textwrap.TextWrapper(initial_indent="  ",

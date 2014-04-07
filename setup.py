@@ -22,7 +22,7 @@ try:
     from setuptools import setup, find_packages
     from setuptools.command.install import install as _install
 except ImportError:
-    #currently broken, this really only works with setuptools
+    # currently broken, this really only works with setuptools
     from distutils.core import setup, find_packages
     from distutils.command.install import install as _install
 
@@ -31,7 +31,7 @@ if sys.argv[-1] == 'publish':
     sys.exit()
 
 
-#Post-install engine configuration
+# Post-install engine configuration
 def _post_install(dir):
     call(['cafe-config', 'engine', '--init-install'])
     call(['cafe-config', 'plugins', 'add', 'plugins'])
@@ -66,7 +66,7 @@ if sys.version_info < (2, 7):
     requires.extend(oldpy_requires)
 
 
-#cmdclass hook allows setup to make post install call
+# cmdclass hook allows setup to make post install call
 class install(_install):
     def run(self):
         _install.run(self)
@@ -74,7 +74,7 @@ class install(_install):
             _post_install, (self.install_lib,),
             msg="\nRunning post install tasks...")
 
-#Normal setup stuff
+# Normal setup stuff
 setup(
     name='cafe',
     version='0.1.0',
