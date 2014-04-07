@@ -87,8 +87,7 @@ def print_traceback():
     """
     info = sys.exc_info()
     excp_type, excp_value = info[:2]
-    err_msg = error_msg(excp_type.__name__,
-                        excp_value)
+    err_msg = error_msg(excp_type.__name__, excp_value)
     print err_msg
     for file_name, lineno, function, text in extract_tb(info[2]):
         print ">>>", file_name
@@ -469,7 +468,7 @@ class _UnittestRunnerCLI(object):
                     ["  +-{0}/".format(dirname) for dirname in os.listdir(
                         product_config_dir)])
 
-            #If no values passed, print a default
+            # If no values passed, print a default
             if not values:
                 if namespace.product and namespace.config:
                     _print_test_tree()
@@ -885,17 +884,14 @@ class UnittestRunner(object):
         parallel_test_list = []
 
         builder = SuiteBuilder(
-            self.cl_args.module_regex,
-            self.cl_args.method_regex,
-            self.cl_args.tags,
-            self.cl_args.supress_flag)
+            self.cl_args.module_regex, self.cl_args.method_regex,
+            self.cl_args.tags, self.cl_args.supress_flag)
 
         test_runner = self.get_runner(
-            self.cl_args.parallel,
-            self.cl_args.fail_fast,
+            self.cl_args.parallel, self.cl_args.fail_fast,
             self.cl_args.verbose)
 
-        #Build master test suite
+        # Build master test suite
         if self.cl_args.packages:
             for package_name in self.cl_args.packages:
                 path = builder.find_subdir(
@@ -908,24 +904,20 @@ class UnittestRunner(object):
                     parallel_test_list = builder.generate_suite_list(
                         path, parallel_test_list)
         else:
-            master_suite = builder.generate_suite(
-                self.product_repo_path)
+            master_suite = builder.generate_suite(self.product_repo_path)
             if self.cl_args.parallel:
                 parallel_test_list = builder.generate_suite_list(
                     self.product_repo_path)
 
         if self.cl_args.parallel:
             exit_code = self.run_parallel(
-                parallel_test_list,
-                test_runner,
+                parallel_test_list, test_runner,
                 result_type=self.cl_args.result,
                 results_path=self.cl_args.result_directory)
             exit(exit_code)
         else:
             exit_code = self.run_serialized(
-                master_suite,
-                test_runner,
-                result_type=self.cl_args.result,
+                master_suite, test_runner, result_type=self.cl_args.result,
                 results_path=self.cl_args.result_directory)
             exit(exit_code)
 
@@ -991,13 +983,13 @@ class UnittestRunner(object):
         total_execution_time = time.time() - start_time
 
         if result_type is not None:
-            result_parser = SummarizeResults(vars(result), master_suite,
-                                             total_execution_time)
+            result_parser = SummarizeResults(
+                vars(result), master_suite, total_execution_time)
             all_results = result_parser.gather_results()
-            reporter = Reporter(result_parser=result_parser,
-                                all_results=all_results)
-            reporter.generate_report(result_type=result_type,
-                                     path=results_path)
+            reporter = Reporter(
+                result_parser=result_parser, all_results=all_results)
+            reporter.generate_report(
+                result_type=result_type, path=results_path)
 
         log_results(result)
         if not result.wasSuccessful():

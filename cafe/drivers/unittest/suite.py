@@ -71,5 +71,5 @@ class OpenCafeUnittestTestSuite(TestSuite):
                 className = util.strclass(currentClass)
                 errorName = 'setUpClass (%s)' % className
                 self._addClassOrModuleLevelException(result, e, errorName)
-                #Monkeypatch: Run class cleanup if setUpClass fails
+                # Monkeypatch: Run class cleanup if setUpClass fails
                 currentClass._do_class_cleanup_tasks()

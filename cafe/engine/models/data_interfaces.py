@@ -27,6 +27,7 @@ except:
     The mongo data-source is currently not being used. and needs to be
     abstracted out into a data-source plugin.
     """
+
     pass
 
 
@@ -42,7 +43,7 @@ class ConfigEnvironmentVariableError(Exception):
     pass
 
 
-#Decorator
+# This is a decorator
 def expected_values(*values):
     def decorator(fn):
         def wrapped():
@@ -242,11 +243,9 @@ class MongoDataSource(DictionaryDataSource):
 
 
 class BaseConfigSectionInterface(object):
-    """
-    Base class for building an interface for the data contained in a
+    """Base class for building an interface for the data contained in a
     SafeConfigParser object, as loaded from the config file as defined
     by the engine's config file.
-
     """
 
     def __init__(self, config_file_path, section_name):

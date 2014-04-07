@@ -23,14 +23,14 @@ class RequiredClientNotDefinedError(Exception):
 
 
 def behavior(*required_clients):
-    '''Decorator that tags method as a behavior, and optionally adds
+    """Decorator that tags method as a behavior, and optionally adds
     required client objects to an internal attribute.  Causes calls to this
     method to throw RequiredClientNotDefinedError exception if the containing
     class does not have the proper client instances defined.
-    '''
-    #@decorator.decorator
+    """
+
     def _decorator(func):
-        #Unused for now
+        # Unused for now
         setattr(func, '__is_behavior__', True)
         setattr(func, '__required_clients__', [])
         for client in required_clients:
