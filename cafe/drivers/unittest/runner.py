@@ -25,7 +25,7 @@ from inspect import getmembers, isclass
 from multiprocessing import Process, Manager
 from re import search
 from traceback import extract_tb
-import unittest2 as unittest
+import unittest
 import uuid
 
 from result import TaggedTextTestResult
@@ -128,12 +128,12 @@ class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
     def run(self, test):
         """Run the given test case or test suite."""
         result = self._makeResult()
-        startTime = time.time()
+        # startTime = time.time()
         test(result)
-        stopTime = time.time()
-        timeTaken = stopTime - startTime
+        # stopTime = time.time()
+        # timeTaken = stopTime - startTime
         result.printErrors()
-        run = result.testsRun
+        # run = result.testsRun
         return result
 
 
@@ -904,18 +904,10 @@ class UnittestRunner(object):
         """Inject tag mapping into the result __dict__ object if available"""
         if hasattr(result, 'mapping'):
             mapping = result.mapping.test_to_tag_mapping
-
-            if not mapping is None and len(mapping) > 0:
-                setattr(result, 'tags', mapping)
-            else:
-                setattr(result, 'tags', [])
+            setattr(result, 'tags', mapping or [])
 
             attributes = result.mapping.test_to_attribute_mapping
-
-            if not attributes is None and len(attributes) > 0:
-                setattr(result, 'attributes', attributes)
-            else:
-                setattr(result, 'attributes', [])
+            setattr(result, 'attributes', attributes or [])
 
     def run(self):
         """

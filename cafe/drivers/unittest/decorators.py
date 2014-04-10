@@ -19,7 +19,7 @@ import inspect
 import itertools
 
 from types import FunctionType
-from unittest2 import TestCase
+from unittest import TestCase
 from warnings import warn, simplefilter
 
 from cafe.common.reporting import cclogging

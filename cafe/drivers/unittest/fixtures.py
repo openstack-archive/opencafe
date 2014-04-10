@@ -21,7 +21,7 @@ limitations under the License.
 """
 import os
 import re
-import unittest2 as unittest
+import unittest
 
 from cafe.drivers.base import FixtureReporter
 from cafe.common.reporting.cclogging import init_root_log_handler

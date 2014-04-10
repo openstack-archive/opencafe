@@ -26,7 +26,7 @@ class SummarizeResults(object):
 
     def get_passed_tests(self):
         all_tests = []
-        actual_number_of_tests_run = []
+        # actual_number_of_tests_run = []
         failed_tests = []
         skipped_tests = []
         errored_tests = []
@@ -50,8 +50,8 @@ class SummarizeResults(object):
                 for item_2 in setup_errored_classes:
                     if item_2 == item_1.__class__.__name__:
                         setup_errored_tests.append(item_1)
-        else:
-            actual_number_of_tests_run = all_tests
+        # else:
+        #   actual_number_of_tests_run = all_tests
 
         passed_tests = list(set(all_tests) - set(failed_tests) -
                             set(skipped_tests) - set(errored_tests) -
