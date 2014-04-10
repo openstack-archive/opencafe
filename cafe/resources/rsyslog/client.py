@@ -60,6 +60,7 @@ class RSyslogClient(object):
         """ Builds a Syslog Message Header Object
         Also handles replacing passed None's with syslog "nil" values.
         """
+
         head = SyslogMessageHead()
         head.appname = app_name or '-'
         head.hostname = host_name or '-'
@@ -113,6 +114,7 @@ class MessageHandler(object):
     @classmethod
     def sd_dict_to_syslog_str(cls, sd_dict):
         """ Converts structured data dictionary to a syslog str """
+
         syslog_sds = ''
         for sd_key, sd_val in sd_dict.items():
             syslog_str = '[{sd_key}'.format(sd_key=sd_key)
@@ -131,6 +133,7 @@ class MessageHandler(object):
         """ Converts a CEE format dictionary and converts it to a syslog
         message string.
         """
+
         structured_data = cee_dict.get('native')
         if structured_data is not None:
             structured_data = cls.sd_dict_to_syslog_str(structured_data)

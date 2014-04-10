@@ -93,6 +93,7 @@ UNICODE_PLANES = None
 
 class PLANE_NAMES(object):
     """Namespace that defines all standard Unicode Plane names"""
+
     basic_multilingual_plane = 'Basic Multilingual Plane'
     supplementary_multilingual_plane = 'Supplementary Multilingual Plane'
     supplementary_ideographic_plane = 'Supplementary Ideographic Plane'
@@ -103,6 +104,7 @@ class PLANE_NAMES(object):
 
 class BLOCK_NAMES(object):
     """Namespace that defines all standard Unicode Block names"""
+
     basic_latin = "Basic Latin"
     c1_controls_and_latin_1_supplement = "C1 Controls and Latin-1 Supplement"
     latin_extended_a = "Latin Extended-A"
@@ -399,11 +401,11 @@ _unicode_blocks = (
 
 
 class UnicodeRange(object):
-    """
-    Iterable representation of a range of unicode codepoints.
+    """Iterable representation of a range of unicode codepoints.
     This can represent a standard Unicode Block, a standard Unicode Plane, or
     even a custom range.
     """
+
     def __init__(self, start, end, name):
         self.name = name
         self.start = start
@@ -414,18 +416,18 @@ class UnicodeRange(object):
             hex(self.start), hex(self.end), str(self.name))
 
     def codepoints(self):
-        """
-        Generator that yields the the integer value of all codepoints in
+        """Generator that yields the the integer value of all codepoints in
         UnicodeRange
         """
+
         for codepoint in range(self.start, self.end + 1):
             yield codepoint
 
     def codepoint_names(self):
-        """
-        Generator that yields the string name (if available) of all codepoints
+        """Generator that yields the string name (if available) of all codepoints
         in UnicodeRange
         """
+
         for codepoint in self.codepoints():
             yield codepoint_name(codepoint)
 
@@ -439,8 +441,7 @@ class UnicodeRange(object):
 
 
 class UnicodeRangeList(list):
-    """
-    List-like collection of UnicodeRange objects.
+    """List-like collection of UnicodeRange objects.
     Represents a set of Unicode codepoint ranges, such as a custom non-linear
     set of ranges, or a Unicode Plane.
     @TODO: Override constructor so that only UnicodeRange objects can be
@@ -454,56 +455,56 @@ class UnicodeRangeList(list):
         return '{0}]'.format(ret_str)
 
     def codepoints(self):
-        """
-        Generator that yields the the integer value of all codepoints in all
+        """Generator that yields the the integer value of all codepoints in all
         UnicodeRange objects in UnicodeRangeList
         """
+
         for unicode_range in self:
             for codepoint in unicode_range.codepoints():
                 yield codepoint
 
     def codepoint_names(self):
-        """
-        Generator that yields the string name (if available) of all codepoints
+        """Generator that yields the string name (if available) of all codepoints
         in all ranges in UnicodeRangeList.
 
         If a name cannot be found, the codepoint's integer value is
         returned in hexidecimal format as a string.
         """
+
         for codepoint in self.codepoints():
             yield codepoint_name(codepoint)
 
     def encoded_codepoints(self, encoding='utf-8'):
-        """
-        Generator that yields an <encoding> encoded unicode string
+        """Generator that yields an <encoding> encoded unicode string
         representation of all codepoints in all UnicodeRange objects in
         UnicodeRangeList
         """
+
         for codepoint in self.codepoints():
             yield unichr(codepoint).encode(encoding)
 
     def get_range(self, range_name):
-        """
-        Expects a Unicode Block name as a string.
+        """Expects a Unicode Block name as a string.
 
         Returns a single UnicodeRange object representing the codepoints in the
         unicode block range named range_name, if such a range exists in the
         UnicodeRangeList, or None otherwise.
         """
+
         for unicode_range in self:
             if unicode_range.name == range_name:
                 return unicode_range
         return None
 
     def get_range_list(self, range_name_list):
-        """
-        Expects a list of Unicode Block names as strings.
+        """Expects a list of Unicode Block names as strings.
 
         Returns a UnicodeRangeList of UnicodeRange objects representing the
         codepoints in the unicode block ranges with names in range_name_list,
         if any such unicode block ranges exist in the UnicodeRangeList, or an
         empty UnicodeRangeList otherewise.
         """
+
         range_list = UnicodeRangeList()
         for unicode_range in self:
             if unicode_range.name in range_name_list:
@@ -523,32 +524,31 @@ for _start, _end, _name in _unicode_planes:
 
 
 def codepoint_parent_plane(codepoint_integer):
-    """
-    Expects a Unicode codepoint as an integer.
+    """Expects a Unicode codepoint as an integer.
 
     Return a UnicodeRangeList of UnicodeRange objects representing the
     unicode plane that codepoint_integer belongs to.
     """
+
     for plane in UNICODE_PLANES:
         if codepoint_integer >= plane.start and codepoint_integer <= plane.end:
             return plane
 
 
 def codepoint_parent_block(codepoint_integer):
-    """
-    Expects a Unicode codepoint as an integer.
+    """Expects a Unicode codepoint as an integer.
 
     Return a UnicodeRange object representing the unicode block that
     codepoint_integer belongs to.
     """
+
     for block in UNICODE_BLOCKS:
         if codepoint_integer >= block.start and codepoint_integer <= block.end:
             return block
 
 
 def codepoint_name(codepoint_integer):
-    """
-    Expects a Unicode codepoint as an integer.
+    """Expects a Unicode codepoint as an integer.
 
     Returns the unicode name of codepoint_integer if valid unicode codepoint,
     None otherwise

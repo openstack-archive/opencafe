@@ -22,7 +22,7 @@ from cafe.common.reporting.base_report import BaseReport
 class JSONReport(BaseReport):
 
     def generate_report(self, result_parser, all_results=None, path=None):
-        """ Generates a JSON report in the specified directory. """
+        """Generates a JSON report in the specified directory."""
 
         num_tests = len(all_results)
         errors = len([result.error_trace for result in all_results

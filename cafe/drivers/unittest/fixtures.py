@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-"""
-@summary: Base Classes for Test Fixtures
+"""Base Classes for Test Fixtures
 @note: Corresponds DIRECTLY TO A unittest.TestCase
 @see: http://docs.python.org/library/unittest.html#unittest.TestCase
 """
+
 import os
 import re
 import unittest2 as unittest
@@ -37,9 +37,8 @@ class BaseTestFixture(unittest.TestCase):
     __test__ = True
 
     def shortDescription(self):
-        """
-        @summary: Returns a formatted description of the test
-        """
+        """Returns a formatted description of the test"""
+
         short_desc = None
 
         if os.environ.get("VERBOSE", None) == "true" and self._testMethodDoc:
@@ -98,7 +97,7 @@ class BaseTestFixture(unittest.TestCase):
 
     def tearDown(self):
         """
-        @todo: This MUST be upgraded this from resultForDoCleanups into a
+        @TODO: This MUST be upgraded this from resultForDoCleanups into a
                better pattern or working with the result object directly.
                This is related to the todo in L{TestRunMetrics}
         """
@@ -162,9 +161,7 @@ class BaseTestFixture(unittest.TestCase):
 
 
 class BaseBurnInTestFixture(BaseTestFixture):
-    """
-    @summary: Base test fixture that allows for Burn-In tests
-    """
+    """Base test fixture that allows for Burn-In tests"""
     @classmethod
     def setUpClass(cls):
         super(BaseBurnInTestFixture, cls).setUpClass()

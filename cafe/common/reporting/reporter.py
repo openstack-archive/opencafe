@@ -27,6 +27,7 @@ class Reporter:
         """ Creates a report object based on what type is given and generates
         the report in the specified directory.
         """
+
         if result_type == 'json':
             report = JSONReport()
         elif result_type == 'xml':

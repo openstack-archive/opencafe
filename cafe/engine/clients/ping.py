@@ -20,9 +20,7 @@ import subprocess
 
 
 class PingClient(object):
-    """
-    @summary: Client to ping windows or linux servers
-    """
+    """Client to ping windows or linux servers"""
 
     PING_IPV4_COMMAND_LINUX = 'ping -c 3'
     PING_IPV6_COMMAND_LINUX = 'ping6 -c 3'
@@ -32,8 +30,7 @@ class PingClient(object):
 
     @classmethod
     def ping(cls, ip, ip_address_version):
-        """
-        @summary: Ping a server with a IP
+        """Ping a server with a IP
         @param ip: IP address to ping
         @type ip: string
         @return: True if the server was reachable, False otherwise

@@ -19,6 +19,7 @@ from cafe.common.reporting import cclogging
 
 class RequiredClientNotDefinedError(Exception):
     """Raised when a behavior method call can't find a required client """
+
     pass
 
 

@@ -24,8 +24,7 @@ import sys
 
 
 class TestRunMetrics(object):
-    """
-    @summary: Generic Timer used to track any time span
+    """Generic Timer used to track any time span
     @ivar start_time: Timestamp from the start of the timer
     @type start_time: C{datetime}
     @ivar stop_time: Timestamp of the end of the timer
@@ -35,6 +34,7 @@ class TestRunMetrics(object):
            this auto-magically work with unittest properly.
            This should be a child of unittest.TestResult
     """
+
     def __init__(self):
         self.total_tests = 0
         self.total_passed = 0
@@ -45,8 +45,7 @@ class TestRunMetrics(object):
 
 
 class TestResultTypes(object):
-    """
-    @summary: Types dictating an individual Test Case result
+    """Types dictating an individual Test Case result
     @cvar PASSED: Test has passed
     @type PASSED: C{str}
     @cvar FAILED: Test has failed
@@ -69,8 +68,7 @@ class TestResultTypes(object):
 
 
 class TestTimer(object):
-    """
-    @summary: Generic Timer used to track any time span
+    """Generic Timer used to track any time span
     @ivar start_time: Timestamp from the start of the timer
     @type start_time: C{datetime}
     @ivar stop_time: Timestamp of the end of the timer
@@ -82,8 +80,7 @@ class TestTimer(object):
         self.stop_time = None
 
     def start(self):
-        """
-        @summary: Starts this timer
+        """Starts this timer
         @return: None
         @rtype: None
         """
@@ -91,8 +88,7 @@ class TestTimer(object):
         self.start_time = datetime.now()
 
     def stop(self):
-        """
-        @summary: Stops this timer
+        """Stops this timer
         @return: None
         @rtype: None
         """
@@ -100,8 +96,7 @@ class TestTimer(object):
         self.stop_time = datetime.now()
 
     def get_elapsed_time(self):
-        """
-        @summary: Convenience method for total elapsed time
+        """Convenience method for total elapsed time
         @rtype: C{datetime}
         @return: Elapsed time for this timer. C{None} if timer has not started
         """

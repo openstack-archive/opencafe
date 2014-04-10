@@ -30,8 +30,6 @@ class BaseWinRMClient(BaseClient):
 
     def __init__(self, host=None):
         """
-        Initialization
-
         @param host: IP address or host name to connect to
         @type host: string
         """
@@ -40,8 +38,7 @@ class BaseWinRMClient(BaseClient):
         self.shell_id = None
 
     def connect(self, username=None, password=None):
-        """
-        Attempts to connect to a remote server via WinRM.
+        """Attempts to connect to a remote server via WinRM.
 
         @param username: Username to be used for the WinRM connection
         @type username: string
@@ -63,8 +60,7 @@ class BaseWinRMClient(BaseClient):
             self.shell_id = self.connection.open_shell()
 
     def is_connected(self):
-        """
-        Checks to see if a WinRM connection exists.
+        """Checks to see if a WinRM connection exists.
 
         @rtype: bool
         """
@@ -72,8 +68,7 @@ class BaseWinRMClient(BaseClient):
         return self.connection is not None and self.shell_id is not None
 
     def _format_response(self, std_out=None, std_err=None, status_code=None):
-        """
-        Converts the executed command responses into an object.
+        """Converts the executed command responses into an object.
 
         @param std_out: The stdout result
         @type std_out: string
@@ -88,8 +83,7 @@ class BaseWinRMClient(BaseClient):
         return response
 
     def execute_command(self, command=None, args=None):
-        """
-        Executes a command via remote shell.
+        """Executes a command via remote shell.
 
         @param command: The command to execute
         @type command: string
@@ -126,8 +120,6 @@ class WinRMClient(BaseWinRMClient):
 
     def __init__(self, username=None, password=None, host=None):
         """
-        Initialization
-
         @param username: Username to be used for WinRM connection
         @type username: string
         @param password: Password to be used for WinRM connection
@@ -143,9 +135,8 @@ class WinRMClient(BaseWinRMClient):
 
     def connect_with_retries(self, retries=10, cooldown=10):
         """
-        Attempt to connect via WinRM, retrying until a
-        time limit has been exceeded.
-
+        @summary: Attempt to connect via WinRM, retrying until a time limit has
+                  been exceeded.
         @param cooldown: Amount of time to wait between connection attempts
         @type cooldown: int
         @param retries: Number of times to retry connecting
@@ -166,9 +157,8 @@ class WinRMClient(BaseWinRMClient):
 
     def connect_with_timeout(self, cooldown=10, timeout=600):
         """
-        Attempt to connect via WinRM, retrying until a
-        time limit has been exceeded.
-
+        @summary: Attempt to connect via WinRM, retrying until a time limit has
+                  been exceeded.
         @param cooldown: Amount of time to wait between connection attempts
         @type cooldown: int
         @param timeout: Amount of time to wait before giving up on connecting

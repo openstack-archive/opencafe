@@ -45,6 +45,7 @@ class DatasetList(list):
 
     def append_new_dataset(self, name, data_dict):
         """Creates and appends a new Dataset"""
+
         self.append(_Dataset(name, data_dict))
 
     def extend(self, dataset_list):
@@ -57,6 +58,7 @@ class DatasetList(list):
 
     def extend_new_datasets(self, dataset_list):
         """Creates and extends a new DatasetList"""
+
         self.extend(dataset_list)
 
 
@@ -95,6 +97,7 @@ class DatasetFileLoader(DatasetList):
     if name is ommited, it is replaced with that dataset's location in the
     load order, so that not all datasets need to be named.
     """
+
     def __init__(self, file_object):
         content = json.loads(str(file_object.read()))
         count = 0

@@ -87,8 +87,7 @@ class PlatformManager(object):
 
 
 class TestEnvManager(object):
-    """
-    Manages setting all required and optional environment variables used by
+    """Manages setting all required and optional environment variables used by
     the engine and it's implementations.
     Usefull for writing bootstrappers for runners and scripts.
     """
@@ -121,8 +120,7 @@ class TestEnvManager(object):
         self.engine_config_interface = EngineConfig(self.engine_config_path)
 
     def finalize(self, create_log_dirs=True, set_os_env_vars=True):
-        """
-        Sets all non-configured values to the defaults in the engine.config
+        """Sets all non-configured values to the defaults in the engine.config
         file. set_defaults=False will override this behavior, but note that
         unless you manually set the os environment variables yourself, this
         will result in undefined behavior
@@ -231,8 +229,7 @@ class TestEnvManager(object):
 class EngineDirectoryManager(object):
 
     class _Namespace(dict):
-        """
-        Converts the top-level keys of this dictionary into a namespace.
+        """Converts the top-level keys of this dictionary into a namespace.
         Raises exception if any self.keys() collide with internal attributes.
         """
 
@@ -276,8 +273,7 @@ class EngineDirectoryManager(object):
 
     @classmethod
     def update_deprecated_engine_directories(cls):
-        """
-        Applies to an existing .cloudcafe (old) or .opencafe (new) directory
+        """Applies to an existing .cloudcafe (old) or .opencafe (new) directory
         all changes made to the default .opencafe directory structure since
         opencafe's release.
         """
@@ -395,8 +391,7 @@ class EngineConfigManager(object):
 
     @classmethod
     def update_engine_config(cls):
-        """
-        Applies to an existing engine.config file all modifications made to
+        """Applies to an existing engine.config file all modifications made to
         the default engine.config file since opencafe's release in the order
         those modification where added.
         """
@@ -598,7 +593,7 @@ class EnginePluginManager(object):
 
     @classmethod
     def populate_plugin_cache(cls, plugins_src_dir):
-        """ Handles moving all plugin src data from package into the user's
+        """Handles moving all plugin src data from package into the user's
         .opencafe folder for installation by the cafe-config tool.
         """
 
@@ -611,7 +606,7 @@ class EnginePluginManager(object):
 
     @classmethod
     def list_plugins(cls):
-        """ Lists all plugins currently available in user's .opencafe cache"""
+        """Lists all plugins currently available in user's .opencafe cache"""
 
         plugin_cache = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
         plugin_folders = os.walk(plugin_cache).next()[1]
@@ -624,14 +619,14 @@ class EnginePluginManager(object):
 
     @classmethod
     def install_plugins(cls, plugin_names):
-        """ Installs a list of plugins into the current environment"""
+        """Installs a list of plugins into the current environment"""
 
         for plugin_name in plugin_names:
             cls.install_plugin(plugin_name)
 
     @classmethod
     def install_plugin(cls, plugin_name):
-        """ Install a single plugin by name into the current environment"""
+        """Install a single plugin by name into the current environment"""
 
         plugin_cache = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
         plugin_dir = os.path.join(plugin_cache, plugin_name)

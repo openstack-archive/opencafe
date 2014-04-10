@@ -23,6 +23,7 @@ class XMLReport(BaseReport):
 
     def generate_report(self, result_parser, all_results=None, path=None):
         """Generates an XML report in the specified directory."""
+
         num_tests = len(all_results)
         root = ET.Element("testsuite")
         root.attrib['name'] = ''

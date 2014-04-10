@@ -140,8 +140,8 @@ class AutoMarshallingModel(
         BaseModel, CommonToolsMixin, JSON_ToolsMixin, XML_ToolsMixin):
     """
     @summary: A class used as a base to build and contain the logic necessary
-             to automatically create serialized requests and automatically
-             deserialize responses in a format-agnostic way.
+              to automatically create serialized requests and automatically
+              deserialize responses in a format-agnostic way.
     """
 
     _log = cclogging.getLogger(__name__)

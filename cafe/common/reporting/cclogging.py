@@ -61,8 +61,7 @@ def get_object_namespace(obj):
 
 
 def parse_class_namespace_string(class_string):
-    """
-    Parses the dotted namespace out of an object's __mro__. Returns a string
+    """Parses the dotted namespace out of an object's __mro__. Returns a string
     """
 
     class_string = str(class_string)

@@ -16,12 +16,13 @@ limitations under the License.
 
 
 class BehaviorResponse(object):
-    '''An object to represent the result of behavior.
+    """An object to represent the result of behavior.
     @ivar response: Last response returned from last client call
     @ivar ok: Represents the success state of the behavior call
     @type ok:C{bool}
     @ivar entity: Data model created via behavior calls, if applicable
-    '''
+    """
+
     def __init__(self):
         self.response = None
         self.ok = False

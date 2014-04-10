@@ -50,7 +50,8 @@ def tags(*tags, **attrs):
 
 def data_driven_test(dataset_source=None):
     """Used to define the data source for a data driven test in a
-    DataDrivenFixture decorated Unittest TestCase class"""
+    DataDrivenFixture decorated Unittest TestCase class
+    """
 
     def decorator(func):
         setattr(func, DATA_DRIVEN_TEST_ATTR, dataset_source)
@@ -60,7 +61,8 @@ def data_driven_test(dataset_source=None):
 
 def DataDrivenFixture(cls):
     """Generates new unittest test methods from methods defined in the
-    decorated class"""
+    decorated class
+    """
 
     if not issubclass(cls, TestCase):
         raise DataDrivenFixtureError
@@ -135,8 +137,7 @@ def skip_open_issue(type, bug_id):
 
 
 class memoized(object):
-    """
-    Decorator.
+    """Decorator.
     @see: https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
     Caches a function's return value each time it is called.
     If called later with the same arguments, the cached value is returned
@@ -175,6 +176,7 @@ class memoized(object):
 
     def __repr__(self):
         """Return the function's docstring."""
+
         return self.func.__doc__
 
     # Because the root log is initialized in the base test fixture, and because

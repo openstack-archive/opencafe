@@ -20,8 +20,6 @@ class WinRMResponse(object):
     def __init__(self, std_out=None,
                  std_err=None, status_code=None):
         """
-        Initialization
-
         @param std_out: Text from the stdout stream
         @type std_out: string
         @param std_err: Text from the stderr stream

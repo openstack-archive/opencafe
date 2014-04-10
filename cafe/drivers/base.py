@@ -7,6 +7,7 @@ from cafe.common.reporting.metrics import \
 
 class _FixtureLogger(object):
     """Provides logging for any test fixture"""
+
     def __init__(self, parent_object):
         self.log = getLogger('')
         self.log_handler = setup_new_cchandler(
@@ -15,12 +16,14 @@ class _FixtureLogger(object):
 
     def start(self):
         """Adds handler to log to start logging"""
+
         if self._is_logging is False:
             self.log.addHandler(self.log_handler)
             self._is_logging = True
 
     def stop(self):
         """Removes handler from log to stop logging"""
+
         self.log.removeHandler(self.log_handler)
         self._is_logging = False
 
@@ -35,6 +38,7 @@ class FixtureReporter(object):
 
     def start(self):
         """Starts logging and metrics reporting for the fixture"""
+
         self.logger.start()
         self.metrics.timer.start()
 

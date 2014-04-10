@@ -23,8 +23,7 @@ class SQLClientException(Exception):
 
 
 class BaseSQLClient(BaseClient):
-    """
-    This is meant to be a base support client for DBAPI 2.0 clients. This
+    """This is meant to be a base support client for DBAPI 2.0 clients. This
     client is not meant to be used directly. New clients will extend this
     client and live inside of the individual CAFE.
 
@@ -38,8 +37,7 @@ class BaseSQLClient(BaseClient):
 
     def connect(self, data_source_name=None, user=None, password=None,
                 host=None, database=None):
-        """
-        Connects to self._driver with passed parameters
+        """Connects to self._driver with passed parameters
 
         @param data_source_name: The data source name
         @type data_source_name: String
@@ -52,6 +50,7 @@ class BaseSQLClient(BaseClient):
         @param database: Database Name
         @type database: String
         """
+
         if self._driver is None:
             message = 'Driver not set.'
             self._log.critical(message)
@@ -67,9 +66,8 @@ class BaseSQLClient(BaseClient):
             raise detail
 
     def execute(self, operation, parameters=None, cursor=None):
-        """
-        Calls execute with operation & parameters sent in on either the passed
-        cursor or a new cursor
+        """Calls execute with operation & parameters sent in on either the 
+        passed cursor or a new cursor
 
         For more information on the execute command see:
         http://www.python.org/dev/peps/pep-0249/#id15
@@ -82,6 +80,7 @@ class BaseSQLClient(BaseClient):
         @param cursor: A pre-existing cursor
         @type cursor: object
         """
+
         if self._connection is None:
             message = 'Connection not set.'
             self._log.critical(message)
@@ -95,8 +94,7 @@ class BaseSQLClient(BaseClient):
         return cursor
 
     def execute_many(self, operation, seq_of_parameters=None, cursor=None):
-        """
-        Calls executemany with operation & parameters sent in on either the
+        """Calls executemany with operation & parameters sent in on either the
         passed cursor or a new cursor
 
         For more information on the execute command see:
@@ -110,6 +108,7 @@ class BaseSQLClient(BaseClient):
         @param cursor: A pre-existing cursor
         @type cursor: object
         """
+
         if self._connection is None:
             message = 'Connection not set.'
             self._log.critical(message)
@@ -123,9 +122,7 @@ class BaseSQLClient(BaseClient):
         return cursor
 
     def close(self):
-        """
-        Closes the connection
-        """
+        """Closes the connection"""
         if self._connection is not None:
             self._connection.close()
             self._connection = None

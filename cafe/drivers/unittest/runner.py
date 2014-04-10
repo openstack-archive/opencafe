@@ -39,9 +39,8 @@ from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
 
 
 def tree(directory, padding, print_files=False):
-    """
-    creates an ascii tree for listing files or configs
-    """
+    """creates an ascii tree for listing files or configs"""
+
     files = []
     dir_token = "{0}+-".format(padding[:-1])
     dir_path = os.path.basename(os.path.abspath(directory))
@@ -73,18 +72,16 @@ def tree(directory, padding, print_files=False):
 
 
 def error_msg(e_type, e_msg):
-    """
-    creates an error message
-    """
+    """creates an error message"""
+
     err_msg = "<[WARNING {0} ERROR {1}]>".format(str(e_type), str(e_msg))
 
     return err_msg
 
 
 def print_traceback():
-    """
-    formats and prints out a minimal stack trace
-    """
+    """formats and prints out a minimal stack trace"""
+
     info = sys.exc_info()
     excp_type, excp_value = info[:2]
     err_msg = error_msg(excp_type.__name__, excp_value)
@@ -121,6 +118,7 @@ class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
 
     def run(self, test):
         """Run the given test case or test suite."""
+
         result = self._makeResult()
         startTime = time.time()
         test(result)
@@ -138,9 +136,7 @@ class LoadedTestClass(object):
         self.module_name = self._get_module_name(loaded_module)
 
     def _get_class_names(self, loaded_module):
-        """
-        gets all the class names in an imported module
-        """
+        """gets all the class names in an imported module"""
 
         for _, obj in getmembers(loaded_module, isclass):
             temp_obj = obj
@@ -190,9 +186,8 @@ class SuiteBuilder(object):
         self.supress = supress_flag
 
     def get_dotted_path(self, path, split_token):
-        """
-        creates a dotted path for use by unittest"s loader
-        """
+        """creates a dotted path for use by unittest"s loader"""
+
         try:
             position = len(path.split(split_token)) - 1
             temp_path = "{0}{1}".format(
@@ -207,37 +202,36 @@ class SuiteBuilder(object):
         return dotted_path
 
     def find_root(self, path, target):
-        """
-        walks the path searching for the target root folder.
-        """
+        """walks the path searching for the target root folder."""
+
         for root, _, _ in os.walk(path):
             if target in os.path.basename(root):
                 return root
 
     def find_file(self, path, target):
-        """
-        walks the path searching for the target file. the full to the target
+        """walks the path searching for the target file. the full to the target
         file is returned
         """
+
         for root, _, files in os.walk(path):
             for file_name in files:
                 if (target in file_name and not file_name.endswith(".pyc")):
                     return os.path.join(root, file_name)
 
     def find_subdir(self, path, target):
-        """
-        Walks the path searching for the target subdirectory.
+        """Walks the path searching for the target subdirectory. 
         The full path to the target subdirectory is returned
         """
+
         for root, dirs, _ in os.walk(path):
             for dir_name in dirs:
                 if target in dir_name:
                     return os.path.join(root, dir_name)
 
     def drill_path(self, path, target):
+        """walks the path searching for the last instance of the target path.
         """
-        walks the path searching for the last instance of the target path.
-        """
+
         return_path = {}
         for root, _, _ in os.walk(path):
             if target in os.path.basename(root):
@@ -246,9 +240,8 @@ class SuiteBuilder(object):
         return return_path
 
     def load_module(self, module_path):
-        """
-        uses imp to load a module
-        """
+        """uses imp to load a module"""
+
         loaded_module = None
 
         module_name = os.path.basename(module_path)
@@ -274,9 +267,8 @@ class SuiteBuilder(object):
         return loaded_module
 
     def get_modules(self, rootdir):
-        """
-        generator yields modules matching the module_regex
-        """
+        """generator yields modules matching the module_regex"""
+
         for root, _, files in os.walk(rootdir):
             for name in files:
                 if (fnmatch(name, self.module_regex)
@@ -287,10 +279,10 @@ class SuiteBuilder(object):
                     yield full_path
 
     def _parse_tags(self, tags):
-        """
-        tags sent in from the command line are sent in as a string.
+        """tags sent in from the command line are sent in as a string.
         returns a list of tags and a "+" token if it is present.
         """
+
         token = None
         tag_list = []
         attrs = {}
@@ -309,11 +301,11 @@ class SuiteBuilder(object):
         return tag_list, attrs, token
 
     def _check_attrs(self, method, attrs, token=None):
-        """
-        checks to see if the method passed in has matching key=value
+        """checks to see if the method passed in has matching key=value
         attributes. if a "+" token is passed only method that contain
         foo and bar will be match
         """
+
         truth_values = []
         method_attrs = {}
 
@@ -334,12 +326,12 @@ class SuiteBuilder(object):
             else True in truth_values)
 
     def _check_tags(self, method, tags, token):
-        """
-        checks to see if the method passed in has matching tags.
+        """checks to see if the method passed in has matching tags.
         if the tags are (foo, bar) this method will match foo or
         bar. if a "+" token is passed only method that contain
         foo and bar will be match
         """
+
         method_tags = method.__dict__.get(TAGS_DECORATOR_TAG_LIST_NAME)
         match = set(tags).intersection(method_tags)
         return match == set(tags) if token == "+" else bool(match)
@@ -369,9 +361,8 @@ class SuiteBuilder(object):
         return load_test_flag
 
     def build_suite(self, loaded_module):
-        """
-        loads the found tests and builds the test suite
-        """
+        """loads the found tests and builds the test suite"""
+
         tag_list = []
         attrs = {}
         loader = unittest.TestLoader()
@@ -494,11 +485,13 @@ class _UnittestRunnerCLI(object):
 
     class ProductAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
+
             # Add the product to the namespace
             setattr(namespace, self.dest, values)
 
     class ConfigAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
+
             # Make sure user provided config name ends with '.config'
             if values is not None:
                 if not str(values).endswith('.config'):
@@ -515,6 +508,7 @@ class _UnittestRunnerCLI(object):
 
     class ModuleRegexAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
+
             # Make sure user-specified module name has a .py at the end of it
             if ".py" not in str(values):
                 values = "{0}{1}".format(values, ".py")
@@ -523,8 +517,8 @@ class _UnittestRunnerCLI(object):
 
     class MethodRegexAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
-            # Make sure user-specified method name has test_ at the start of it
 
+            # Make sure user-specified method name has test_ at the start of it
             if 'test_' not in str(values):
                 values = "{0}{1}".format("test_", values)
 
@@ -532,6 +526,7 @@ class _UnittestRunnerCLI(object):
 
     class DataAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
+
             dict_string = ""
             data_range = len(values)
 
@@ -546,6 +541,7 @@ class _UnittestRunnerCLI(object):
 
     class DataDirectoryAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
+
             if not os.path.exists(values):
                 print (
                     "cafe-runner: error: data-directory '{0}' does not "
@@ -573,10 +569,10 @@ class _UnittestRunnerCLI(object):
             setattr(namespace, self.dest, values)
 
     def get_cl_args(self):
-        """
-        collects and parses the command line args
+        """collects and parses the command line args.
         creates the runner"s help msg
         """
+
         base = "{0} {1} {2}".format("cafe-runner", "<product>", "<config>")
         mod = "{0} {1}".format("-m", "<module pattern>")
         mthd = "{0} {1}".format("-M", "<test method>")
@@ -876,10 +872,10 @@ class UnittestRunner(object):
         return errors, failures, tests_run
 
     def run(self):
-        """
-        loops through all the packages, modules, and methods sent in from
+        """loops through all the packages, modules, and methods sent in from
         the command line and runs them
         """
+
         master_suite = OpenCafeUnittestTestSuite()
         parallel_test_list = []
 
