@@ -33,6 +33,9 @@ class BaseTestFixture(unittest.TestCase):
               meant to be used instead of unittest.TestCase.
     @see: http://docs.python.org/library/unittest.html#unittest.TestCase
     """
+
+    __test__ = True
+
     def shortDescription(self):
         """
         @summary: Returns a formatted description of the test

@@ -150,7 +150,8 @@ class LoadedTestClass(object):
                     if (temp_obj.__base__ == unittest.TestCase
                             or temp_obj.__base__ == BaseTestFixture
                             and temp_obj != obj.__base__):
-                                if not search("fixture", obj.__name__.lower()):
+                                if (not search("fixture", obj.__name__.lower())
+                                        and obj.__test__):
                                     yield obj.__name__
                                 break
                     else:
