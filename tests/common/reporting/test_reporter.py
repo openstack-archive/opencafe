@@ -15,7 +15,7 @@ limitations under the License.
 """
 import os
 import shutil
-import unittest2 as unittest
+import unittest
 from uuid import uuid4
 
 from cafe.common.reporting.reporter import Reporter
