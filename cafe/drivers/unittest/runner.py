@@ -122,12 +122,12 @@ class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
     def run(self, test):
         """Run the given test case or test suite."""
         result = self._makeResult()
-        startTime = time.time()
+        # startTime = time.time()
         test(result)
-        stopTime = time.time()
-        timeTaken = stopTime - startTime
+        # stopTime = time.time()
+        # timeTaken = stopTime - startTime
         result.printErrors()
-        run = result.testsRun
+        # run = result.testsRun
         return result
 
 

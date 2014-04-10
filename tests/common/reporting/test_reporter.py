@@ -15,11 +15,20 @@ limitations under the License.
 """
 import os
 import shutil
-import unittest2 as unittest
+import unittest
 from uuid import uuid4
 
 from cafe.common.reporting.reporter import Reporter
 from cafe.drivers.unittest.parsers import SummarizeResults
+
+
+def load_tests(*args, **kwargs):
+    suite = unittest.suite.TestSuite()
+    suite.addTest(ReportingTests('test_create_json_report'))
+    suite.addTest(ReportingTests('test_create_xml_report'))
+    suite.addTest(ReportingTests('test_create_json_report_w_file_name'))
+    suite.addTest(ReportingTests('test_create_xml_report_w_file_name'))
+    return suite
 
 
 class FakeTests(unittest.TestCase):
@@ -67,7 +76,7 @@ class ReportingTests(unittest.TestCase):
         self.reporter = Reporter(
             result_parser=self.result_parser, all_results=self.all_results,)
 
-        self.results_dir = os.getcwd() + '/test-reporting-results'
+        self.results_dir = os.getcwd() + os.path.sep + 'test-reporting-results'
         if not os.path.exists(self.results_dir):
             os.makedirs(self.results_dir)
 
@@ -96,7 +105,7 @@ class ReportingTests(unittest.TestCase):
         """
         self.reporter.generate_report(
             result_type='json', path=self.results_dir)
-        results_file = self.results_dir + '/results.json'
+        results_file = self.results_dir + os.path.sep + 'results.json'
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
 
@@ -105,7 +114,7 @@ class ReportingTests(unittest.TestCase):
         the proper test information.
         """
         self.reporter.generate_report(result_type='xml', path=self.results_dir)
-        results_file = self.results_dir + '/results.xml'
+        results_file = self.results_dir + os.path.sep + 'results.xml'
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
 
@@ -113,7 +122,7 @@ class ReportingTests(unittest.TestCase):
         """ Creates a json report with a specified file name and checks that
         the created report contains the proper test information.
         """
-        results_file = self.results_dir + str(uuid4()) + '.json'
+        results_file = self.results_dir + os.path.sep + str(uuid4()) + '.json'
         self.reporter.generate_report(result_type='json', path=results_file)
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
@@ -122,7 +131,7 @@ class ReportingTests(unittest.TestCase):
         """ Creates an xml report with a specified file name and checks that
         the created report contains the proper test information.
         """
-        results_file = self.results_dir + str(uuid4()) + '.xml'
+        results_file = self.results_dir + os.path.sep + str(uuid4()) + '.xml'
         self.reporter.generate_report(result_type='xml', path=results_file)
         self.assertTrue(os.path.exists(results_file))
         self.assertTrue(self._file_contains_test_info(file_path=results_file))
@@ -131,14 +140,3 @@ class ReportingTests(unittest.TestCase):
         """ Deletes created reports and directories. """
         if os.path.exists(self.results_dir):
             self.results_dir = shutil.rmtree(self.results_dir)
-
-if __name__ == '__main__':
-    # Creates a suite of only the actual unit tests so that
-    # fake tests are not a part of the unit test results.
-    suite = unittest.suite.TestSuite()
-    suite.addTest(ReportingTests('test_create_json_report'))
-    suite.addTest(ReportingTests('test_create_xml_report'))
-    suite.addTest(ReportingTests('test_create_json_report_w_file_name'))
-    suite.addTest(ReportingTests('test_create_xml_report_w_file_name'))
-
-    unittest.TextTestRunner().run(suite)
