@@ -147,7 +147,6 @@ class ReportingTests(unittest.TestCase):
         if os.path.exists(self.results_dir):
             self.results_dir = shutil.rmtree(self.results_dir)
 
-
 if __name__ == '__main__':
     # Creates a suite of only the actual unit tests so that
     # fake tests are not a part of the unit test results.
