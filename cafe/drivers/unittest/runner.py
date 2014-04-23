@@ -864,10 +864,12 @@ class UnittestRunner(object):
         # Use custom test result object to keep track of tags
         if parallel:
             test_runner = OpenCafeParallelTextTestRunner(
-                verbosity=int(verbosity), resultclass=TaggedTextTestResult)
+                stream=sys.stdout, verbosity=int(verbosity),
+                resultclass=TaggedTextTestResult)
         else:
             test_runner = unittest.TextTestRunner(
-                verbosity=int(verbosity), resultclass=TaggedTextTestResult)
+                stream=sys.stdout, verbosity=int(verbosity),
+                resultclass=TaggedTextTestResult)
 
         test_runner.failfast = fail_fast
         return test_runner
@@ -1016,6 +1018,7 @@ class UnittestRunner(object):
         start_time = time.time()
         result = test_runner.run(master_suite)
         total_execution_time = time.time() - start_time
+        result.printErrors()
 
         # Inject tag mapping
         UnittestRunner._inject_tag_mapping(result)
