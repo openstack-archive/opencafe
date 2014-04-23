@@ -147,6 +147,17 @@ class ReportingTests(unittest.TestCase):
         if os.path.exists(self.results_dir):
             self.results_dir = shutil.rmtree(self.results_dir)
 
+    @tags('single-test')
+    def test_one(self):
+        raise Exception("Fail on purpose")
+
+    @tags('two-tests')
+    def test_two(self):
+        raise Exception("Fail on purpose")
+
+    @tags('two-tests')
+    def test_three(self):
+        self.assertTrue(False, "Failed")
 
 if __name__ == '__main__':
     # Creates a suite of only the actual unit tests so that
