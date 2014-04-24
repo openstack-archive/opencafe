@@ -18,6 +18,7 @@ import time
 # WinRM package is not currently pip installable, so will not expect
 # it be installed unless explicitly needed
 try:
+    from winrm.exceptions import WinRMTransportError
     from winrm.protocol import Protocol
 except:
     raise Exception("Dependency 'winrm' missing.")
@@ -158,7 +159,10 @@ class WinRMClient(BaseWinRMClient):
                             '{retries} to {host}.'.format(
                                 iteration=iteration, retries=retries,
                                 host=self.host))
-            self.connect(username=self.username, password=self.password)
+            try:
+                self.connect(username=self.username, password=self.password)
+            except WinRMTransportError as exception:
+                self._log.error(exception.message)
             if self.is_connected():
                 return True
             time.sleep(cooldown)
