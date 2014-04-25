@@ -19,3 +19,7 @@ from cafe.common.reporting import cclogging
 
 class BaseClient(object):
     _log = cclogging.getLogger(__name__)
+
+    def __init__(self):
+        self._log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
