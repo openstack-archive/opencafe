@@ -16,20 +16,18 @@ limitations under the License.
 """
 
 import argparse
-import imp
 import os
+import pkgutil
 import sys
 import time
-from fnmatch import fnmatch
-from inspect import getmembers, isclass
+from inspect import isclass
 from multiprocessing import Process, Manager
-from re import search
 from traceback import extract_tb
 import unittest
 import uuid
 
 from result import TaggedTextTestResult
-from cafe.drivers.unittest.fixtures import BaseTestFixture
+from cafe.engine.config import EngineConfig
 from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.decorators import (
@@ -133,162 +131,15 @@ class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
         return result
 
 
-class LoadedTestClass(object):
-
-    def __init__(self, loaded_module):
-        self.module = loaded_module
-        self.module_path = self._get_module_path(loaded_module)
-        self.module_name = self._get_module_name(loaded_module)
-
-    def _get_class_names(self, loaded_module):
-        """
-        gets all the class names in an imported module
-        """
-
-        for _, obj in getmembers(loaded_module, isclass):
-            temp_obj = obj
-            try:
-                while temp_obj.__base__ != object:
-                    if (temp_obj.__base__ == unittest.TestCase
-                            or temp_obj.__base__ == BaseTestFixture
-                            and temp_obj != obj.__base__):
-                                if (not search("fixture", obj.__name__.lower())
-                                        and obj.__test__):
-                                    yield obj.__name__
-                                break
-                    else:
-                        temp_obj = temp_obj.__base__
-            except AttributeError:
-                continue
-
-    def _get_class(self, loaded_module, test_class_name):
-        class_ = None
-        try:
-            class_ = getattr(loaded_module, test_class_name)
-        except AttributeError, e:
-            print e
-            return None
-
-        return class_
-
-    def get_instances(self):
-        loaded = []
-        for class_name in self._get_class_names(self.module):
-            if class_name not in loaded:
-                loaded.append(class_name)
-                yield self._get_class(self.module, class_name)
-
-    def _get_module_path(self, loaded_module):
-        return os.path.dirname(loaded_module.__file__)
-
-    def _get_module_name(self, loaded_module):
-        return loaded_module.__name__.split(".")[1]
-
-
 class SuiteBuilder(object):
 
-    def __init__(self, module_regex, method_regex, cl_tags, supress_flag):
-        self.module_regex = module_regex
-        self.method_regex = method_regex
-        self.tags = cl_tags
-        self.supress = supress_flag
-
-    def get_dotted_path(self, path, split_token):
-        """
-        creates a dotted path for use by unittest"s loader
-        """
-        try:
-            position = len(path.split(split_token)) - 1
-            temp_path = "{0}{1}".format(
-                split_token, path.split(split_token)[position])
-            split_path = os.path.split(temp_path)
-            dotted_path = ".".join(split_path)
-        except AttributeError:
-            return None
-        except Exception:
-            return None
-
-        return dotted_path
-
-    def find_root(self, path, target):
-        """
-        walks the path searching for the target root folder.
-        """
-        for root, _, _ in os.walk(path):
-            if target in os.path.basename(root):
-                return root
-
-    def find_file(self, path, target):
-        """
-        walks the path searching for the target file. the full to the target
-        file is returned
-        """
-        for root, _, files in os.walk(path):
-            for file_name in files:
-                if (target in file_name and not file_name.endswith(".pyc")):
-                    return os.path.join(root, file_name)
-
-    def find_subdir(self, path, target):
-        """
-        Walks the path searching for the target subdirectory.
-        The full path to the target subdirectory is returned
-        """
-        for root, dirs, _ in os.walk(path):
-            for dir_name in dirs:
-                if target in dir_name:
-                    return os.path.join(root, dir_name)
-
-    def drill_path(self, path, target):
-        """
-        walks the path searching for the last instance of the target path.
-        """
-        return_path = {}
-        for root, _, _ in os.walk(path):
-            if target in os.path.basename(root):
-                return_path[target] = root
-
-        return return_path
-
-    def load_module(self, module_path):
-        """
-        uses imp to load a module
-        """
-        loaded_module = None
-
-        module_name = os.path.basename(module_path)
-        package_path = os.path.dirname(module_path)
-
-        pkg_name = os.path.basename(package_path)
-        root_path = os.path.dirname(package_path)
-
-        module_name = module_name.split('.')[0]
-
-        f, p_path, description = imp.find_module(pkg_name, [root_path])
-
-        loaded_pkg = imp.load_module(pkg_name, f, p_path, description)
-
-        f, m_path, description = imp.find_module(
-            module_name, loaded_pkg.__path__)
-        try:
-            mod = "{0}.{1}".format(loaded_pkg.__name__, module_name)
-            loaded_module = imp.load_module(mod, f, m_path, description)
-        except ImportError:
-            raise
-
-        return loaded_module
-
-    def get_modules(self, rootdir):
-        """
-        generator yields modules matching the module_regex
-        """
-        for root, _, files in os.walk(rootdir):
-            for name in files:
-                if (fnmatch(name, self.module_regex)
-                        and name != "__init__.py"
-                        and not name.endswith(".pyc")):
-                    file_name = name.split(".")[0]
-                    full_path = "{0}/{1}".format(root, file_name)
-                    yield full_path
+    def __init__(self, cl_args):
+        self.packages = cl_args.packages or []
+        self.module_regex = cl_args.module_regex
+        self.class_regex = cl_args.class_regex
+        self.method_regex = cl_args.method_regex
+        self.tags = cl_args.tags
+        self.supress = cl_args.supress_flag
 
     def _parse_tags(self, tags):
         """
@@ -372,7 +223,18 @@ class SuiteBuilder(object):
 
         return load_test_flag
 
-    def build_suite(self, loaded_module):
+    def get_classes(self, loaded_module):
+        classes = []
+        for objname in dir(loaded_module):
+            obj = getattr(loaded_module, objname, None)
+            if (isclass(obj) and issubclass(obj, unittest.TestCase) and
+                "fixture" not in obj.__name__.lower() and
+                    getattr(obj, "__test__", True)):
+                if self.class_regex in obj.__name__:
+                    classes.append(obj)
+        return classes
+
+    def build_suite(self, module_path):
         """
         loads the found tests and builds the test suite
         """
@@ -380,63 +242,75 @@ class SuiteBuilder(object):
         attrs = {}
         loader = unittest.TestLoader()
         suite = OpenCafeUnittestTestSuite()
-        loaded = LoadedTestClass(loaded_module)
+
+        pak_path, mod_name = module_path.rsplit(".", 1)
+        loaded_module = getattr(__import__(
+            pak_path, globals(), locals(), [mod_name], -1), mod_name)
 
         if self.tags:
             tag_list, attrs, token = self._parse_tags(self.tags)
 
         if (hasattr(loaded_module, "load_tests")
                 and not self.supress
-                and self.method_regex == "test_*"
+                and not self.method_regex
                 and self.tags is None):
             load_tests = getattr(loaded_module, "load_tests")
             suite.addTests(load_tests(loader, None, None))
             return suite
 
-        for class_ in loaded.get_instances():
+        for class_ in self.get_classes(loaded_module):
             for method_name in dir(class_):
-                load_test_flag = False
-
-                if fnmatch(method_name, self.method_regex):
-                    if not self.tags:
-                        load_test_flag = True
-                    else:
-                        load_test_flag = self._check_method(
-                            class_, method_name, tag_list, attrs, token)
-                    if load_test_flag:
-                        suite.addTest(class_(method_name))
+                if (method_name.startswith("test_") and
+                    self.method_regex in method_name and
+                    (not self.tags or self._check_method(
+                        class_, method_name, tag_list, attrs, token))):
+                    suite.addTest(class_(method_name))
         return suite
 
-    def get_tests(self, module_path):
-        suite = OpenCafeUnittestTestSuite()
+    def get_modules(self, roast, product):
+        roast = __import__(roast, globals(), locals(), [], -1)
+        prefix = "{0}.".format(roast.__name__)
+        product = "{0}{1}".format(prefix, product)
+        modnames = []
+        for importer, modname, ispkg in pkgutil.walk_packages(
+                path=roast.__path__, prefix=prefix, onerror=lambda x: None):
+            if not ispkg and modname.startswith(product):
+                if (not self.module_regex or
+                        self.module_regex in modname.rsplit(".", 1)[1]):
+                    modnames.append(modname)
 
-        try:
-            loaded_module = self.load_module(module_path)
-        except ImportError:
-            print_traceback()
-            return None
+        if self.packages:
+            filter_mods = []
+            for modname in modnames:
+                for package in self.packages:
+                    if package in modname.rsplit(".", 1)[0]:
+                        filter_mods.append(modname)
+                        break
+            filter_mods = list(set(filter_mods))
+        else:
+            filter_mods = modnames
+        filter_mods.sort()
 
-        try:
-            suite = self.build_suite(loaded_module)
-        except Exception:
-            print_traceback()
-            return None
+        return filter_mods
 
-        return suite
+    def generate_suite(self, roast, product):
+        master_suite = OpenCafeUnittestTestSuite()
+        modules = self.get_modules(roast, product)
 
-    def generate_suite(self, path, suite=None):
-        master_suite = suite or OpenCafeUnittestTestSuite()
-        for module_path in self.get_modules(path):
-            st = self.get_tests(module_path)
+        for modname in modules:
+            st = self.build_suite(modname)
             if st:
                 master_suite.addTests(st)
         return master_suite
 
-    def generate_suite_list(self, path, suite_list=None):
-        master_suite_list = suite_list or []
-        for module_path in self.get_modules(path):
-            st = self.get_tests(module_path)
-            if st:
+    def generate_suite_list(self, roast, product):
+        master_suite_list = []
+        modules = self.get_modules(roast, product)
+
+        for modname in modules:
+            st = self.build_suite(modname)
+
+            if st and len(st._tests):
                 master_suite_list.append(st)
         return master_suite_list
 
@@ -517,25 +391,6 @@ class _UnittestRunnerCLI(object):
                         "cafe-runner: error: config file at {0} does not "
                         "exist".format(test_env.test_config_file_path))
                     exit(1)
-
-            setattr(namespace, self.dest, values)
-
-    class ModuleRegexAction(argparse.Action):
-
-        def __call__(self, parser, namespace, values, option_string=None):
-            # Make sure user-specified module name has a .py at the end of it
-            if ".py" not in str(values):
-                values = "{0}{1}".format(values, ".py")
-
-            setattr(namespace, self.dest, values)
-
-    class MethodRegexAction(argparse.Action):
-
-        def __call__(self, parser, namespace, values, option_string=None):
-            # Make sure user-specified method name has test_ at the start of it
-
-            if 'test_' not in str(values):
-                values = "{0}{1}".format("test_", values)
 
             setattr(namespace, self.dest, values)
 
@@ -738,17 +593,21 @@ class _UnittestRunnerCLI(object):
 
         argparser.add_argument(
             "-m", "--module-regex", "--module",
-            action=self.ModuleRegexAction,
-            default="*.py",
+            default="",
             metavar="<module>",
-            help="test module regex - defaults to '*.py'")
+            help="test module matching")
+
+        argparser.add_argument(
+            "-C", "--class-regex",
+            default="",
+            metavar="<class>",
+            help="class matching")
 
         argparser.add_argument(
             "-M", "--method-regex",
-            action=self.MethodRegexAction,
-            default="test_*",
+            default="",
             metavar="<method>",
-            help="test method regex defaults to 'test_'")
+            help="test method matching. defaults to 'test_'")
 
         argparser.add_argument(
             "-t", "--tags",
@@ -819,9 +678,9 @@ class UnittestRunner(object):
         # finalize() is called
         self.test_env.test_data_directory = (
             self.test_env.test_data_directory or self.cl_args.data_directory)
-        self.product_repo_path = os.path.join(
-            self.test_env.test_repo_path, self.cl_args.product)
         self.test_env.finalize()
+        self.product = self.cl_args.product
+        self.test_repo = EngineConfig().default_test_repo
         self.print_mug_and_paths(self.test_env)
 
     @staticmethod
@@ -857,19 +716,20 @@ class UnittestRunner(object):
         results.update({test_id: result})
 
     @staticmethod
-    def get_runner(parallel, fail_fast, verbosity):
+    def get_runner(cl_args):
         test_runner = None
-
         # Use the parallel text runner so the console logs look correct
         # Use custom test result object to keep track of tags
-        if parallel:
+        if cl_args.parallel:
             test_runner = OpenCafeParallelTextTestRunner(
-                verbosity=int(verbosity), resultclass=TaggedTextTestResult)
+                verbosity=int(cl_args.verbose),
+                resultclass=TaggedTextTestResult)
         else:
             test_runner = unittest.TextTestRunner(
-                verbosity=int(verbosity), resultclass=TaggedTextTestResult)
+                verbosity=int(cl_args.verbose),
+                resultclass=TaggedTextTestResult)
 
-        test_runner.failfast = fail_fast
+        test_runner.failfast = cl_args.fail_fast
         return test_runner
 
     @staticmethod
@@ -913,33 +773,12 @@ class UnittestRunner(object):
         master_suite = OpenCafeUnittestTestSuite()
         parallel_test_list = []
 
-        builder = SuiteBuilder(
-            self.cl_args.module_regex, self.cl_args.method_regex,
-            self.cl_args.tags, self.cl_args.supress_flag)
-
-        test_runner = self.get_runner(
-            self.cl_args.parallel, self.cl_args.fail_fast,
-            self.cl_args.verbose)
-
-        # Build master test suite
-        if self.cl_args.packages:
-            for package_name in self.cl_args.packages:
-                path = builder.find_subdir(
-                    self.product_repo_path, package_name)
-                if path is None:
-                    print error_msg("PACKAGE", package_name)
-                    continue
-                master_suite = builder.generate_suite(path, master_suite)
-                if self.cl_args.parallel:
-                    parallel_test_list = builder.generate_suite_list(
-                        path, parallel_test_list)
-        else:
-            master_suite = builder.generate_suite(self.product_repo_path)
-            if self.cl_args.parallel:
-                parallel_test_list = builder.generate_suite_list(
-                    self.product_repo_path)
+        builder = SuiteBuilder(self.cl_args)
+        test_runner = self.get_runner(self.cl_args)
 
         if self.cl_args.parallel:
+            parallel_test_list = builder.generate_suite_list(
+                self.test_repo, self.product)
             exit_code = self.run_parallel(
                 parallel_test_list, test_runner,
                 result_type=self.cl_args.result,
@@ -947,6 +786,8 @@ class UnittestRunner(object):
                 verbosity=self.cl_args.verbose)
             exit(exit_code)
         else:
+            master_suite = builder.generate_suite(
+                self.test_repo, self.product)
             exit_code = self.run_serialized(
                 master_suite, test_runner, result_type=self.cl_args.result,
                 results_path=self.cl_args.result_directory,
