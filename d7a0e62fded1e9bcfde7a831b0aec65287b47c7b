@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: jose-idar <jose.idar@rackspace.com>
+Code-Review+2: jose-idar <jose.idar@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 25 Apr 2014 18:16:53 +0000
+Reviewed-on: https://review.openstack.org/89950
+Project: stackforge/opencafe
+Branch: refs/heads/master
