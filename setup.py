@@ -83,7 +83,7 @@ setup(
     name='cafe',
     version='0.1.0',
     description='The Common Automation Framework Engine',
-    long_description='{0}'.format(open('README.md').read()),
+    long_description='{0}'.format(open('README.rst').read()),
     author='Rackspace Cloud QE',
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://rackspace.com',

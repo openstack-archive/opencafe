@@ -1,1 +1,1 @@
-include README.md LICENSE pip-requires plugins
+include README.rst LICENSE pip-requires plugins
