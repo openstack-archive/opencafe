@@ -47,12 +47,16 @@ def tags(*tags, **attrs):
     return decorator
 
 
-def data_driven_test(dataset_source=None):
+def data_driven_test(*dataset_sources, **kwargs):
     """Used to define the data source for a data driven test in a
     DataDrivenFixture decorated Unittest TestCase class"""
 
     def decorator(func):
-        setattr(func, DATA_DRIVEN_TEST_ATTR, dataset_source)
+        # dataset_source checked for backward compatibility
+        combined_lists = kwargs.get("dataset_source") or []
+        for list_ in dataset_sources:
+            combined_lists += list_
+        setattr(func, DATA_DRIVEN_TEST_ATTR, combined_lists)
         return func
     return decorator
 
