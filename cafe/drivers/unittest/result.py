@@ -89,9 +89,6 @@ class TestCaseTagMapping(object):
 
     def print_test_to_tag_mapping(self):
         """ Prints the test-to-tag dict mapping to result stream """
-        if len(self.test_to_tag_mapping) == 0:
-            return
-
         max_len = 0
         self.test_ref.stream.writeln()
         self.test_ref.stream.writeln("Tags and attributes associated to tests")
@@ -112,9 +109,6 @@ class TestCaseTagMapping(object):
 
     def print_tag_to_test_mapping(self):
         """ Prints the tag-to-test dict mapping to result stream """
-        if len(self.tag_to_test_mapping) == 0:
-            return
-
         max_len = 0
         self.test_ref.stream.writeln("Tests associated to tags")
         self.test_ref.stream.writeln(self.test_ref.separator1)
@@ -133,9 +127,6 @@ class TestCaseTagMapping(object):
 
     def print_attribute_to_test_mapping(self):
         """ Prints the attribute-to-test dict mapping to result stream """
-        if len(self.attribute_to_test_mapping) == 0:
-            return
-
         max_len = 0
         self.test_ref.stream.writeln("Tests associated to attributes")
         self.test_ref.stream.writeln(self.test_ref.separator1)

@@ -863,10 +863,10 @@ class UnittestRunner(object):
         # Use the parallel text runner so the console logs look correct
         # Use custom test result object to keep track of tags
         if parallel:
-            test_runner = OpenCafeParallelTextTestRunner(stream=sys.stdout,
+            test_runner = OpenCafeParallelTextTestRunner(
                 verbosity=int(verbosity), resultclass=TaggedTextTestResult)
         else:
-            test_runner = unittest.TextTestRunner(stream=sys.stdout,
+            test_runner = unittest.TextTestRunner(
                 verbosity=int(verbosity), resultclass=TaggedTextTestResult)
 
         test_runner.failfast = fail_fast
