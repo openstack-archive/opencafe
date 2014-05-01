@@ -28,7 +28,6 @@ from traceback import extract_tb
 import unittest
 import uuid
 
-from result import TaggedTextTestResult
 from cafe.drivers.unittest.fixtures import BaseTestFixture
 from cafe.common.reporting.cclogging import log_results
 from cafe.drivers.unittest.parsers import SummarizeResults
@@ -117,10 +116,7 @@ class _WritelnDecorator(object):
 
 class OpenCafeParallelTextTestRunner(unittest.TextTestRunner):
 
-    def __init__(self, stream=sys.stderr, descriptions=1, verbosity=1,
-                 resultclass=None):
-        super(OpenCafeParallelTextTestRunner, self).__init__(
-            stream, descriptions, verbosity, resultclass=resultclass)
+    def __init__(self, stream=sys.stderr, descriptions=1, verbosity=1):
         self.stream = _WritelnDecorator(stream)
         self.descriptions = descriptions
         self.verbosity = verbosity
@@ -847,13 +843,8 @@ class UnittestRunner(object):
         print "=" * 150
 
     @staticmethod
-    def execute_test(runner, test_id, test, results, verbosity):
+    def execute_test(runner, test_id, test, results):
         result = runner.run(test)
-
-        # Inject tag mapping and log results to console
-        UnittestRunner._inject_tag_mapping(result)
-        log_results(result, test_id, verbosity=verbosity)
-
         results.update({test_id: result})
 
     @staticmethod
@@ -861,13 +852,11 @@ class UnittestRunner(object):
         test_runner = None
 
         # Use the parallel text runner so the console logs look correct
-        # Use custom test result object to keep track of tags
         if parallel:
-            test_runner = OpenCafeParallelTextTestRunner(stream=sys.stdout,
-                verbosity=int(verbosity), resultclass=TaggedTextTestResult)
+            test_runner = OpenCafeParallelTextTestRunner(
+                verbosity=int(verbosity))
         else:
-            test_runner = unittest.TextTestRunner(stream=sys.stdout,
-                verbosity=int(verbosity), resultclass=TaggedTextTestResult)
+            test_runner = unittest.TextTestRunner(verbosity=int(verbosity))
 
         test_runner.failfast = fail_fast
         return test_runner
@@ -894,16 +883,6 @@ class UnittestRunner(object):
                 "Errors={0}".format(errors) if errors else "")
 
         return errors, failures, tests_run
-
-    @staticmethod
-    def _inject_tag_mapping(result):
-        """Inject tag mapping into the result __dict__ object if available"""
-        if hasattr(result, 'mapping'):
-            mapping = result.mapping.test_to_tag_mapping
-            setattr(result, 'tags', mapping or [])
-
-            attributes = result.mapping.test_to_attribute_mapping
-            setattr(result, 'attributes', attributes or [])
 
     def run(self):
         """
@@ -943,20 +922,18 @@ class UnittestRunner(object):
             exit_code = self.run_parallel(
                 parallel_test_list, test_runner,
                 result_type=self.cl_args.result,
-                results_path=self.cl_args.result_directory,
-                verbosity=self.cl_args.verbose)
+                results_path=self.cl_args.result_directory)
             exit(exit_code)
         else:
             exit_code = self.run_serialized(
                 master_suite, test_runner, result_type=self.cl_args.result,
-                results_path=self.cl_args.result_directory,
-                verbosity=self.cl_args.verbose)
+                results_path=self.cl_args.result_directory)
 
             exit(exit_code)
 
-    @staticmethod
-    def run_parallel(test_suites, test_runner, result_type=None,
-                     results_path=None, verbosity=0):
+    def run_parallel(
+            self, test_suites, test_runner, result_type=None,
+            results_path=None):
 
         exit_code = 0
         proc = None
@@ -975,8 +952,8 @@ class UnittestRunner(object):
             test_mapping[test_id] = test_suite
 
             proc = Process(
-                target=UnittestRunner.execute_test,
-                args=(test_runner, test_id, test_suite, results, verbosity))
+                target=self.execute_test,
+                args=(test_runner, test_id, test_suite, results))
             processes.append(proc)
             proc.start()
 
@@ -985,8 +962,7 @@ class UnittestRunner(object):
 
         finish = time.time()
 
-        errors, failures, _ = UnittestRunner.dump_results(
-            start, finish, results)
+        errors, failures, _ = self.dump_results(start, finish, results)
 
         if result_type is not None:
             all_results = []
@@ -1006,19 +982,15 @@ class UnittestRunner(object):
 
         return exit_code
 
-    @staticmethod
     def run_serialized(
-            master_suite, test_runner, result_type=None,
-            results_path=None, verbosity=0):
+            self, master_suite, test_runner, result_type=None,
+            results_path=None):
 
         exit_code = 0
         unittest.installHandler()
         start_time = time.time()
         result = test_runner.run(master_suite)
         total_execution_time = time.time() - start_time
-
-        # Inject tag mapping
-        UnittestRunner._inject_tag_mapping(result)
 
         if result_type is not None:
             result_parser = SummarizeResults(
@@ -1029,7 +1001,7 @@ class UnittestRunner(object):
             reporter.generate_report(
                 result_type=result_type, path=results_path)
 
-        log_results(result, verbosity=verbosity)
+        log_results(result)
         if not result.wasSuccessful():
             exit_code = 1
 

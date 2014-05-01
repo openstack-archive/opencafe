@@ -94,25 +94,6 @@ class SummarizeResults(object):
 
         return failure_obj_list
 
-    def update_tags(self, executed_tests):
-        for test in executed_tests:
-            if hasattr(self, 'mapping'):
-                test_tags = self.mapping.test_to_tag_mapping.get(
-                    getattr(test, 'test_method_name'))
-
-                if test_tags is None or len(test_tags) == 0:
-                    test_tags = []
-                setattr(test, 'tags', test_tags)
-
-                attribute_tags = self.mapping.test_to_attribute_mapping.get(
-                    getattr(test, 'test_method_name'))
-
-                if attribute_tags is None or len(attribute_tags) == 0:
-                    attribute_tags = []
-                setattr(test, 'attributes', attribute_tags)
-
-        return executed_tests
-
     def summary_result(self):
         summary_res = {'tests': str(self.testsRun),
                        'errors': str(len(self.errors)),
@@ -124,21 +105,19 @@ class SummarizeResults(object):
         executed_tests = (self.get_passed_tests() + self.parse_failures() +
                           self.get_errored_tests() + self.get_skipped_tests())
 
-        return self.update_tags(executed_tests)
+        return executed_tests
 
 
 class Result(object):
+    def __init__(
+            self, test_class_name, test_method_name, failure_trace=None,
+            skipped_msg=None, error_trace=None):
 
-    def __init__(self, test_class_name, test_method_name, failure_trace=None,
-                 skipped_msg=None, error_trace=None, tags=None,
-                 attributes=None):
         self.test_class_name = test_class_name
         self.test_method_name = test_method_name
         self.failure_trace = failure_trace
         self.skipped_msg = skipped_msg
         self.error_trace = error_trace
-        self.tags = tags
-        self.attributes = attributes
 
     def __repr__(self):
         values = []

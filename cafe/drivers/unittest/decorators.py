@@ -36,7 +36,7 @@ class DataDrivenFixtureError(Exception):
 
 def tags(*tags, **attrs):
     """Adds tags and attributes to tests, which are interpreted by the
-    cafe-runner at run time and by result generator during reporting
+    cafe-runner at run time
     """
     def decorator(func):
         setattr(func, TAGS_DECORATOR_TAG_LIST_NAME, [])

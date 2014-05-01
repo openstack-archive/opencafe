@@ -130,7 +130,7 @@ def setup_new_cchandler(
     return log_handler
 
 
-def log_results(result, test_id=None, verbosity=0):
+def log_results(result):
     """Replicates the printing functionality of unittest's runner.run() but
     log's instead of prints
     """
@@ -178,14 +178,6 @@ def log_results(result, test_id=None, verbosity=0):
     print "Detailed logs: {0}".format(
         os.getenv("CAFE_TEST_LOG_PATH"))
     print '-' * 150
-
-    # Print the tag to test mapping if available and verbosity is > 2
-    if verbosity > 2 and hasattr(result, 'mapping'):
-        if test_id is not None:
-            result.mapping.write_to_stream(
-                "Test Suite ID: {0}\n".format(test_id))
-        result.mapping.print_tag_to_test_mapping()
-        result.mapping.print_attribute_to_test_mapping()
 
 
 def log_errors(label, result, errors):

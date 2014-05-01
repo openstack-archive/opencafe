@@ -21,8 +21,6 @@ from uuid import uuid4
 from cafe.common.reporting.reporter import Reporter
 from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.decorators import tags
-from cafe.drivers.unittest.runner import UnittestRunner
-from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
 
 
 def load_tests(*args, **kwargs):
