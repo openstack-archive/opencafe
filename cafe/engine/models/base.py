@@ -31,6 +31,19 @@ class CommonToolsMixin(object):
         return value
 
     @staticmethod
+    def _string_to_bool(boolean_string):
+        """Returns a boolean value of a boolean value string representation
+        """
+        if boolean_string.lower() == "true":
+            return True
+        elif boolean_string.lower() == "false":
+            return False
+        else:
+            raise Exception(
+                msg="Passed in boolean string was neither True or False: {0}"
+                .format(boolean_string))
+
+    @staticmethod
     def _remove_empty_values(dictionary):
         """Returns a new dictionary based on 'dictionary', minus any keys with
         values that are None
