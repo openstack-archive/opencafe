@@ -15,13 +15,9 @@ limitations under the License.
 """
 
 import time
-# WinRM package is not currently pip installable, so will not expect
-# it be installed unless explicitly needed
-try:
-    from winrm.exceptions import WinRMTransportError
-    from winrm.protocol import Protocol
-except:
-    raise Exception("Dependency 'winrm' missing.")
+
+from winrm.exceptions import WinRMTransportError
+from winrm.protocol import Protocol
 
 from cafe.engine.clients.base import BaseClient
 from cafe.engine.models.winrm_response import WinRMResponse
