@@ -31,6 +31,10 @@ if not platform.system().lower() == 'windows':
     import pwd
 
 
+class PackageNotFoundError(Exception):
+    pass
+
+
 class PlatformManager(object):
     USING_WINDOWS = (platform.system().lower() == 'windows')
     USING_VIRTUALENV = hasattr(sys, 'real_prefix')
@@ -112,8 +116,9 @@ class TestEnvManager(object):
 
     def __init__(
             self, product_name, test_config_file_name,
-            engine_config_path=None):
+            engine_config_path=None, test_repo_package_name=None):
 
+        self._test_repo_package_name = test_repo_package_name
         self.product_name = product_name
         self.test_config_file_name = test_config_file_name
         self.engine_config_path = engine_config_path or \
@@ -173,9 +178,9 @@ class TestEnvManager(object):
         module_info = None
         try:
             module_info = imp.find_module(self.test_repo_package)
-        except ImportError as exception:
-            print "Cannot find test repo '{0}'".format(self.test_repo_package)
-            raise exception
+        except ImportError:
+            raise PackageNotFoundError(
+                "Cannot find test repo '{0}'".format(self.test_repo_package))
 
         return str(module_info[1])
 
@@ -188,7 +193,8 @@ class TestEnvManager(object):
         """
 
         return os.path.expanduser(
-            self.engine_config_interface.default_test_repo)
+            self._test_repo_package_name
+            or self.engine_config_interface.default_test_repo)
 
     @_lazy_property
     def test_data_directory(self):
