@@ -156,7 +156,9 @@ class memoized(object):
         self.__name__ = func.func_name
 
     def __call__(self, *args):
-        self._start_logging(cclogging.get_object_namespace(args[0]))
+        log_name = "{0}.{1}".format(
+            cclogging.get_object_namespace(args[0]), self.__name__)
+        self._start_logging(log_name)
         if not isinstance(args, collections.Hashable):
             # uncacheable. a list, for instance.
             # better to not cache than blow up.
@@ -181,12 +183,6 @@ class memoized(object):
         """Return the function's docstring."""
         return self.func.__doc__
 
-    # Because the root log is initialized in the base test fixture, and because
-    # datalist generators are run before that test fixture is initialized,
-    # it is neccessary to add a log handler to the root logger so that logs
-    # get logged.  Once the root log handler initialization is moved
-    # upstream of the base test fixture initialization, this code can be
-    # removed.
     def _start_logging(self, log_file_name):
         setattr(self.func, '_log_handler', cclogging.setup_new_cchandler(
             log_file_name))

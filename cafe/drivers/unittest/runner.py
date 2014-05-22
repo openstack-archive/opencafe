@@ -27,7 +27,7 @@ from inspect import isclass
 from multiprocessing import Process, Manager
 from re import search
 from traceback import print_exc
-
+from cafe.common.reporting.cclogging import init_root_log_handler
 from cafe.common.reporting.cclogging import log_results
 from cafe.common.reporting.reporter import Reporter
 from cafe.configurator.managers import TestEnvManager
@@ -673,6 +673,7 @@ class UnittestRunner(object):
         self.test_env.test_data_directory = (
             self.test_env.test_data_directory or self.cl_args.data_directory)
         self.test_env.finalize()
+        init_root_log_handler()
         self.product = self.cl_args.product
         self.test_repo = (
             self.test_env.engine_config_interface.default_test_repo)

@@ -134,7 +134,12 @@ class ConfigParserDataSource(DataSource):
         try:
             return self._data_source.get(self._section_name, item_name)
         except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
-            self._log.error(str(e))
+            if default is None:
+                self._log.error(str(e))
+            else:
+                msg = "{0}.  Using default value '{1}' instead".format(
+                    str(e), default)
+                self._log.warning(msg)
             return default
 
     def get_raw(self, item_name, default=None):
@@ -142,7 +147,12 @@ class ConfigParserDataSource(DataSource):
             return self._data_source.get(
                 self._section_name, item_name, raw=True)
         except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
-            self._log.error(str(e))
+            if default is None:
+                self._log.error(str(e))
+            else:
+                msg = "{0}.  Using default value '{1}' instead".format(
+                    str(e), default)
+                self._log.warning(msg)
             return default
 
     def get_boolean(self, item_name, default=None):
@@ -150,7 +160,12 @@ class ConfigParserDataSource(DataSource):
         try:
             return self._data_source.getboolean(self._section_name, item_name)
         except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
-            self._log.error(str(e))
+            if default is None:
+                self._log.error(str(e))
+            else:
+                msg = "{0}.  Using default value '{1}' instead".format(
+                    str(e), default)
+                self._log.warning(msg)
             return default
 
 
