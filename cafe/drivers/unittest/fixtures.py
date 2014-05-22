@@ -24,7 +24,7 @@ import re
 import unittest
 
 from cafe.drivers.base import FixtureReporter
-from cafe.common.reporting.cclogging import init_root_log_handler
+#from cafe.common.reporting.cclogging import init_root_log_handler
 
 
 class BaseTestFixture(unittest.TestCase):
@@ -76,7 +76,7 @@ class BaseTestFixture(unittest.TestCase):
     def setUpClass(cls):
         super(BaseTestFixture, cls).setUpClass()
         # TODO: Move root log handler initialization to the runner!
-        init_root_log_handler()
+        #init_root_log_handler()
         cls._reporter = FixtureReporter(cls)
         cls.fixture_log = cls._reporter.logger.log
         cls._reporter.start()

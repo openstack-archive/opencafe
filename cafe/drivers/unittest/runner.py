@@ -35,6 +35,7 @@ from cafe.drivers.unittest.decorators import (
     TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME)
 from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
+from cafe.common.reporting.cclogging import init_root_log_handler
 
 
 def tree(directory, padding, print_files=False):
@@ -673,6 +674,7 @@ class UnittestRunner(object):
         self.test_env.test_data_directory = (
             self.test_env.test_data_directory or self.cl_args.data_directory)
         self.test_env.finalize()
+        init_root_log_handler()
         self.product = self.cl_args.product
         self.test_repo = (
             self.test_env.engine_config_interface.default_test_repo)
