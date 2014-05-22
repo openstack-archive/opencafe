@@ -316,8 +316,10 @@ class _UnittestRunnerCLI(object):
     class ListAction(argparse.Action):
 
         def __call__(self, parser, namespace, values, option_string=None):
+
             product = namespace.product or ""
-            test_env_mgr = TestEnvManager(product, None)
+            test_env_mgr = TestEnvManager(
+                product, None, test_repo_package_name=namespace.roast)
             test_dir = os.path.expanduser(
                 os.path.join(test_env_mgr.test_repo_path, product))
             product_config_dir = os.path.expanduser(os.path.join(
@@ -637,6 +639,12 @@ class _UnittestRunnerCLI(object):
             metavar="data",
             help="arbitrary test data")
 
+        argparser.add_argument(
+            "--roast",
+            default=None,
+            metavar="roast",
+            help="Overrides the default_test_repo option in engine.config")
+
         args = argparser.parse_args()
 
         # Special case for when product or config is missing and --list
@@ -665,7 +673,8 @@ class UnittestRunner(object):
     def __init__(self):
         self.cl_args = _UnittestRunnerCLI().get_cl_args()
         self.test_env = TestEnvManager(
-            self.cl_args.product, self.cl_args.config)
+            self.cl_args.product, self.cl_args.config,
+            test_repo_package_name=self.cl_args.roast)
 
         # If something in the cl_args is supposed to override a default, like
         # say that data directory or something, it needs to happen before
