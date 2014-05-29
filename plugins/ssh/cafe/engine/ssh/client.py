@@ -125,7 +125,7 @@ class BaseSSHClient(BaseClient):
         try:
             ssh.connect(**connect_args)
         except (AuthenticationException, SSHException,
-                socket.error) as exception:
+                socket.error, EOFError) as exception:
             # Log the failure
             self._log.error(exception.message)
         else:
