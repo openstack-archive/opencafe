@@ -87,8 +87,7 @@ class PlatformManager(object):
 
 
 class TestEnvManager(object):
-    """
-    Manages setting all required and optional environment variables used by
+    """Manages setting all required and optional environment variables used by
     the engine and it's implementations.
     Usefull for writing bootstrappers for runners and scripts.
     """
@@ -121,8 +120,7 @@ class TestEnvManager(object):
         self.engine_config_interface = EngineConfig(self.engine_config_path)
 
     def finalize(self, create_log_dirs=True, set_os_env_vars=True):
-        """
-        Sets all non-configured values to the defaults in the engine.config
+        """Sets all non-configured values to the defaults in the engine.config
         file. set_defaults=False will override this behavior, but note that
         unless you manually set the os environment variables yourself, this
         will result in undefined behavior
@@ -231,8 +229,7 @@ class TestEnvManager(object):
 class EngineDirectoryManager(object):
 
     class _Namespace(dict):
-        """
-        Converts the top-level keys of this dictionary into a namespace.
+        """Converts the top-level keys of this dictionary into a namespace.
         Raises exception if any self.keys() collide with internal attributes.
         """
 
@@ -255,15 +252,7 @@ class EngineDirectoryManager(object):
     wrapper = textwrap.TextWrapper(
         initial_indent="* ", subsequent_indent="  ", break_long_words=False)
 
-    # Old .cloudcafe directories
-    _OLD_ROOT_DIR = os.path.join(
-        PlatformManager.get_user_home_path(), ".cloudcafe")
-    _OLD_CAFE_DIRS = _Namespace(
-        LOG_DIR=os.path.join(_OLD_ROOT_DIR, 'logs'),
-        DATA_DIR=os.path.join(_OLD_ROOT_DIR, 'data'),
-        TEMP_DIR=os.path.join(_OLD_ROOT_DIR, 'temp'))
-
-    # Current .opencafe Directories
+    # .opencafe Directories
     OPENCAFE_ROOT_DIR = os.path.join(
         PlatformManager.get_user_home_path(), ".opencafe")
 
@@ -273,32 +262,6 @@ class EngineDirectoryManager(object):
         TEMP_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'temp'),
         CONFIG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'configs'),
         PLUGIN_CACHE=os.path.join(OPENCAFE_ROOT_DIR, 'plugin_cache'))
-
-    @classmethod
-    def update_deprecated_engine_directories(cls):
-        """
-        Applies to an existing .cloudcafe (old) or .opencafe (new) directory
-        all changes made to the default .opencafe directory structure since
-        opencafe's release.
-        """
-
-        # Rename .cloudcafe to .opencafe
-        if os.path.exists(cls._OLD_ROOT_DIR):
-            if os.path.exists(cls.OPENCAFE_ROOT_DIR):
-                print cls.wrapper.fill("* * ERROR * * *")
-                print cls.wrapper.fill(
-                    "Could not port .cloudcafe to .opencafe since .opencafe "
-                    "already exists and is populated with files that the "
-                    "config manager would need to overwrite.  This usually "
-                    "means an attempt was made to install an older version "
-                    "of opencafe on top of a newer version.  Delete either "
-                    "the .opencafe or .cloudcafe directory in the user home "
-                    "directory and try again.")
-            else:
-                os.rename(cls._OLD_ROOT_DIR, cls.OPENCAFE_ROOT_DIR)
-                print cls.wrapper.fill(
-                    "'{0} directory was successfully ported to {1}'".format(
-                        cls._OLD_ROOT_DIR, cls.OPENCAFE_ROOT_DIR))
 
     @classmethod
     def create_engine_directories(cls):
@@ -329,9 +292,6 @@ class EngineDirectoryManager(object):
     def build_engine_directories(cls):
         """Updates, creates, and owns (as needed) all default directories"""
 
-        if (os.path.exists(cls.OPENCAFE_ROOT_DIR) or
-                os.path.exists(cls._OLD_ROOT_DIR)):
-            cls.update_deprecated_engine_directories()
         cls.create_engine_directories()
         cls.set_engine_directory_permissions()
 
@@ -339,10 +299,6 @@ class EngineDirectoryManager(object):
 class EngineConfigManager(object):
     wrapper = textwrap.TextWrapper(
         initial_indent="* ", subsequent_indent="  ", break_long_words=False)
-
-    # Old Config Stuff for backwards compatability testing only
-    _OLD_ENGINE_CONFIG_PATH = os.path.join(
-        EngineDirectoryManager.OPENCAFE_ROOT_DIR, 'configs', 'engine.config')
 
     # Openafe config defaults
     ENGINE_CONFIG_PATH = os.path.join(
@@ -414,83 +370,10 @@ class EngineConfigManager(object):
 
         config = None
         update_tracker = _UpdateTracker()
-
-        # Engine config moved from .opencafe/configs/engine.conf
-        # to .opencafe/engine.conf
-        if os.path.exists(cls._OLD_ENGINE_CONFIG_PATH):
-            update_tracker.register_update(backup=False)
-            print cls.wrapper.fill(
-                "Moving engine.config file from {0} to {1}".format(
-                    cls._OLD_ENGINE_CONFIG_PATH, cls.ENGINE_CONFIG_PATH))
-            config = cls.read_config_file(cls._OLD_ENGINE_CONFIG_PATH)
-            # Move to new location
-            os.rename(cls._OLD_ENGINE_CONFIG_PATH, cls.ENGINE_CONFIG_PATH)
-
         # Read config from current default location ('.opencafe/engine.config)
         config = config or cls.read_config_file(cls.ENGINE_CONFIG_PATH)
 
-        # 'CCTNG_ENGINE' section name was changed to 'OPENCAFE_ENGINE'
-        if 'CCTNG_ENGINE' in config.sections():
-            update_tracker.register_update(config)
-            config = cls.rename_section(
-                config, 'CCTNG_ENGINE', 'OPENCAFE_ENGINE')
-            print cls.wrapper.fill(
-                "Section name 'CCTNG_ENGINE' in the engine.config file was "
-                "updated to'OPENCAFE_ENGINE'")
-
-        # 'use_verbose_logging' option name changed to 'logging_verbosity'
-        # value was changed from True or False to 'STANDARD', or 'VERBOSE',
-        # respectively.
-        config_keys = [key for key, _ in config.items('OPENCAFE_ENGINE')]
-        if 'use_verbose_logging' in config_keys:
-            update_tracker.register_update(config)
-            current_value = config.getboolean(
-                'OPENCAFE_ENGINE', 'use_verbose_logging')
-            new_value = 'VERBOSE' if current_value else 'STANDARD'
-            config = cls.rename_section_option(
-                config, 'OPENCAFE_ENGINE', 'use_verbose_logging',
-                'logging_verbosity')
-            config.set('OPENCAFE_ENGINE', 'logging_verbosity', new_value)
-            print cls.wrapper.fill(
-                "The 'use_verbose_logging' option in the OPENCAFE_ENGINE "
-                "section of your engine.config has been renamed to "
-                "'logging_verbosity'.  It's value has been changed from '{0}'"
-                "to the new functional equivalent '{1}'".format(
-                    current_value, new_value))
-
-        # 'default_test_repo' value changed from 'test_repo' to 'cloudroast'
-        config_keys = [key for key, _ in config.items('OPENCAFE_ENGINE')]
-        if ('default_test_repo' in config_keys and config.get(
-                'OPENCAFE_ENGINE', 'default_test_repo') == 'test_repo'):
-            update_tracker.register_update(config)
-            config.set(
-                'OPENCAFE_ENGINE', 'default_test_repo', value='cloudroast')
-            print cls.wrapper.fill(
-                "The value of the 'default_test_repo' option in the "
-                "OPENCAFE_ENGINE section of your engine.config has been "
-                "changed from 'test_repo' to 'cloudroast'")
-
-        # 'config_dir' was added as a configurable option
-        config_keys = [key for key, _ in config.items('OPENCAFE_ENGINE')]
-        if 'config_directory' not in config_keys:
-            update_tracker.register_update(config)
-            config.set(
-                'OPENCAFE_ENGINE', 'config_directory',
-                value=EngineDirectoryManager.OPENCAFE_SUB_DIRS.CONFIG_DIR)
-            print cls.wrapper.fill(
-                "'config_directory = {0}' has been added to the "
-                "OPENCAFE_ENGINE section of your engine.config".format(
-                    EngineDirectoryManager.OPENCAFE_SUB_DIRS.CONFIG_DIR))
-
-        # 'master_log_file_name' was added as a configurable option
-        config_keys = [key for key, _ in config.items('OPENCAFE_ENGINE')]
-        if 'master_log_file_name' not in config_keys:
-            update_tracker.register_update(config)
-            config.set(
-                'OPENCAFE_ENGINE', 'master_log_file_name', 'cafe.master')
-            print cls.wrapper.fill(
-                "'master_log_file_name = cafe-master' has been added to the "
-                "OPENCAFE_ENGINE section of your engine.config")
+        # UPDATE CODE GOES HERE
 
         if not update_tracker._updated:
             wrapper = textwrap.TextWrapper(initial_indent="  ")
@@ -533,15 +416,13 @@ class EngineConfigManager(object):
     @classmethod
     def build_engine_config(cls):
         config = None
-        if os.path.exists(cls.ENGINE_CONFIG_PATH) or \
-                os.path.exists(cls._OLD_ENGINE_CONFIG_PATH):
+        if os.path.exists(cls.ENGINE_CONFIG_PATH):
             print cls.wrapper.fill('Checking for updates to engine.config...')
             config = cls.update_engine_config()
         else:
             print cls.wrapper.fill(
                 "Creating default engine.config at {0}".format(
                     cls.ENGINE_CONFIG_PATH))
-
             config = cls.generate_default_engine_config()
 
         cls.write_and_chown_config(config, cls.ENGINE_CONFIG_PATH)
