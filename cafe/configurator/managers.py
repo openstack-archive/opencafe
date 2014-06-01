@@ -160,6 +160,7 @@ class TestEnvManager(object):
             os.environ["CAFE_LOGGING_VERBOSITY"] = self.test_logging_verbosity
             os.environ["CAFE_MASTER_LOG_FILE_NAME"] = \
                 self.test_master_log_file_name
+            os.environ["CAFE_CONFIG_STRATEGY"] = self.test_config_strategy
 
     @_lazy_property
     def test_repo_path(self):
@@ -224,6 +225,10 @@ class TestEnvManager(object):
     @_lazy_property
     def test_master_log_file_name(self):
         return self.engine_config_interface.master_log_file_name
+
+    @_lazy_property
+    def test_config_strategy(self):
+        return self.engine_config_interface.config_strategy
 
 
 class EngineDirectoryManager(object):

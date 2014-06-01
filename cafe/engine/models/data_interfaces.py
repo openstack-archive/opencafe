@@ -14,21 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import abc
 import json
 import os
 import ConfigParser
 
 from cafe.common.reporting import cclogging
-try:
-    from cafe.engine.mongo.client import BaseMongoClient
-except:
-    """ We are temporarily ignoring errors due to plugin refactor.
-    The mongo data-source is currently not being used. and needs to be
-    abstracted out into a data-source plugin.
-    """
 
-    pass
+data_sources = []
+
+
+class DataSourceType(type):
+    def __new__(cls, clsname, bases, attrs):
+        data_source = super(DataSourceType, cls).__new__(
+            cls, clsname, bases, attrs)
+        if data_source.__strategy_name__:
+            data_sources.append(data_source)
+        return data_source
 
 
 class ConfigDataException(Exception):
@@ -75,7 +76,8 @@ CONFIG_KEY = 'CAFE_{section_name}_{key}'
 
 class DataSource(object):
 
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = DataSourceType
+    __strategy_name__ = None
 
     def get(self, item_name, default=None):
         raise NotImplementedError
@@ -88,6 +90,8 @@ class DataSource(object):
 
 
 class EnvironmentVariableDataSource(DataSource):
+
+    __strategy_name__ = 'env_variable'
 
     def __init__(self, section_name):
         self._log = cclogging.getLogger(
@@ -108,6 +112,8 @@ class EnvironmentVariableDataSource(DataSource):
 
 
 class ConfigParserDataSource(DataSource):
+
+    __strategy_name__ = 'config_parser'
 
     def __init__(self, config_file_path, section_name):
         self._log = cclogging.getLogger(
@@ -171,6 +177,10 @@ class ConfigParserDataSource(DataSource):
 
 class DictionaryDataSource(DataSource):
 
+    # This is a building block for other data sources. Setting it's name
+    # to None will cause it to skip registration
+    __strategy_name__ = None
+
     def get(self, item_name, default=None):
         section = self._data_source.get(self._section_name)
         if section is None:
@@ -222,6 +232,8 @@ class DictionaryDataSource(DataSource):
 
 class JSONDataSource(DictionaryDataSource):
 
+    __strategy_name__ = 'json'
+
     def __init__(self, config_file_path, section_name):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
@@ -243,32 +255,16 @@ class JSONDataSource(DictionaryDataSource):
                 raise exception
 
 
-class MongoDataSource(DictionaryDataSource):
-
-    def __init__(self, hostname, db_name, username, password,
-                 config_name, section_name):
-        self._section_name = section_name
-
-        self.db = BaseMongoClient(
-            hostname=hostname, db_name=db_name,
-            username=username, password=password)
-        self.db.connect()
-        self.db.auth()
-        self._data_source = self.db.find_one({'config_name': config_name})
-
-
 class BaseConfigSectionInterface(object):
     """Base class for building an interface for the data contained in a
     SafeConfigParser object, as loaded from the config file as defined
     by the engine's config file.
     """
 
-    def __init__(self, config_file_path, section_name):
+    def __init__(self, data_source, override, section_name):
 
-        self._override = EnvironmentVariableDataSource(
-            section_name)
-        self._data_source = ConfigParserDataSource(
-            config_file_path, section_name)
+        self._override = data_source
+        self._data_source = override
         self._section_name = section_name
 
     def get(self, item_name, default=None):
@@ -285,13 +281,35 @@ class BaseConfigSectionInterface(object):
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
-    def __init__(self, config_file_path=None, section_name=None):
+    def __init__(self, config_file_path=None, section_name=None,
+                 config_strategy=None):
         section_name = (section_name or
                         getattr(self, 'SECTION_NAME', None) or
                         getattr(self, 'CONFIG_SECTION_NAME', None))
-
         config_file_path = config_file_path or _get_path_from_env(
             'CAFE_CONFIG_FILE_PATH')
 
+        # Determine if the configuration strategy is valid
+        strategy = config_strategy or os.environ.get("CAFE_CONFIG_STRATEGY")
+        strategy = strategy.lower()
+        config_strategies = {data_source.__strategy_name__: data_source
+                             for data_source in data_sources}
+        if strategy not in config_strategies.keys():
+            raise KeyError(
+                "{strategy} is an unregistered configuration strategy. "
+                "Known strategies are {strategies}.".format(
+                    strategy=strategy, strategies=config_strategies.keys()))
+
+        if strategy in [ConfigParserDataSource.__strategy_name__,
+                        JSONDataSource.__strategy_name__]:
+            data_source = config_strategies[strategy](
+                config_file_path, section_name)
+        else:
+            data_source = config_strategies[strategy](section_name)
+        override = EnvironmentVariableDataSource(
+            section_name)
+
         super(ConfigSectionInterface, self).__init__(
-            config_file_path, section_name)
+            data_source=data_source,
+            override=override,
+            section_name=section_name)
