@@ -26,6 +26,8 @@ from subprocess import Popen, PIPE
 
 from ConfigParser import SafeConfigParser
 from cafe.engine.config import EngineConfig
+from cafe.engine.models.data_interfaces import data_sources
+
 
 if not platform.system().lower() == 'windows':
     import pwd
@@ -119,6 +121,24 @@ class TestEnvManager(object):
             EngineConfigManager.ENGINE_CONFIG_PATH
         self.engine_config_interface = EngineConfig(self.engine_config_path)
 
+    def is_configuration_valid(self):
+        """Pre-check before finalizing a configuration to determine if
+        it can load successfully."""
+        config_strategy = self.engine_config_interface.config_strategy
+        config_kwargs = self.engine_config_interface.config_kwargs
+        config_kwargs['config_file_path'] = self.test_config_file_path
+
+        config_strategies = {data_source.__strategy_name__: data_source
+                             for data_source in data_sources}
+        if config_strategy not in config_strategies.keys():
+            raise KeyError(
+                "{strategy} is an unregistered configuration strategy. "
+                "Known strategies are {strategies}.".format(
+                    strategy=config_strategy,
+                    strategies=config_strategies.keys()))
+        strategy = config_strategies[config_strategy]
+        return strategy.can_be_loaded(**config_kwargs)
+
     def finalize(self, create_log_dirs=True, set_os_env_vars=True):
         """Sets all non-configured values to the defaults in the engine.config
         file. set_defaults=False will override this behavior, but note that
@@ -139,7 +159,7 @@ class TestEnvManager(object):
 
         _check(self.test_repo_path)
         _check(self.test_data_directory)
-        _check(self.test_config_file_path)
+        self.is_configuration_valid()
 
         if create_log_dirs:
             _create(self.test_root_log_dir)
@@ -160,6 +180,8 @@ class TestEnvManager(object):
             os.environ["CAFE_LOGGING_VERBOSITY"] = self.test_logging_verbosity
             os.environ["CAFE_MASTER_LOG_FILE_NAME"] = \
                 self.test_master_log_file_name
+            os.environ["CAFE_CONFIG_STRATEGY"] = self.test_config_strategy
+            os.environ["CAFE_CONFIG_KWARGS"] = str(self.test_config_kwargs)
 
     @_lazy_property
     def test_repo_path(self):
@@ -224,6 +246,14 @@ class TestEnvManager(object):
     @_lazy_property
     def test_master_log_file_name(self):
         return self.engine_config_interface.master_log_file_name
+
+    @_lazy_property
+    def test_config_strategy(self):
+        return self.engine_config_interface.config_strategy
+
+    @_lazy_property
+    def test_config_kwargs(self):
+        return self.engine_config_interface.config_kwargs
 
 
 class EngineDirectoryManager(object):

@@ -13,9 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import ast
 
 from cafe.engine.models.data_interfaces import (
-    ConfigSectionInterface, _get_path_from_env)
+    ConfigSectionInterface, ConfigParserDataSource, _get_path_from_env)
 
 
 class EngineConfig(ConfigSectionInterface):
@@ -25,7 +26,9 @@ class EngineConfig(ConfigSectionInterface):
     def __init__(self, config_file_path=None):
         config_file_path = config_file_path or _get_path_from_env(
             'CAFE_ENGINE_CONFIG_FILE_PATH')
-        super(EngineConfig, self).__init__(config_file_path=config_file_path)
+        super(EngineConfig, self).__init__(
+            config_file_path=config_file_path,
+            config_strategy=ConfigParserDataSource.__strategy_name__)
 
     @property
     def data_directory(self):
@@ -90,3 +93,20 @@ class EngineConfig(ConfigSectionInterface):
         """
 
         return self.get_raw("default_test_repo")
+
+    @property
+    def config_strategy(self):
+        """
+        Name of the strategy used to load test configurations.
+        """
+
+        return self.get_raw(
+            "config_strategy", ConfigParserDataSource.__strategy_name__)
+
+    @property
+    def config_kwargs(self):
+        """
+        The data used to load configurations.
+        """
+
+        return ast.literal_eval(self.get_raw("config_kwargs", "{}"))
