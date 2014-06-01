@@ -14,21 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import abc
+import ast
 import json
 import os
 import ConfigParser
 
 from cafe.common.reporting import cclogging
-try:
-    from cafe.engine.mongo.client import BaseMongoClient
-except:
-    """ We are temporarily ignoring errors due to plugin refactor.
-    The mongo data-source is currently not being used. and needs to be
-    abstracted out into a data-source plugin.
-    """
 
-    pass
+data_sources = {}
+
+
+class DataSourceType(type):
+    def __new__(cls, clsname, bases, attrs):
+        data_source = super(DataSourceType, cls).__new__(
+            cls, clsname, bases, attrs)
+        if data_source.__strategy_name__:
+            data_sources[data_source.__strategy_name__] = data_source
+        return data_source
 
 
 class ConfigDataException(Exception):
@@ -75,7 +77,8 @@ CONFIG_KEY = 'CAFE_{section_name}_{key}'
 
 class DataSource(object):
 
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = DataSourceType
+    __strategy_name__ = None
 
     def get(self, item_name, default=None):
         raise NotImplementedError
@@ -86,8 +89,14 @@ class DataSource(object):
     def get_boolean(self, item_name, default=None):
         raise NotImplementedError
 
+    @staticmethod
+    def can_be_loaded(config_file_path):
+        raise NotImplementedError
+
 
 class EnvironmentVariableDataSource(DataSource):
+
+    __strategy_name__ = 'env_variable'
 
     def __init__(self, section_name):
         self._log = cclogging.getLogger(
@@ -106,10 +115,20 @@ class EnvironmentVariableDataSource(DataSource):
         item_value = self.get(item_name, default)
         return bool(item_value) if item_value is not None else item_value
 
+    @staticmethod
+    def can_be_loaded(config_file_path):
+        """Determines if a configuration can be loaded given the
+        existing parameters."""
+
+        # Environment variables are always available on any system
+        return True
+
 
 class ConfigParserDataSource(DataSource):
 
-    def __init__(self, config_file_path, section_name):
+    __strategy_name__ = 'config_parser'
+
+    def __init__(self, config_file_path, section_name, **kwargs):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
@@ -168,8 +187,25 @@ class ConfigParserDataSource(DataSource):
                 self._log.warning(msg)
             return default
 
+    @staticmethod
+    def can_be_loaded(config_file_path, **kwargs):
+        """Determines if a configuration can be loaded given the
+        existing parameters."""
+
+        # Make sure user provided config name ends with '.config'
+        if not config_file_path.endswith('.config'):
+            config_file_path = "{0}{1}".format(config_file_path, ".config")
+
+        if not os.path.exists(config_file_path):
+            raise Exception("Config file at {path} does not exist".format(
+                path=config_file_path))
+
 
 class DictionaryDataSource(DataSource):
+
+    # This is a building block for other data sources. Setting it's name
+    # to None will cause it to skip registration
+    __strategy_name__ = None
 
     def get(self, item_name, default=None):
         section = self._data_source.get(self._section_name)
@@ -222,7 +258,9 @@ class DictionaryDataSource(DataSource):
 
 class JSONDataSource(DictionaryDataSource):
 
-    def __init__(self, config_file_path, section_name):
+    __strategy_name__ = 'json'
+
+    def __init__(self, config_file_path, section_name, **kwargs):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
@@ -242,19 +280,18 @@ class JSONDataSource(DictionaryDataSource):
                 self._log.exception(exception)
                 raise exception
 
+    @staticmethod
+    def can_be_loaded(config_file_path, **kwargs):
+        """Determines if a configuration can be loaded given the
+        existing parameters."""
 
-class MongoDataSource(DictionaryDataSource):
+        # Make sure user provided config name ends with '.json'
+        if not config_file_path.endswith('.json'):
+            config_file_path = "{0}{1}".format(config_file_path, ".json")
 
-    def __init__(self, hostname, db_name, username, password,
-                 config_name, section_name):
-        self._section_name = section_name
-
-        self.db = BaseMongoClient(
-            hostname=hostname, db_name=db_name,
-            username=username, password=password)
-        self.db.connect()
-        self.db.auth()
-        self._data_source = self.db.find_one({'config_name': config_name})
+        if not os.path.exists(config_file_path):
+            raise Exception("Config file at {path} does not exist".format(
+                path=config_file_path))
 
 
 class BaseConfigSectionInterface(object):
@@ -263,12 +300,10 @@ class BaseConfigSectionInterface(object):
     by the engine's config file.
     """
 
-    def __init__(self, config_file_path, section_name):
+    def __init__(self, data_source, override, section_name):
 
-        self._override = EnvironmentVariableDataSource(
-            section_name)
-        self._data_source = ConfigParserDataSource(
-            config_file_path, section_name)
+        self._override = override
+        self._data_source = data_source
         self._section_name = section_name
 
     def get(self, item_name, default=None):
@@ -285,13 +320,37 @@ class BaseConfigSectionInterface(object):
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
-    def __init__(self, config_file_path=None, section_name=None):
+    def __init__(self, section_name=None, config_strategy=None, **kwargs):
         section_name = (section_name or
                         getattr(self, 'SECTION_NAME', None) or
                         getattr(self, 'CONFIG_SECTION_NAME', None))
 
-        config_file_path = config_file_path or _get_path_from_env(
-            'CAFE_CONFIG_FILE_PATH')
+        config_kwargs = os.environ.get("CAFE_CONFIG_KWARGS") or '{}'
+        config_kwargs = ast.literal_eval(config_kwargs)
+        kwargs.update(config_kwargs)
+
+        if 'config_file_path' not in kwargs:
+            kwargs['config_file_path'] = _get_path_from_env(
+                'CAFE_CONFIG_FILE_PATH')
+
+        # Determine if the configuration strategy is valid
+        strategy = config_strategy or os.environ.get("CAFE_CONFIG_STRATEGY")
+        if strategy is None:
+            raise Exception(
+                "No config strategy defined for section {section}".format(
+                    section=section_name))
+        strategy = strategy.lower()
+        if strategy not in data_sources.keys():
+            raise KeyError(
+                "{strategy} is an unregistered configuration strategy. "
+                "Known strategies are {strategies}.".format(
+                    strategy=strategy, strategies=data_sources.keys()))
+
+        data_source = data_sources[strategy](
+            section_name=section_name, **kwargs)
+        override = EnvironmentVariableDataSource(section_name)
 
         super(ConfigSectionInterface, self).__init__(
-            config_file_path, section_name)
+            data_source=data_source,
+            override=override,
+            section_name=section_name)
