@@ -316,8 +316,10 @@ class _UnittestRunnerCLI(object):
     class ListAction(argparse.Action):
 
         def __call__(self, parser, namespace, values, option_string=None):
+
             product = namespace.product or ""
-            test_env_mgr = TestEnvManager(product, None)
+            test_env_mgr = TestEnvManager(
+                product, None, test_repo_package_name=namespace.test_repo)
             test_dir = os.path.expanduser(
                 os.path.join(test_env_mgr.test_repo_path, product))
             product_config_dir = os.path.expanduser(os.path.join(
@@ -552,19 +554,21 @@ class _UnittestRunnerCLI(object):
             help="product test config")
 
         argparser.add_argument(
+            "--test-repo",
+            default=None,
+            metavar="<test-repo>",
+            help="The name of the package containing the tests. "
+                 "This overrides the value in the engine.config file, as well "
+                 "as the CAFE_OPENCAFE_ENGINE_default_test_repo environment "
+                 "variable.")
+
+        argparser.add_argument(
             "-v", "--verbose",
             action=self.VerboseAction,
             nargs="?",
             default=2,
             type=int,
             help="set unittest output verbosity")
-
-        argparser.add_argument(
-            "-l", "--list",
-            action=self.ListAction,
-            nargs="*",
-            choices=["products", "configs", "tests"],
-            help="list tests and or configs")
 
         argparser.add_argument(
             "-f", "--fail-fast",
@@ -637,6 +641,13 @@ class _UnittestRunnerCLI(object):
             metavar="data",
             help="arbitrary test data")
 
+        argparser.add_argument(
+            "-l", "--list",
+            action=self.ListAction,
+            nargs="*",
+            choices=["products", "configs", "tests"],
+            help="list tests and or configs")
+
         args = argparser.parse_args()
 
         # Special case for when product or config is missing and --list
@@ -665,7 +676,8 @@ class UnittestRunner(object):
     def __init__(self):
         self.cl_args = _UnittestRunnerCLI().get_cl_args()
         self.test_env = TestEnvManager(
-            self.cl_args.product, self.cl_args.config)
+            self.cl_args.product, self.cl_args.config,
+            test_repo_package_name=self.cl_args.test_repo)
 
         # If something in the cl_args is supposed to override a default, like
         # say that data directory or something, it needs to happen before
@@ -675,8 +687,6 @@ class UnittestRunner(object):
         self.test_env.finalize()
         init_root_log_handler()
         self.product = self.cl_args.product
-        self.test_repo = (
-            self.test_env.engine_config_interface.default_test_repo)
         self.print_mug_and_paths(self.test_env)
 
     @staticmethod
@@ -751,7 +761,7 @@ class UnittestRunner(object):
         master_suite = OpenCafeUnittestTestSuite()
         parallel_test_list = []
 
-        builder = SuiteBuilder(self.cl_args, self.test_repo)
+        builder = SuiteBuilder(self.cl_args, self.test_env.test_repo_package)
         test_runner = self.get_runner(self.cl_args)
 
         if self.cl_args.parallel:
