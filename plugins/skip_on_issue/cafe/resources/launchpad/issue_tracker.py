@@ -16,7 +16,7 @@ limitations under the License.
 import logging
 
 from cafe.resources.launchpad.config import LaunchpadTrackerConfig
-from launchpadlib.launchpad import Launchpad
+from lplight.client import LaunchpadClient
 
 
 class LaunchpadTracker(object):
@@ -29,21 +29,16 @@ class LaunchpadTracker(object):
         """
         config = LaunchpadTrackerConfig()
         log = logging.getLogger('RunnerLog')
-        launchpad = Launchpad.login_anonymously(consumer_name='test',
-                                                service_root='production')
-        try:
-            bug = launchpad.bugs[bug_id]
-        except KeyError as error:
-            # Invalid bug ID
-            log.info('Invalid bug ID. Key Error: {0}'.format(error))
-            return False
+        launchpad = LaunchpadClient()
 
-        tasks = bug.bug_tasks
-        entries = tasks.entries
-        for bug_entry in entries:
-            if bug_entry['bug_target_name'] == config.project:
-                return bug_entry['status'] not in ('Fix Committed',
-                                                   'Fix Released')
+        resp = launchpad.get_bug_tasks(bug_id)
+        if resp.status_code == 404:
+            log.info('Couldn\'t find bug with ID {0}'.format(bug_id))
+
+        tasks = resp.model or []
+        for bug_task in tasks:
+            if bug_task.bug_target_name == config.project:
+                return bug_task.status not in ('Fix Committed', 'Fix Released')
 
         log.info('Bug does not affect project {0} '
                  'or project name is not correct.'.format(config.project))
