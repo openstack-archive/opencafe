@@ -90,3 +90,11 @@ class EngineConfig(ConfigSectionInterface):
         """
 
         return self.get_raw("default_test_repo")
+
+    @property
+    def ssh_proxy(self):
+        """
+        Used by the ssh plugin to build a tunnel through the proxy/bastion
+        to the test environment.
+        """
+        return self.get_raw('ssh_proxy', None)

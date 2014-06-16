@@ -410,6 +410,8 @@ class EngineConfigManager(object):
             'OPENCAFE_ENGINE', 'logging_verbosity', 'STANDARD')
         config.set(
             'OPENCAFE_ENGINE', 'default_test_repo', 'cloudroast')
+        config.set(
+            'OPENCAFE_ENGINE', 'ssh_proxy', '')
         return config
 
     @staticmethod
