@@ -18,13 +18,14 @@ import socket
 import StringIO
 import time
 
-from paramiko import AutoAddPolicy, RSAKey
+from paramiko import AutoAddPolicy, RSAKey, ProxyCommand
 from paramiko import AuthenticationException, SSHException
 from paramiko.client import SSHClient as ParamikoSSHClient
 from paramiko.resource import ResourceManager
 
 from cafe.engine.clients.base import BaseClient
 from cafe.engine.ssh.models.ssh_response import ExecResponse
+from cafe.engine.ssh.config import SSHConfig
 
 
 class SSHAuthStrategy:
@@ -43,7 +44,7 @@ class ExtendedParamikoSSHClient(ParamikoSSHClient):
         exit status code.
         """
         chan = self._transport.open_session()
-        if(get_pty):
+        if get_pty:
             chan.get_pty()
         chan.settimeout(timeout)
         chan.exec_command(command)
@@ -66,9 +67,12 @@ class BaseSSHClient(BaseClient):
         @param host: IP address or host name to connect to
         @type host: string
         """
+        super(BaseSSHClient, self).__init__()
         self.ssh_connection = None
         self.host = host
         self._chan = None
+        self.proxy = None
+        self.proxy_set = False
 
     def connect(self, username=None, password=None,
                 accept_missing_host_key=True, tcp_timeout=30,
@@ -107,20 +111,33 @@ class BaseSSHClient(BaseClient):
         connect_args = {'hostname': self.host, 'username': username,
                         'timeout': tcp_timeout, 'port': port,
                         'allow_agent': allow_agent}
+
         self._log.debug('Attempting to SSH connect to {host} '
                         'with user {user} and strategy {strategy}.'.format(
                             host=self.host, user=username,
                             strategy=auth_strategy))
+
         if auth_strategy == SSHAuthStrategy.PASSWORD:
             connect_args['password'] = password
+
         if auth_strategy == SSHAuthStrategy.LOCAL_KEY:
             connect_args['look_for_keys'] = True
+
         if auth_strategy == SSHAuthStrategy.KEY_STRING:
             key_file = StringIO.StringIO(key)
             key = RSAKey.from_private_key(key_file)
             connect_args['pkey'] = key
+
         if auth_strategy == SSHAuthStrategy.KEY_FILE_LIST:
             connect_args['key_filename'] = key_filename
+
+        # Add sock proxy if ssh tunnel through proxy/bastion is required
+        if self.is_proxy_needed():
+            self._log.info("Using a proxy: {proxy}".format(proxy=self.proxy))
+            proxy_str = 'ssh -q -a -x {proxy} nc {host} {port}'
+            proxy_cmd = proxy_str.format(proxy=self.proxy,
+                                         host=self.host, port=port)
+            connect_args['sock'] = ProxyCommand(proxy_cmd)
 
         try:
             ssh.connect(**connect_args)
@@ -132,6 +149,25 @@ class BaseSSHClient(BaseClient):
             # Complete setup of the client
             ResourceManager.register(self, ssh.get_transport())
             self.ssh_connection = ssh
+
+    def is_proxy_needed(self):
+        """
+        @return: Boolean - True=proxy specified, False=proxy not specified
+        """
+
+        # Should only check once and then use the result for the duration of
+        # the connection.
+        if not self.proxy_set:
+            if self.proxy is None:
+                cafe_config = SSHConfig()
+                self.proxy = cafe_config.proxy
+
+                # If the option is in the config file, but no value is set,
+                # the proxy is not set.
+                if self.proxy == '':
+                    self.proxy = None
+            self.proxy_set = True
+        return self.proxy is not None
 
     def _format_response(self, resp_dict):
         """
@@ -186,18 +222,18 @@ class BaseSSHClient(BaseClient):
             self._chan.recv(1024)
 
     def end_shell(self):
-        '''
+        """
         @summary: Kills the pseudo terminal if not already closed.
-        '''
+        """
         if not self._chan.closed:
             self._chan.close()
         self._chan = None
 
     def wait_for_active_shell(self, max_time):
-        '''
+        """
         Opens a chanel and waits until max_time for the chanel
-        to be ready for data tranmission
-        '''
+        to be ready for data transmission
+        """
         if not self.is_connected():
             message = 'Not currently connected to {host}.'.format(
                 host=self.host)
@@ -209,10 +245,10 @@ class BaseSSHClient(BaseClient):
             time.sleep(1)
 
     def read_shell_response(self, prompt, max_time):
-        '''
-        Reads the data from the pseduo terminal until it finds the prompt
+        """
+        Reads the data from the pseudo terminal until it finds the prompt
         or until max_time.
-        '''
+        """
         output = ''
         while time.time() < max_time:
             while not self._chan.recv_ready() and time.time() < max_time:
