@@ -1,3 +1,4 @@
+import argparse
 import os
 from cafe.common.reporting.cclogging import \
     get_object_namespace, getLogger, setup_new_cchandler, log_info_block
@@ -112,3 +113,48 @@ class FixtureReporter(object):
              ('Start Time', self.test_metrics.timer.start_time),
              ('Elapsed Time', self.test_metrics.timer.get_elapsed_time())])
         self.stats_log.report(self.test_metrics)
+
+
+def parse_runner_args(arg_parser):
+    """ Generic CAFE args for external runners"""
+
+    arg_parser.add_argument(
+        "product",
+        nargs=1,
+        metavar="<product>",
+        help="Product name")
+
+    arg_parser.add_argument(
+        "config",
+        nargs=1,
+        metavar="<config_file>",
+        help="Product test config")
+
+    arg_parser.add_argument(
+        dest='cmd_opts',
+        nargs=argparse.REMAINDER,
+        metavar="<cmd_opts>",
+        help="Options to pass to the test runner")
+
+    return arg_parser.parse_args()
+
+
+def print_mug(name, brewing_from):
+    """ Generic CAFE mug """
+    border = '-' * 40
+    mug = """
+    Brewing from {path}
+              ( (
+               ) )
+            .........
+            |       |___
+            |       |_  |
+            |  :-)  |_| |
+            |       |___|
+            |_______|
+    === CAFE {name} Runner ===""".format(
+        path=brewing_from, name=name)
+
+    print border
+    print mug
+    print border
