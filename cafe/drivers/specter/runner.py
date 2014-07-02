@@ -18,7 +18,7 @@ import argparse
 import os
 import subprocess
 from cafe.configurator.managers import TestEnvManager
-from cafe.drivers import print_mug, parse_runner_args
+from cafe.drivers.driver_helpers import print_mug, parse_runner_args
 
 
 def entry_point():
