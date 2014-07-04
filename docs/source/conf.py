@@ -7,7 +7,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-#templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -54,10 +54,8 @@ latex_elements = {}
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-  ('index', 'OpenCAFE.tex', u'OpenCAFE Documentation',
-   u'Rackspace', 'manual'),
-]
+latex_documents = [('index', 'OpenCAFE.tex', u'OpenCAFE Documentation',
+                    u'Rackspace', 'manual')]
 
 # -- Options for manual page output ---------------------------------------
 
@@ -73,8 +71,6 @@ man_pages = [
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-  ('index', 'OpenCAFE', u'OpenCAFE Documentation',
-   u'Rackspace', 'OpenCAFE', 'One line description of project.',
-   'Miscellaneous'),
-]
+texinfo_documents = [('index', 'OpenCAFE', u'OpenCAFE Documentation',
+                      u'Rackspace', 'OpenCAFE',
+                      'One line description of project.', 'Miscellaneous')]
