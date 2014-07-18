@@ -93,7 +93,7 @@ def print_mug(base_dir):
     mug7 = "    |_______|"
     mug8 = "=== CAFE Vows Runner ==="
 
-    print "\n{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}\n{8}".format(
+    print("\n{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n{6}\n{7}\n{8}".format(
         mug0,
         mug1,
         mug2,
@@ -102,11 +102,11 @@ def print_mug(base_dir):
         mug5,
         mug6,
         mug7,
-        mug8)
+        mug8))
 
-    print "-" * len(brew)
-    print brew
-    print "-" * len(brew)
+    print("-" * len(brew))
+    print(brew)
+    print("-" * len(brew))
 
 if __name__ == '__main__':
     entry_point()

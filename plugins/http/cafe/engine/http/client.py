@@ -229,18 +229,18 @@ class HTTPClient(BaseHTTPClient):
         headers = dict(self.default_headers, **(headers or {}))
 
         # Override url if present in requestslib_kwargs
-        if 'url' in requestslib_kwargs.keys():
+        if 'url' in list(requestslib_kwargs.keys()):
             url = requestslib_kwargs.get('url', None) or url
             del requestslib_kwargs['url']
 
         # Override method if present in requestslib_kwargs
-        if 'method' in requestslib_kwargs.keys():
+        if 'method' in list(requestslib_kwargs.keys()):
             method = requestslib_kwargs.get('method', None) or method
             del requestslib_kwargs['method']
 
         # The requests lib already removes None key/value pairs, but we force
         # it here in case that behavior ever changes
-        for key in requestslib_kwargs.keys():
+        for key in list(requestslib_kwargs.keys()):
             if requestslib_kwargs[key] is None:
                 del requestslib_kwargs[key]
 

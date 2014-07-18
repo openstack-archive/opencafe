@@ -178,7 +178,7 @@ class LinuxClient(BaseClient):
 
         def is_decimal(char):
             return str.isdigit(char) or char == "."
-        size = filter(is_decimal, size)
+        size = list(filter(is_decimal, size))
         return float(size)
 
     def get_number_of_vcpus(self):
@@ -283,7 +283,7 @@ class LinuxClient(BaseClient):
         # Return a list of partition objects that each contains the name and
         # size of the partition in bytes and the type of the partition
         partition_types = self.get_partition_types()
-        partition_names = ' '.join(partition_types.keys())
+        partition_names = ' '.join(list(partition_types.keys()))
 
         partition_size_output = self.ssh_client.execute_command(
             'fdisk -l %s 2>/dev/null | '

@@ -89,14 +89,17 @@ class SSHBehavior(BaseBehavior):
             if not os.path.isfile(private_key_file_path):
                 return SSHKeyResponse(error="No private key file created")
             else:
-                os.chmod(private_key_file_path, 0700)
+                os.chmod(private_key_file_path, 0o700)
             return SSHKeyResponse(
                 public_key=pub_keyfile_path,
                 private_key=private_key_file_path)
-        except IOError as (errno, strerror):
-            _log.error("I/O error({0}): {1}".format(
-                errno, strerror))
-            return SSHKeyResponse(error=strerror)
+        except IOError as err:
+            try:
+                errno, strerror = err
+            except:
+                _log.error("I/O error({0}): {1}".format(
+                    errno, strerror))
+                return SSHKeyResponse(error=strerror)
 
     @behavior(BaseSSHClient)
     def ping_using_remote_machine(self, ping_ip_address, count=3):
