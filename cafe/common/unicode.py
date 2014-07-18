@@ -74,6 +74,7 @@
     [n for n in UNICODE_BLOCKS.get_range(BLOCK_NAMES.thai).codepoint_names()]
 """
 
+import six
 import unicodedata
 
 # Integer denoting the first unicode codepoint
@@ -435,7 +436,7 @@ class UnicodeRange(object):
         representation of all codepoints in UnicodeRange
         """
         for codepoint in self.codepoints():
-            yield unichr(codepoint).encode(encoding)
+            yield six.unichr(codepoint).encode(encoding)
 
 
 class UnicodeRangeList(list):
@@ -480,7 +481,7 @@ class UnicodeRangeList(list):
         UnicodeRangeList
         """
         for codepoint in self.codepoints():
-            yield unichr(codepoint).encode(encoding)
+            yield six.unichr(codepoint).encode(encoding)
 
     def get_range(self, range_name):
         """
@@ -561,4 +562,5 @@ def codepoint_name(codepoint_integer):
             (codepoint_integer > (UNICODE_ENDING_CODEPOINT + 1)):
         return None
 
-    return unicodedata.name(unichr(codepoint_integer), hex(codepoint_integer))
+    return unicodedata.name(
+        six.unichr(codepoint_integer), hex(codepoint_integer))

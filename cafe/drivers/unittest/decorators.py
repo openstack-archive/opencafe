@@ -16,7 +16,8 @@ limitations under the License.
 
 import collections
 import inspect
-import itertools
+import six
+from six.moves import zip_longest
 
 from types import FunctionType
 from unittest import TestCase
@@ -91,7 +92,8 @@ def DataDrivenFixture(cls):
 
             # Create a new test from the old test
             new_test = FunctionType(
-                original_test.func_code, original_test.func_globals,
+                six.get_function_code(original_test),
+                six.get_function_globals(original_test),
                 name=new_test_name)
 
             # Copy over any other attributes the original test had (mainly to
@@ -108,7 +110,7 @@ def DataDrivenFixture(cls):
 
             # Make sure we take into account required arguments
             kwargs = dict(
-                itertools.izip_longest(
+                zip_longest(
                     args[::-1], list(defaults or ())[::-1], fillvalue=None))
 
             kwargs.update(dataset.data)
@@ -153,7 +155,7 @@ class memoized(object):
     def __init__(self, func):
         self.func = func
         self.cache = {}
-        self.__name__ = func.func_name
+        self.__name__ = func.__name__
 
     def __call__(self, *args):
         log_name = "{0}.{1}".format(

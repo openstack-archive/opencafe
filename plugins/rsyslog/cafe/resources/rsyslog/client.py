@@ -114,10 +114,10 @@ class MessageHandler(object):
     def sd_dict_to_syslog_str(cls, sd_dict):
         """ Converts structured data dictionary to a syslog str """
         syslog_sds = ''
-        for sd_key, sd_val in sd_dict.items():
+        for sd_key, sd_val in list(sd_dict.items()):
             syslog_str = '[{sd_key}'.format(sd_key=sd_key)
 
-            for sub_key, sub_val in sd_val.items():
+            for sub_key, sub_val in list(sd_val.items()):
                 syslog_str = '{orig} {key}="{value}"'.format(
                     orig=syslog_str, key=sub_key, value=sub_val)
             syslog_str += ']'

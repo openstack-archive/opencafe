@@ -45,7 +45,7 @@ def tree(directory, padding, print_files=False):
     dir_token = "{0}+-".format(padding[:-1])
     dir_path = os.path.basename(os.path.abspath(directory))
 
-    print "{0}{1}/".format(dir_token, dir_path)
+    print("{0}{1}/".format(dir_token, dir_path))
 
     padding = "{0}{1}".format(padding, " ")
 
@@ -53,7 +53,7 @@ def tree(directory, padding, print_files=False):
         try:
             files = os.listdir(directory)
         except OSError:
-            print "Directory: {0} Does Not Exist".format(directory)
+            print("Directory: {0} Does Not Exist".format(directory))
     else:
         files = [name for name in os.listdir(directory) if
                  os.path.isdir(os.path.join(directory, name))]
@@ -68,7 +68,7 @@ def tree(directory, padding, print_files=False):
                 tree(path, "".join([padding, "|"]), print_files)
         else:
             if (not file_name.endswith(".pyc") and file_name != "__init__.py"):
-                print "{0}{1}".format(padding, file_name)
+                print("{0}{1}".format(padding, file_name))
 
 
 class _WritelnDecorator(object):
@@ -147,9 +147,9 @@ class SuiteBuilder(object):
         truth_values = []
         method_attrs = {}
 
-        attr_keys = attrs.keys()
+        attr_keys = list(attrs.keys())
         method_attrs = method.__dict__[TAGS_DECORATOR_ATTR_DICT_NAME]
-        method_attrs_keys = method_attrs.keys()
+        method_attrs_keys = list(method_attrs.keys())
 
         for attr_key in attr_keys:
             if attr_key in method_attrs_keys:
@@ -327,23 +327,23 @@ class _UnittestRunnerCLI(object):
                 product))
 
             def _print_test_tree():
-                print "\n<[TEST REPO]>\n"
+                print("\n<[TEST REPO]>\n")
                 tree(test_dir, " ", print_files=True)
 
             def _print_config_tree():
-                print "\n<[CONFIGS]>\n"
+                print("\n<[CONFIGS]>\n")
                 tree(product_config_dir, " ", print_files=True)
 
             def _print_product_tree():
-                print "\n<[PRODUCTS]>\n"
+                print("\n<[PRODUCTS]>\n")
                 tree(test_env_mgr.test_repo_path, " ", print_files=False)
 
             def _print_product_list():
-                print "\n<[PRODUCTS]>\n"
-                print "+-{0}".format(product_config_dir)
-                print "\n".join(
+                print("\n<[PRODUCTS]>\n")
+                print("+-{0}".format(product_config_dir))
+                print("\n".join(
                     ["  +-{0}/".format(dirname) for dirname in os.listdir(
-                        product_config_dir)])
+                        product_config_dir)]))
 
             # If no values passed, print a default
             if not values:
@@ -385,7 +385,7 @@ class _UnittestRunnerCLI(object):
 
                 test_env = TestEnvManager(namespace.product or "", values)
                 if not os.path.exists(test_env.test_config_file_path):
-                    print (
+                    print(
                         "cafe-runner: error: config file at {0} does not "
                         "exist".format(test_env.test_config_file_path))
                     exit(1)
@@ -411,7 +411,7 @@ class _UnittestRunnerCLI(object):
 
         def __call__(self, parser, namespace, values, option_string=None):
             if not os.path.exists(values):
-                print (
+                print(
                     "cafe-runner: error: data-directory '{0}' does not "
                     "exist".format(values))
                 exit(1)
@@ -430,8 +430,8 @@ class _UnittestRunnerCLI(object):
                     "cafe-runner: error: {0} is not a valid argument for "
                     "-v/--verbose".format(values))
             if msg:
-                print parser.usage
-                print msg
+                print(parser.usage)
+                print(msg)
                 exit(1)
 
             os.environ["VERBOSE"] = "true" if values == 3 else "false"
@@ -653,7 +653,7 @@ class _UnittestRunnerCLI(object):
         # Special case for when product or config is missing and --list
         # wasn't called
         if args.product is None or args.config is None:
-            print argparser.usage
+            print(argparser.usage)
             print (
                 "cafe-runner: error: You must supply both a product and a "
                 "config to run tests")
@@ -661,7 +661,7 @@ class _UnittestRunnerCLI(object):
 
         if (args.result or args.result_directory) and (
                 args.result is None or args.result_directory is None):
-            print argparser.usage
+            print(argparser.usage)
             print (
                 "cafe-runner: error: You must supply both a --result and a "
                 "--result-directory to print out json or xml formatted "
@@ -691,7 +691,7 @@ class UnittestRunner(object):
 
     @staticmethod
     def print_mug_and_paths(test_env):
-        print """
+        print("""
     ( (
      ) )
   .........
@@ -700,16 +700,16 @@ class UnittestRunner(object):
   |  :-)  |_| |
   |       |___|
   |_______|
-=== CAFE Runner ==="""
-        print "=" * 150
-        print "Percolated Configuration"
-        print "-" * 150
-        print "BREWING FROM: ....: {0}".format(test_env.test_repo_path)
-        print "ENGINE CONFIG FILE: {0}".format(test_env.engine_config_path)
-        print "TEST CONFIG FILE..: {0}".format(test_env.test_config_file_path)
-        print "DATA DIRECTORY....: {0}".format(test_env.test_data_directory)
-        print "LOG PATH..........: {0}".format(test_env.test_log_dir)
-        print "=" * 150
+=== CAFE Runner ===""")
+        print("=" * 150)
+        print("Percolated Configuration")
+        print("-" * 150)
+        print("BREWING FROM: ....: {0}".format(test_env.test_repo_path))
+        print("ENGINE CONFIG FILE: {0}".format(test_env.engine_config_path))
+        print("TEST CONFIG FILE..: {0}".format(test_env.test_config_file_path))
+        print("DATA DIRECTORY....: {0}".format(test_env.test_data_directory))
+        print("LOG PATH..........: {0}".format(test_env.test_log_dir))
+        print("=" * 150)
 
     @staticmethod
     def execute_test(runner, test_id, test, results):
@@ -732,24 +732,24 @@ class UnittestRunner(object):
 
     @staticmethod
     def dump_results(start, finish, results):
-        print "-" * 71
+        print("-" * 71)
 
         tests_run = 0
         errors = 0
         failures = 0
-        for key, result in results.items():
+        for key, result in list(results.items()):
             tests_run += result.testsRun
             errors += len(result.errors)
             failures += len(result.failures)
 
-        print "Ran {0} test{1} in {2:.3f}s".format(
-            tests_run, "s" if tests_run != 1 else "", finish - start)
+        print("Ran {0} test{1} in {2:.3f}s".format(
+            tests_run, "s" if tests_run != 1 else "", finish - start))
 
         if failures or errors:
-            print "\nFAILED ({0}{1}{2})".format(
+            print("\nFAILED ({0}{1}{2})".format(
                 "Failures={0}".format(failures) if failures else "",
                 " " if failures and errors else "",
-                "Errors={0}".format(errors) if errors else "")
+                "Errors={0}".format(errors) if errors else ""))
 
         return errors, failures, tests_run
 
@@ -769,7 +769,7 @@ class UnittestRunner(object):
             if self.cl_args.dry_run:
                 for suite in parallel_test_list:
                     for test in suite:
-                        print test
+                        print(test)
                 exit(0)
             exit_code = self.run_parallel(
                 parallel_test_list, test_runner,
@@ -780,7 +780,7 @@ class UnittestRunner(object):
             master_suite = builder.generate_suite()
             if self.cl_args.dry_run:
                 for test in master_suite:
-                    print test
+                    print(test)
                 exit(0)
             exit_code = self.run_serialized(
                 master_suite, test_runner, result_type=self.cl_args.result,
@@ -823,7 +823,7 @@ class UnittestRunner(object):
 
         if result_type is not None:
             all_results = []
-            for test_id, result in results.items():
+            for test_id, result in list(results.items()):
                 tests = test_mapping[test_id]
                 result_parser = SummarizeResults(
                     vars(result), tests, (finish - start))

@@ -15,7 +15,7 @@ limitations under the License.
 """
 
 import socket
-import StringIO
+import io
 import time
 
 from paramiko import AutoAddPolicy, RSAKey, ProxyCommand
@@ -124,7 +124,7 @@ class BaseSSHClient(BaseClient):
             connect_args['look_for_keys'] = True
 
         if auth_strategy == SSHAuthStrategy.KEY_STRING:
-            key_file = StringIO.StringIO(key)
+            key_file = io.StringIO(key)
             key = RSAKey.from_private_key(key_file)
             connect_args['pkey'] = key
 
@@ -207,7 +207,7 @@ class BaseSSHClient(BaseClient):
                                                               height=9999999)
                 if self._chan is not None:
                     break
-            except SSHException, msg:
+            except SSHException as msg:
                 retry_count = retry_count + 1
                 self._log.error("Channel attempt {0} failed \n {1}".format(
                     retry_count,
@@ -476,7 +476,7 @@ class SSHClient(BaseSSHClient):
         sftp_conn = self.ssh_connection.open_sftp()
         try:
             sftp_conn.put(local_path, remote_path)
-        except IOError, exception:
+        except IOError as exception:
             self._log.warning("Error during file transfer: {error}".format(
                 error=exception))
             return False
@@ -499,7 +499,7 @@ class SSHClient(BaseSSHClient):
         sftp_conn = self.ssh_connection.open_sftp()
         try:
             sftp_conn.get(remote_path, local_path)
-        except IOError, exception:
+        except IOError as exception:
             self._log.warning("Error during file transfer: {error}".format(
                 error=exception))
             return False

@@ -52,7 +52,7 @@ class BaseCommandLineClient(BaseClient):
         """Sets all os environment variables provided in env_var_dict"""
 
         self.env_var_dict = env_var_dict
-        for key, value in self.env_var_dict.items():
+        for key, value in list(self.env_var_dict.items()):
             self._log.debug('setting {0}={1}'.format(key, value))
             os.environ[str(key)] = str(value)
 
@@ -60,7 +60,7 @@ class BaseCommandLineClient(BaseClient):
         """Sets all os environment variables provided in env_var_dict"""
 
         self.env_var_dict = self.env_var_dict.update(env_var_dict or {})
-        for key, value in self.env_var_dict.items():
+        for key, value in list(self.env_var_dict.items()):
             self._log.debug('setting {0}={1}'.format(key, value))
             os.environ[str(key)] = str(value)
 
@@ -70,7 +70,7 @@ class BaseCommandLineClient(BaseClient):
         If env_var_list is passed, attempts to unset all environment vars in
         list"""
 
-        env_var_list = env_var_list or self.env_var_dict.keys() or []
+        env_var_list = env_var_list or list(self.env_var_dict.keys()) or []
         for key, _ in env_var_list:
             self._log.debug('unsetting {0}'.format(key))
             os.unsetenv(str(key))

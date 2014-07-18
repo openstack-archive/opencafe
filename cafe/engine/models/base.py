@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 from cafe.common.reporting import cclogging
+import six
 
 
 class CommonToolsMixin(object):
@@ -49,7 +50,8 @@ class CommonToolsMixin(object):
         values that are None
         """
 
-        return dict((k, v) for k, v in dictionary.iteritems() if v is not None)
+        return dict(
+            (k, v) for k, v in six.iteritems(dictionary) if v is not None)
 
 
 class JSON_ToolsMixin(object):
@@ -88,7 +90,7 @@ class XML_ToolsMixin(object):
     def _remove_xml_etree_namespace(doc, namespace):
         """Remove namespace in the passed document in place."""
 
-        ns = u'{%s}' % namespace
+        ns = six.u(namespace)
         nsl = len(ns)
         for elem in doc.getiterator():
             for key in elem.attrib:
@@ -129,11 +131,11 @@ class BaseModel(object):
     def __str__(self):
         strng = '<{0} object> {1}'.format(
             type(self).__name__, self.__REPR_SEPARATOR__)
-        for key in vars(self).keys():
+        for key in list(vars(self).keys()):
             val = getattr(self, key)
             if isinstance(val, cclogging.logging.Logger):
                 continue
-            elif isinstance(val, unicode):
+            elif isinstance(val, six.text_type):
                 strng = '{0}{1} = {2}{3}'.format(
                     strng, key, val.encode("utf-8"), self.__REPR_SEPARATOR__)
             else:

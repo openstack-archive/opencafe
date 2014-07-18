@@ -139,15 +139,15 @@ def log_results(result):
     expected_fails = unexpected_successes = skipped = 0
 
     try:
-        results = map(len, (result.expectedFailures,
-                            result.unexpectedSuccesses,
-                            result.skipped))
+        results = list(map(len, (
+            result.expectedFailures, result.unexpectedSuccesses,
+            result.skipped)))
         expected_fails, unexpected_successes, skipped = results
     except AttributeError:
         pass
 
     if not result.wasSuccessful():
-        failed, errored = map(len, (result.failures, result.errors))
+        failed, errored = list(map(len, (result.failures, result.errors)))
 
         if failed:
             infos.append("failures={0}".format(failed))
@@ -174,10 +174,10 @@ def log_results(result):
     else:
         log.info("\n")
 
-    print '=' * 150
-    print "Detailed logs: {0}".format(
-        os.getenv("CAFE_TEST_LOG_PATH"))
-    print '-' * 150
+    print('=' * 150)
+    print("Detailed logs: {0}".format(
+        os.getenv("CAFE_TEST_LOG_PATH")))
+    print('-' * 150)
 
 
 def log_errors(label, result, errors):
@@ -228,7 +228,7 @@ def log_info_block(
 
     separator = str(separator or "{0}".format('=' * 56))
     max_length = \
-        len(max([k for k in info.keys() if info.get(k)], key=len)) + 3
+        len(max([k for k in list(info.keys()) if info.get(k)], key=len)) + 3
 
     output.append(separator)
     if heading:
