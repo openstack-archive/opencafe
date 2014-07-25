@@ -17,6 +17,7 @@ from unittest import skip
 
 from cafe.resources.github.issue_tracker import GitHubTracker
 from cafe.resources.launchpad.issue_tracker import LaunchpadTracker
+from cafe.resources.jira.issue_tracker import JiraTracker
 
 
 def skip_open_issue(type, bug_id):
@@ -31,4 +32,7 @@ def skip_open_issue(type, bug_id):
     elif type.lower() == 'github' and GitHubTracker.is_bug_open(
             issue_id=bug_id):
         return skip('GitHub Issue #{0}'.format(bug_id))
+    elif type.lower() == 'jira' and JiraTracker.is_bug_open(
+            issue_id=bug_id):
+        return skip('Jira Issue {0}'.format(bug_id))
     return lambda obj: obj
