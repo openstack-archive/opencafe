@@ -105,8 +105,7 @@ class SSHBehavior(BaseBehavior):
         command = "{0} {1}".format(SSHBehavior.PING_IPV4_COMMAND_LINUX,
                                    count)
         ping_response = self.client.execute_shell_command(
-            "{0} {1}".format(command, ping_ip_address),
-            prompt="$").stdout
+            "{0} {1}".format(command, ping_ip_address)).stdout
         packet_loss_regex_result = re.search(
             SSHBehavior.PING_PACKET_LOSS_REGEX, ping_response)
         if packet_loss_regex_result is None:
