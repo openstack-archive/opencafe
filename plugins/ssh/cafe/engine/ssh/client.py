@@ -203,23 +203,17 @@ class BaseSSHClient(BaseClient):
         retry_count = 0
         while retry_count < retries:
             try:
-                self._chan = self.ssh_connection.invoke_shell(width=9999999,
-                                                              height=9999999)
+                transport = self.ssh_connection.get_transport()
+                self._chan = transport.open_session()
+                self._chan.get_pty()
                 if self._chan is not None:
+                    self._log.debug("Created ssh channel")
                     break
             except SSHException, msg:
                 retry_count = retry_count + 1
                 self._log.error("Channel attempt {0} failed \n {1}".format(
                     retry_count,
                     msg))
-
-        # wait until buffer has data
-        while not self._chan.recv_ready():
-            time.sleep(1)
-
-        # clearing initial buffer, usually login information
-        while self._chan.recv_ready():
-            self._chan.recv(1024)
 
     def end_shell(self):
         """
@@ -229,7 +223,7 @@ class BaseSSHClient(BaseClient):
             self._chan.close()
         self._chan = None
 
-    def wait_for_active_shell(self, max_time):
+    def wait_for_active_shell(self):
         """
         Opens a chanel and waits until max_time for the chanel
         to be ready for data transmission
@@ -241,38 +235,51 @@ class BaseSSHClient(BaseClient):
             raise Exception(message)
         if self._chan is None or self._chan.closed:
             self.start_shell()
-        while not self._chan.send_ready() and time.time() < max_time:
-            time.sleep(1)
 
-    def read_shell_response(self, prompt, max_time):
+    def retreive_exit_status_on_shell_response(self):
+        if self._chan.exit_status_ready:
+            exit_status = self._chan.recv_exit_status
+            self._log.debug(
+                "Exit status found: {0}".format(
+                    exit_status))
+            return exit_status
+        else:
+            self._log.debug("Exit status not ready")
+
+    def read_shell_response(self,
+                            max_time):
         """
         Reads the data from the pseudo terminal until it finds the prompt
-        or until max_time.
+        or until max_time or until it recieves a positive exit status
         """
-        output = ''
-        while time.time() < max_time:
-            while not self._chan.recv_ready() and time.time() < max_time:
-                time.sleep(1)
-            if not self._chan.recv_ready():
-                break
-            current = self._chan.recv(1024)
-            output += current
-            if not prompt:
-                break
-            if current.find(prompt) != -1:
-                self._log.debug('SHELL-PROMPT-FOUND: %s' % prompt)
-                break
-            self._log.debug('Current response: {0}'.format(current))
-            self._log.debug(
-                "Looking for prompt: {0}.Time remaining: {1}".format(
-                    prompt, max_time - time.time()))
+        while time.time() < max_time and not self._chan.recv_ready():
+            time.sleep(5)
+        if not self._chan.recv_ready():
+            self._log.debug("SSH Chanel did not move to recieve ready")
+            return None, None
+        current_output = self._chan.recv(1024)
+        total_output = current_output
+        while time.time() < max_time and len(current_output) > 0:
+            current_output = self._chan.recv(1024)
+            total_output += current_output
+            self._log.debug('Current response: {0}'.format(current_output))
+            self._log.debug("Time remaining: {0}".format(
+                max_time - time.time()))
             self._chan.get_transport().set_keepalive(1000)
-        self._log.debug('SHELL-COMMAND-RETURN: {0}'.format(output))
-        return output
+        if time.time() >= max_time:
+            self._log.debug("Max time reached for command execution")
+        self._log.debug('SHELL-COMMAND-RETURN: {0}'.format(total_output))
+        stderr = None
+        while self._chan.recv_stderr_ready():
+            stderr = "{0} {1}".format(stderr, self._chan.recv_stderr(1024))
+        return ExecResponse(
+            stdin=self._chan.makefile('wb'),
+            stdout=total_output,
+            stderr=stderr,
+            exit_status=self.retreive_exit_status_on_shell_response())
 
     def execute_shell_command(self,
                               cmd,
-                              prompt=None,
                               timeout=100):
         """
         @summary: Executes a command in shell mode and receives all of
@@ -281,29 +288,17 @@ class BaseSSHClient(BaseClient):
         @return: Returns the output of the command and the prompt.
 
         """
-
         max_time = time.time() + timeout
         if not cmd.endswith("\n"):
             cmd = "{0}\n".format(cmd)
         self._log.debug('EXEC-SHELLing: {0}'.format(cmd))
         self.wait_for_active_shell(max_time)
-        if not self._chan.send_ready():
-            self._log.error("Channel timed out for send ready")
-            return ExecResponse(
-                stdin=None,
-                stdout=None,
-                stderr=None)
-        self._chan.send(cmd)
-        output = self.read_shell_response(prompt,
-                                          max_time)
-        if self._chan.recv_stderr_ready():
-            stderr = self._chan.recv_stderr(1024)
-        else:
-            stderr = None
-        return ExecResponse(
-            stdin=self._chan.makefile('wb'),
-            stdout=output,
-            stderr=stderr)
+        self._chan.exec_command(cmd)
+        while time.time() < max_time and not self._chan.closed:
+            time.sleep(5)
+        if not self._chan.closed:
+            self._log.debug("Command execution not completed post timeout")
+        return self.read_shell_response(max_time)
 
     def execute_command(self, command, return_exit_status=False):
         """
