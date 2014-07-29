@@ -86,6 +86,14 @@ class DataSource(object):
     def get_boolean(self, item_name, default=None):
         raise NotImplementedError
 
+    @staticmethod
+    def _str_to_bool(value):
+        """Attempts to convert a text value to a boolean.
+        Returns None otherwise."""
+        if value:
+            return value.lower() == 'true'
+        return None
+
 
 class EnvironmentVariableDataSource(DataSource):
 
@@ -103,8 +111,7 @@ class EnvironmentVariableDataSource(DataSource):
         return self.get(item_name, default)
 
     def get_boolean(self, item_name, default=None):
-        item_value = self.get(item_name, default)
-        return bool(item_value) if item_value is not None else item_value
+        return self._str_to_bool(self.get(item_name, default))
 
 
 class ConfigParserDataSource(DataSource):
@@ -216,8 +223,7 @@ class DictionaryDataSource(DataSource):
                     section_name=self._section_name, item_name=item_name))
             return default
 
-        item_value = section.get(item_name, default)
-        return bool(item_value) if item_value is not None else item_value
+        return self._str_to_bool(self.get(item_name, default))
 
 
 class JSONDataSource(DictionaryDataSource):
@@ -280,8 +286,10 @@ class BaseConfigSectionInterface(object):
             self._data_source.get(item_name, default)
 
     def get_boolean(self, item_name, default=None):
-        return self._override.get_boolean(item_name, None) or \
-            self._data_source.get_boolean(item_name, default)
+        value = self._override.get_boolean(item_name, None)
+        if value is None:
+            value = self._data_source.get_boolean(item_name, default)
+        return value
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
