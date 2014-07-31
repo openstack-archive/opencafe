@@ -1,5 +1,3 @@
-import sys
-import os
 import sphinx_rtd_theme
 
 extensions = [

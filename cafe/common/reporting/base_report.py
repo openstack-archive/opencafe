@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from abc import ABCMeta, abstractmethod
+from six import add_metaclass
 
 
-class BaseReport:
-    __metaclass__ = ABCMeta
+@add_metaclass(ABCMeta)
+class BaseReport(object):
 
     @abstractmethod
     def generate_report(self, result_parser, all_results=None, path=None):

@@ -24,7 +24,7 @@ import getpass
 import shutil
 from subprocess import Popen, PIPE
 
-from ConfigParser import SafeConfigParser
+from six.moves.configparser import SafeConfigParser
 from cafe.engine.config import EngineConfig
 
 if not platform.system().lower() == 'windows':
@@ -104,13 +104,12 @@ class TestEnvManager(object):
 
         def __init__(self, func):
             self.func = func
-            self.func_name = func.__name__
 
         def __get__(self, obj, cls):
             if obj is None:
                 return None
             value = self.func(obj)
-            setattr(obj, self.func_name, value)
+            setattr(obj, self.func.__name__, value)
             return value
 
     def __init__(
@@ -271,15 +270,15 @@ class EngineDirectoryManager(object):
 
     @classmethod
     def create_engine_directories(cls):
-        print cls.wrapper.fill('Creating default directories in {0}'.format(
-            cls.OPENCAFE_ROOT_DIR))
+        print(cls.wrapper.fill('Creating default directories in {0}'.format(
+            cls.OPENCAFE_ROOT_DIR)))
 
         # Create the opencafe root dir and sub dirs
         PlatformManager.safe_create_dir(cls.OPENCAFE_ROOT_DIR)
-        print cls.wrapper.fill('...created {0}'.format(cls.OPENCAFE_ROOT_DIR))
-        for _, directory_path in cls.OPENCAFE_SUB_DIRS.items():
+        print(cls.wrapper.fill('...created {0}'.format(cls.OPENCAFE_ROOT_DIR)))
+        for _, directory_path in list(cls.OPENCAFE_SUB_DIRS.items()):
             PlatformManager.safe_create_dir(directory_path)
-            print cls.wrapper.fill('...created {0}'.format(directory_path))
+            print(cls.wrapper.fill('...created {0}'.format(directory_path)))
 
     @classmethod
     def set_engine_directory_permissions(cls):
@@ -350,9 +349,9 @@ class EngineConfigManager(object):
     def write_config_backup(cls, config):
         config_backup_location = "{0}{1}".format(
             cls.ENGINE_CONFIG_PATH, '.backup')
-        print cls.wrapper.fill(
+        print(cls.wrapper.fill(
             "Creating backup of {0} at {1}".format(
-                cls.ENGINE_CONFIG_PATH, config_backup_location))
+                cls.ENGINE_CONFIG_PATH, config_backup_location)))
         cls.write_and_chown_config(config, config_backup_location)
 
     @classmethod
@@ -383,8 +382,8 @@ class EngineConfigManager(object):
 
         if not update_tracker._updated:
             wrapper = textwrap.TextWrapper(initial_indent="  ")
-            print wrapper.fill(
-                "...no updates applied, engine.config is newest version")
+            print(wrapper.fill(
+                "...no updates applied, engine.config is newest version"))
 
         return config
 
@@ -423,12 +422,12 @@ class EngineConfigManager(object):
     def build_engine_config(cls):
         config = None
         if os.path.exists(cls.ENGINE_CONFIG_PATH):
-            print cls.wrapper.fill('Checking for updates to engine.config...')
+            print(cls.wrapper.fill('Checking for updates to engine.config...'))
             config = cls.update_engine_config()
         else:
-            print cls.wrapper.fill(
+            print(cls.wrapper.fill(
                 "Creating default engine.config at {0}".format(
-                    cls.ENGINE_CONFIG_PATH))
+                    cls.ENGINE_CONFIG_PATH)))
             config = cls.generate_default_engine_config()
 
         cls.write_and_chown_config(config, cls.ENGINE_CONFIG_PATH)
@@ -439,9 +438,9 @@ class EngineConfigManager(object):
             twrap = textwrap.TextWrapper(
                 initial_indent='* ', subsequent_indent='  ',
                 break_long_words=False)
-            print twrap.fill(
+            print(twrap.fill(
                 'Installing reference configuration files in ...'.format(
-                    EngineDirectoryManager.OPENCAFE_ROOT_DIR))
+                    EngineDirectoryManager.OPENCAFE_ROOT_DIR)))
             twrap = textwrap.TextWrapper(
                 initial_indent='  ', subsequent_indent='  ',
                 break_long_words=False)
@@ -463,7 +462,7 @@ class EngineConfigManager(object):
 
                 if print_progress:
                     if destination_dir not in _printed:
-                        print twrap.fill('{0}'.format(destination_dir))
+                        print(twrap.fill('{0}'.format(destination_dir)))
                         _printed.append(destination_dir)
 
                 PlatformManager.safe_chown(destination_file)
@@ -507,7 +506,7 @@ class EnginePluginManager(object):
                                     break_long_words=False).fill
 
         for plugin_folder in plugin_folders:
-            print wrap('... {name}'.format(name=plugin_folder))
+            print(wrap('... {name}'.format(name=plugin_folder)))
 
     @classmethod
     def install_plugins(cls, plugin_names):
@@ -527,11 +526,11 @@ class EnginePluginManager(object):
                                     break_long_words=False).fill
 
         # Pretty output of plugin name
-        print wrap('... {name}'.format(name=plugin_name))
+        print(wrap('... {name}'.format(name=plugin_name)))
 
         # Verify that the plugin exists
         if not os.path.exists(plugin_dir):
-            print wrap('* Failed to install plugin: {0}'.format(plugin_name))
+            print(wrap('* Failed to install plugin: {0}'.format(plugin_name)))
             return
 
         # Install Plugin
@@ -543,10 +542,10 @@ class EnginePluginManager(object):
             standard_out, standard_error = process.communicate()
         except Exception as e:
             msg = '* Plugin install failed {0}\n{1}\n'.format(cmd, e)
-            print wrap(msg)
+            print(wrap(msg))
 
         # Print failure if we receive an error code
         if process and process.returncode != 0:
-            print wrap(standard_out)
-            print wrap(standard_error)
-            print wrap('* Failed to install plugin: {0}'.format(plugin_name))
+            print(wrap(standard_out))
+            print(wrap(standard_error))
+            print(wrap('* Failed to install plugin: {0}'.format(plugin_name)))

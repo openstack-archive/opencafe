@@ -17,7 +17,9 @@ limitations under the License.
 import abc
 import json
 import os
-import ConfigParser
+from six.moves import configparser
+from six import add_metaclass
+
 
 from cafe.common.reporting import cclogging
 try:
@@ -65,17 +67,17 @@ def _get_path_from_env(os_env_var):
             os_env_var)
         raise ConfigEnvironmentVariableError(msg)
     except Exception as exception:
-        print ("Unexpected exception when attempting to access '{1}'"
-               " environment variable.".format(os_env_var))
+        print(
+            "Unexpected exception when attempting to access '{1}'"
+            " environment variable.".format(os_env_var))
         raise exception
 
 # Standard format to for flat key/value data sources
 CONFIG_KEY = 'CAFE_{section_name}_{key}'
 
 
+@add_metaclass(abc.ABCMeta)
 class DataSource(object):
-
-    __metaclass__ = abc.ABCMeta
 
     def get(self, item_name, default=None):
         raise NotImplementedError
@@ -120,7 +122,7 @@ class ConfigParserDataSource(DataSource):
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
 
-        self._data_source = ConfigParser.SafeConfigParser()
+        self._data_source = configparser.SafeConfigParser()
         self._section_name = section_name
 
         # Check if the path exists
@@ -140,7 +142,7 @@ class ConfigParserDataSource(DataSource):
 
         try:
             return self._data_source.get(self._section_name, item_name)
-        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
+        except (configparser.NoOptionError, configparser.NoSectionError) as e:
             if default is None:
                 self._log.error(str(e))
             else:
@@ -153,7 +155,7 @@ class ConfigParserDataSource(DataSource):
         try:
             return self._data_source.get(
                 self._section_name, item_name, raw=True)
-        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
+        except (configparser.NoOptionError, configparser.NoSectionError) as e:
             if default is None:
                 self._log.error(str(e))
             else:
@@ -166,7 +168,7 @@ class ConfigParserDataSource(DataSource):
 
         try:
             return self._data_source.getboolean(self._section_name, item_name)
-        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
+        except (configparser.NoOptionError, configparser.NoSectionError) as e:
             if default is None:
                 self._log.error(str(e))
             else:

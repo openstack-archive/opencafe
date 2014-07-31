@@ -19,7 +19,7 @@ class SummarizeResults(object):
 
     def __init__(self, result_dict, master_testsuite,
                  execution_time):
-        for keys, values in result_dict.items():
+        for keys, values in list(result_dict.items()):
             setattr(self, keys, values)
         self.master_testsuite = master_testsuite
         self.execution_time = execution_time

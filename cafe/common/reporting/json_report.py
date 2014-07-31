@@ -61,5 +61,5 @@ class JSONReport(BaseReport):
         if os.path.isdir(result_path):
             result_path += "/results.json"
 
-        with open(result_path, 'wb') as result_file:
+        with open(result_path, 'w') as result_file:
             json.dump(test_results, result_file)

@@ -155,6 +155,6 @@ def print_mug(name, brewing_from):
     === CAFE {name} Runner ===""".format(
         path=brewing_from, name=name)
 
-    print border
-    print mug
-    print border
+    print(border)
+    print(mug)
+    print(border)

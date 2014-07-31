@@ -26,7 +26,7 @@ class OpenCafeUnittestTestSuite(TestSuite):
         if tearDownClass is not None:
             try:
                 tearDownClass()
-            except Exception, e:
+            except Exception as e:
                 if isinstance(result, _DebugResult):
                     raise
                 className = util.strclass(previousClass)
@@ -65,7 +65,7 @@ class OpenCafeUnittestTestSuite(TestSuite):
         if setUpClass is not None:
             try:
                 setUpClass()
-            except Exception, e:
+            except Exception as e:
                 if isinstance(result, _DebugResult):
                     raise
                 currentClass._classSetupFailed = True
