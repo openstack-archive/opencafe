@@ -25,7 +25,11 @@ class JiraTracker(object):
 
     @classmethod
     def is_bug_open(cls, issue_id):
-        """Checks if the JIRA issue is open."""
+        """Checks if the JIRA issue is open. An issue is open if its status is
+        not in the closed_statuses list, or if none of its labels are in the
+        closed_labels list.
+        """
+
         log = logging.getLogger('RunnerLog')
 
         config = JiraTrackerConfig()
@@ -35,7 +39,7 @@ class JiraTracker(object):
             # exceptions from requests can bubble up here
             jira = JIRA(options={'server': config.server})
 
-            # returns an Issue ojbect; JIRAError on invalid id
+            # returns an Issue object; JIRAError on invalid id
             issue = jira.issue(issue_id)
         except JIRAError as error:
             log.info('Error getting issue from JIRA. '
@@ -44,11 +48,35 @@ class JiraTracker(object):
             log.info('Unable to connect to JIRA server {0}. '
                      'RequestException: {1}'.format(config.server, error))
 
-        status_name = None
-        if issue:
-            status_name = issue.fields.status.name
-
-        closed_statuses = [x.lower() for x in config.closed_statuses]
-        if status_name is None or status_name.lower() not in closed_statuses:
+        if cls._status_is_open(issue, config):
+            return True
+        elif cls._labels_are_open(issue, config):
             return True
         return False
+
+    @classmethod
+    def _status_is_open(cls, issue, config):
+        # allow the issue's status to be ignored
+        if config.closed_statuses is None:
+            return False
+
+        status = issue.fields.status
+        if status is None:
+            return True
+
+        closed_statuses = [x.lower() for x in config.closed_statuses]
+        return str(status).lower() not in closed_statuses
+
+    @classmethod
+    def _labels_are_open(cls, issue, config):
+        # allow the issue's labels to be ignored
+        if config.closed_labels is None:
+            return False
+
+        # Determine if the issue has any of its labels in closed_labels
+        labels = set(str(x).lower() for x in issue.fields.labels)
+        closed_labels = set(x.lower() for x in config.closed_labels)
+        matches = labels.intersection(closed_labels)
+
+        # the issue is open only if no labels are closed
+        return not bool(matches)

@@ -23,6 +23,19 @@ class JiraTrackerConfig(ConfigSectionInterface):
 
     SECTION_NAME = 'JIRA'
 
+    def _get_json(self, key):
+        log = logging.getLogger('RunnerLog')
+
+        statuses = self.get(key)
+        if not statuses:
+            return None
+
+        try:
+            return json.loads(statuses)
+        except ValueError as error:
+            log.info('Invalid JSON for {0}. ValueError {1}'.format(key, error))
+            return None
+
     @property
     def server(self):
         """The location of your JIRA server."""
@@ -31,18 +44,9 @@ class JiraTrackerConfig(ConfigSectionInterface):
     @property
     def closed_statuses(self):
         """These statuses define a closed issue."""
-        log = logging.getLogger('RunnerLog')
+        return self._get_json('closed_statuses')
 
-        default = ['Closed', 'Resolved']
-
-        statuses = self.get('closed_statuses')
-        if not statuses:
-            return default
-
-        try:
-            # expecting a list here
-            return json.loads(statuses)
-        except ValueError as error:
-            log.info('Invalid value for closed_statuses. Using default value. '
-                     'ValueError {0}'.format(error))
-            return default
+    @property
+    def closed_labels(self):
+        """These labels define a closed issue."""
+        return self._get_json('closed_labels')
