@@ -272,7 +272,8 @@ class BaseConfigSectionInterface(object):
     """
 
     def __init__(self, config_file_path, section_name):
-
+        self._log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
         self._override = EnvironmentVariableDataSource(
             section_name)
         self._data_source = ConfigParserDataSource(
@@ -292,6 +293,21 @@ class BaseConfigSectionInterface(object):
         if value is None:
             value = self._data_source.get_boolean(item_name, default)
         return value
+
+    def get_json(self, item_name):
+        """Parse and return the item as JSON. Returns None if item_name is not
+        found, or if the JSON is invalid.
+        """
+        statuses = self.get(item_name)
+        if not statuses:
+            return None
+
+        try:
+            return json.loads(statuses)
+        except ValueError as error:
+            self._log.info('Invalid JSON for {0}. ValueError {1}'
+                           .format(item_name, error))
+            return None
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
