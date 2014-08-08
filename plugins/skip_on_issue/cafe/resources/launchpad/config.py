@@ -24,3 +24,13 @@ class LaunchpadTrackerConfig(ConfigSectionInterface):
     @property
     def project(self):
         return self.get('project')
+
+    @property
+    def use_status(self):
+        """Specifies whether to check the status of the bug."""
+        return self.get_boolean('use_status', default=True)
+
+    @property
+    def closed_tags(self):
+        """These tags define a closed launchpad bug."""
+        return self.get_json('closed_tags')

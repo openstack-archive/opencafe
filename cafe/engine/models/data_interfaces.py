@@ -88,6 +88,9 @@ class DataSource(object):
     def get_boolean(self, item_name, default=None):
         raise NotImplementedError
 
+    def get_json(self, item_name, default=None):
+        raise NotImplementedError
+
     @staticmethod
     def _str_to_bool(value):
         """Attempts to convert a text value to a boolean.
@@ -95,6 +98,20 @@ class DataSource(object):
         if value:
             return value.lower() == 'true'
         return None
+
+    @staticmethod
+    def _parse_json(value, log=None):
+        """Parse the value as JSON. Returns None if value is invalid JSON."""
+        if not value:
+            return None
+
+        try:
+            return json.loads(value)
+        except ValueError as error:
+            if log is not None:
+                log.warning("Invalid JSON '{0}'. ValueError: {1}"
+                            .format(value, error))
+            return None
 
 
 class EnvironmentVariableDataSource(DataSource):
@@ -114,6 +131,9 @@ class EnvironmentVariableDataSource(DataSource):
 
     def get_boolean(self, item_name, default=None):
         return self._str_to_bool(self.get(item_name, default))
+
+    def get_json(self, item_name, default=None):
+        return self._parse_json(self.get(item_name, default), log=self._log)
 
 
 class ConfigParserDataSource(DataSource):
@@ -177,6 +197,12 @@ class ConfigParserDataSource(DataSource):
                 self._log.warning(msg)
             return default
 
+    def get_json(self, item_name, default=None):
+        value = self._parse_json(self.get(item_name, None), log=self._log)
+        if value is None:
+            return default
+        return value
+
 
 class DictionaryDataSource(DataSource):
 
@@ -227,6 +253,12 @@ class DictionaryDataSource(DataSource):
 
         return self._str_to_bool(self.get(item_name, default))
 
+    def get_json(self, item_name, default=None):
+        value = self._parse_json(self.get(item_name, None), log=self._log)
+        if value is None:
+            return default
+        return value
+
 
 class JSONDataSource(DictionaryDataSource):
 
@@ -272,7 +304,8 @@ class BaseConfigSectionInterface(object):
     """
 
     def __init__(self, config_file_path, section_name):
-
+        self._log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
         self._override = EnvironmentVariableDataSource(
             section_name)
         self._data_source = ConfigParserDataSource(
@@ -291,6 +324,12 @@ class BaseConfigSectionInterface(object):
         value = self._override.get_boolean(item_name, None)
         if value is None:
             value = self._data_source.get_boolean(item_name, default)
+        return value
+
+    def get_json(self, item_name, default=None):
+        value = self._override.get_json(item_name, None)
+        if value is None:
+            value = self._data_source.get_json(item_name, default)
         return value
 
 
