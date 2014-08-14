@@ -57,7 +57,27 @@ class CommonToolsMixin(object):
 class JSON_ToolsMixin(object):
     """Methods used to make building json data models easier"""
 
-    pass
+    @staticmethod
+    def _replace_dict_key(json_dict, old_key, new_key):
+        """Replaces key names in a json response dict"""
+        if old_key in json_dict:
+            value = json_dict[old_key]
+            json_dict[new_key] = value
+            del json_dict[old_key]
+
+        # Adding recursion for nested dicts and lists
+        for key, data in json_dict.iteritems():
+            if isinstance(data, dict):
+                JSON_ToolsMixin._replace_dict_key(data, old_key, new_key)
+            elif isinstance(data, list):
+                for list_item in data:
+                    if isinstance(list_item, dict):
+                        JSON_ToolsMixin._replace_dict_key(list_item, old_key,
+                                                          new_key)
+            else:
+                pass
+
+        return json_dict
 
 
 class XML_ToolsMixin(object):
