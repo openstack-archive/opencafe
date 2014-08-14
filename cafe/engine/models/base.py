@@ -53,6 +53,30 @@ class CommonToolsMixin(object):
         return dict(
             (k, v) for k, v in six.iteritems(dictionary) if v is not None)
 
+    @staticmethod
+    def _replace_dict_key(dictionary, old_key, new_key, recursion=False):
+        """Replaces key names in a dictionary, by default only first level keys
+        will be replaced, recursion needs to be set to True for replacing keys
+        in nested dicts and/or lists
+        """
+        if old_key in dictionary:
+            value = dictionary[old_key]
+            dictionary[new_key] = value
+            del dictionary[old_key]
+
+        # Recursion for nested dicts and lists if flag set to True
+        if recursion:
+            for key, data in dictionary.iteritems():
+                if isinstance(data, dict):
+                    CommonToolsMixin._replace_dict_key(data, old_key, new_key,
+                                                       recursion=True)
+                elif isinstance(data, list):
+                    for list_item in data:
+                        if isinstance(list_item, dict):
+                            CommonToolsMixin._replace_dict_key(
+                                list_item, old_key, new_key, recursion=True)
+        return dictionary
+
 
 class JSON_ToolsMixin(object):
     """Methods used to make building json data models easier"""
