@@ -17,7 +17,11 @@ limitations under the License.
 import logging
 import os
 import sys
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    # python 2.6 or earlier, use backport
+    from ordereddict import OrderedDict
 
 log = logging.getLogger('RunnerLog')
 
