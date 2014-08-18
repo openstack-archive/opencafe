@@ -35,15 +35,27 @@ class DataDrivenFixtureError(Exception):
     pass
 
 
+def _add_tags(func, tags):
+    if not getattr(func, TAGS_DECORATOR_TAG_LIST_NAME, None):
+        setattr(func, TAGS_DECORATOR_TAG_LIST_NAME, [])
+    func.__test_tags__ = list(set(func.__test_tags__).union(set(tags)))
+    return func
+
+
+def _add_attrs(func, attrs):
+    if not getattr(func, TAGS_DECORATOR_ATTR_DICT_NAME, None):
+        setattr(func, TAGS_DECORATOR_ATTR_DICT_NAME, {})
+    func.__test_attrs__.update(attrs)
+    return func
+
+
 def tags(*tags, **attrs):
     """Adds tags and attributes to tests, which are interpreted by the
     cafe-runner at run time
     """
     def decorator(func):
-        setattr(func, TAGS_DECORATOR_TAG_LIST_NAME, [])
-        setattr(func, TAGS_DECORATOR_ATTR_DICT_NAME, {})
-        func.__test_tags__.extend(tags)
-        func.__test_attrs__.update(attrs)
+        func = _add_tags(func, tags)
+        func = _add_attrs(func, attrs)
         return func
     return decorator
 
@@ -55,8 +67,8 @@ def data_driven_test(*dataset_sources, **kwargs):
     def decorator(func):
         # dataset_source checked for backward compatibility
         combined_lists = kwargs.get("dataset_source") or []
-        for list_ in dataset_sources:
-            combined_lists += list_
+        for dataset_list in dataset_sources:
+            combined_lists += dataset_list
         setattr(func, DATA_DRIVEN_TEST_ATTR, combined_lists)
         return func
     return decorator
@@ -119,8 +131,12 @@ def DataDrivenFixture(cls):
             new_default_values = [kwargs[arg] for arg in args]
             setattr(new_test, "func_defaults", tuple(new_default_values))
 
+            # Set dataset tags and attrs
+            new_test = _add_tags(new_test, dataset.metadata.get('tags', []))
+
             # Add the new test to the decorated TestCase
             setattr(cls, new_test_name, new_test)
+
     return cls
 
 
