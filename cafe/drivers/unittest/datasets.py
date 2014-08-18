@@ -27,6 +27,10 @@ class _Dataset(object):
 
         self.name = name
         self.data = data_dict
+        self.metadata = {'tags': []}
+
+    def apply_test_tags(self, tags):
+        self.metadata['tags'].extend(tags)
 
     def __repr__(self):
         return "<name:{0}, data:{1}>".format(self.name, self.data)
@@ -58,6 +62,30 @@ class DatasetList(list):
     def extend_new_datasets(self, dataset_list):
         """Creates and extends a new DatasetList"""
         self.extend(dataset_list)
+
+    def apply_test_tags(self, *tags):
+        for dataset in self:
+            dataset.apply_test_tags(tags)
+
+    def dataset_names(self):
+        return [ds.name for ds in self]
+
+    def dataset_name_map(self):
+        name_map = {}
+        count = 0
+        for ds in self:
+            name_map[count] = ds.name
+            count += 1
+        return name_map
+
+    def merge_dataset_tags(self, *dataset_lists):
+        local_name_map = self.dataset_name_map()
+        for dsl in dataset_lists:
+            for foreign_ds in dsl:
+                for location, name in local_name_map.items():
+                    if name == foreign_ds.name:
+                        self[location].metadata['tags'].extend(
+                            foreign_ds.metadata['tags'])
 
 
 class DatasetGenerator(DatasetList):
