@@ -489,7 +489,7 @@ class EnginePluginManager(object):
         """
 
         default_dest = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
-        plugins = os.walk(plugins_src_dir).next()[1]
+        plugins = next(os.walk(plugins_src_dir))[1]
 
         for plugin_name in plugins:
             cls.copy_plugin_to_cache(

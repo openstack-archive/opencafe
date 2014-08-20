@@ -21,6 +21,7 @@ limitations under the License.
 """
 import os
 import re
+import six
 import unittest
 
 from cafe.drivers.base import FixtureReporter
@@ -99,12 +100,26 @@ class BaseTestFixture(unittest.TestCase):
                better pattern or working with the result object directly.
                This is related to the todo in L{TestRunMetrics}
         """
-        if any(r for r in self._resultForDoCleanups.failures
-               if self._test_name_matches_result(self._testMethodName, r)):
-            self._reporter.stop_test_metrics(self._testMethodName, 'Failed')
-        elif any(r for r in self._resultForDoCleanups.errors
-                 if self._test_name_matches_result(self._testMethodName, r)):
-            self._reporter.stop_test_metrics(self._testMethodName, 'ERRORED')
+        if six.PY2:
+            if any(r for r in self._resultForDoCleanups.failures
+                   if self._test_name_matches_result(self._testMethodName, r)):
+                self._reporter.stop_test_metrics(self._testMethodName,
+                                                 'Failed')
+            elif any(r for r in self._resultForDoCleanups.errors
+                     if self._test_name_matches_result(self._testMethodName,
+                                                       r)):
+                self._reporter.stop_test_metrics(self._testMethodName,
+                                                 'ERRORED')
+        elif six.PY3:
+            if any(r for r in self._outcomeForDoCleanups.failures
+                   if self._test_name_matches_result(self._testMethodName, r)):
+                self._reporter.stop_test_metrics(self._testMethodName,
+                                                 'Failed')
+            elif any(r for r in self._outcomeForDoCleanups.errors
+                     if self._test_name_matches_result(self._testMethodName,
+                                                       r)):
+                self._reporter.stop_test_metrics(self._testMethodName,
+                                                 'ERRORED')
         else:
             self._reporter.stop_test_metrics(self._testMethodName, 'Passed')
 
