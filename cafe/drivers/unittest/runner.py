@@ -172,7 +172,7 @@ class SuiteBuilder(object):
         """
         method_tags = method.__dict__.get(TAGS_DECORATOR_TAG_LIST_NAME)
         match = set(tags).intersection(method_tags)
-        return match == set(tags) if token == "+" else bool(match)
+        return match == set(method_tags) if token == "+" else bool(match)
 
     def _check_method(self, class_, method_name, tags, attrs, token):
         """
