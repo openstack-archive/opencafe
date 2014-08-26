@@ -1,5 +1,6 @@
 import argparse
 import os
+from warnings import warn
 from cafe.common.reporting.cclogging import \
     get_object_namespace, getLogger, setup_new_cchandler, log_info_block
 from cafe.common.reporting.metrics import \
@@ -92,8 +93,21 @@ class FixtureReporter(object):
         Logs all collected metrics.
         Useful for logging metrics for individual test at the test's conclusion
         """
-
-        self.test_metrics.timer.stop()
+        try:
+            self.test_metrics.timer.stop()
+        except AttributeError:
+            warn(
+                "Test metrics not being logged!"
+                "stop_test_metrics is being called without "
+                "start_test_metrics having been previously called.")
+            log_info_block(
+                self.logger.log,
+                [('Test Case', test_name),
+                 ('Result', test_result),
+                 ('Start Time', "Unknown, start_test_metrics was not called"),
+                 ('Elapsed Time', "Unknown, start_test_metrics was not called")
+                 ])
+            return
 
         if test_result == TestResultTypes.PASSED:
             self.metrics.total_passed += 1
