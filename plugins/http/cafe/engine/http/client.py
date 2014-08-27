@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import requests
+import six
 from time import time
 
 from cafe.common.reporting import cclogging
@@ -22,6 +23,22 @@ from cafe.engine.clients.base import BaseClient
 
 
 def _log_transaction(log, level=cclogging.logging.DEBUG):
+
+    def _safe_decode(text, incoming='utf-8', errors='replace'):
+            """Decodes incoming text/bytes string using `incoming`
+               if they're not already unicode.
+
+            :param incoming: Text's current encoding
+            :param errors: Errors handling policy. See here for valid
+                values http://docs.python.org/2/library/codecs.html
+            :returns: text or a unicode `incoming` encoded
+                        representation of it.
+            """
+            if isinstance(text, six.text_type):
+                return text
+
+            return text.decode(incoming, errors)
+
     """ Paramaterized decorator
     Takes a python Logger object and an optional logging level.
     """
@@ -36,7 +53,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             logline = '{0} {1}'.format(args, kwargs)
 
             try:
-                log.debug(logline.decode('utf-8', 'replace'))
+                log.debug(_safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
                 log.info(
@@ -83,7 +100,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 'request headers.: {0}\n'.format(response.request.headers),
                 'request body....: {0}\n'.format(request_body)])
             try:
-                log.log(level, logline.decode('utf-8', 'replace'))
+                log.log(level, _safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
                 log.log(level, '\n{0}\nREQUEST INFO\n{0}\n'.format('-' * 12))
@@ -97,7 +114,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 'response body....: {0}\n'.format(response.content),
                 '-' * 79])
             try:
-                log.log(level, logline.decode('utf-8', 'replace'))
+                log.log(level, _safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
                 log.log(level, '\n{0}\nRESPONSE INFO\n{0}\n'.format('-' * 13))
