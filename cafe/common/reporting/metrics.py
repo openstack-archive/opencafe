@@ -20,6 +20,7 @@ limitations under the License.
 from datetime import datetime
 import os
 import csv
+import six
 import sys
 
 
@@ -147,7 +148,10 @@ class CSVWriter(object):
 
     def writerow(self, row_list):
         if self.full_path:
-            fp = open(self.full_path, "ab")
+            if six.PY2:
+                fp = open(self.full_path, "ab")
+            else:
+                fp = open(self.full_path, "a", newline="")
             csv_writer = csv.writer(
                 fp, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             try:
