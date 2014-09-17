@@ -35,6 +35,54 @@ class PackageNotFoundError(Exception):
     pass
 
 
+class _NamespaceDict(dict):
+    """A dict-like object that allows dotted access to it's top-level
+    values via its top-level keys.
+    Raises an Exception if any keys self.keys() collide with internal
+    attributes.
+    """
+
+    def __init__(self, **kwargs):
+        dict.__init__(self, **kwargs)
+        collisions = set(kwargs) & set(dir(self))
+        if bool(collisions):
+            # Construct proper grammar for Exception message
+            collisions = list(collisions)
+            collisions_string = "{0} as an attribute".format(collisions[0])
+            if len(collisions) > 1:
+                collisions_string = ", ".join(
+                    ["'{0}'".format(c) for c in collisions[:-1]])
+                collisions_string = "{0} or '{1}' as attributes".format(
+                    collisions_string, str(collisions[-1]))
+            raise Exception(
+                "Cannot set keys {0}.  NamespaceDict cannot "
+                "contain any keys that collide with attribute names internal "
+                "to a dict-like object.".format(collisions_string))
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(
+                "NamespaceDict has no accessable attribute '{0}'".format(name))
+
+
+class _lazy_property(object):
+    """To be used for lazy evaluation of an object attribute.
+    Property should represent non-mutable data, as it replaces itself.
+    """
+
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return None
+        value = self.func(obj)
+        setattr(obj, self.func.__name__, value)
+        return value
+
+
 class PlatformManager(object):
     USING_WINDOWS = (platform.system().lower() == 'windows')
     USING_VIRTUALENV = hasattr(sys, 'real_prefix')
@@ -93,77 +141,110 @@ class PlatformManager(object):
 class TestEnvManager(object):
     """Manages setting all required and optional environment variables used by
     the engine and it's implementations.
-    Usefull for writing bootstrappers for runners and scripts.
+    Wraps all internally-set and config-controlled environment variables
+    in read-only properties for easy access. Useful for writing bootstrappers
+    for runners and scripts.
+
+    Set the environment variable "CAFE_ALLOW_MANAGED_ENV_VAR_OVERRIDES" to any
+    value to enable overrides for other managed environment variables.
+
+    NOTE: The TestEnvManager is only responsible for setting these vars,
+    it has no control over how they are used, so override them at your own
+    risk!
+    Specifically, If you set CAFE_TEST_REPO_PATH, you should also set the
+    CAFE_TEST_REPO_PACKAGE accordingly, as having them point to
+    different things could cause undefined behavior.  (The path is normally
+    derived from the package)
     """
 
-    class _lazy_property(object):
-        '''
-        meant to be used for lazy evaluation of an object attribute.
-        property should represent non-mutable data, as it replaces itself.
-        '''
-
-        def __init__(self, func):
-            self.func = func
-
-        def __get__(self, obj, cls):
-            if obj is None:
-                return None
-            value = self.func(obj)
-            setattr(obj, self.func.__name__, value)
-            return value
+    MANAGED_VARS = _NamespaceDict(
+        engine_config_path="CAFE_ENGINE_CONFIG_FILE_PATH",
+        test_repo_package="CAFE_TEST_REPO_PACKAGE",
+        test_repo_path="CAFE_TEST_REPO_PATH",
+        test_data_directory="CAFE_DATA_DIR_PATH",
+        test_root_log_dir="CAFE_ROOT_LOG_PATH",
+        test_log_dir="CAFE_TEST_LOG_PATH",
+        test_config_file_path="CAFE_CONFIG_FILE_PATH",
+        test_logging_verbosity="CAFE_LOGGING_VERBOSITY",
+        test_master_log_file_name="CAFE_MASTER_LOG_FILE_NAME")
 
     def __init__(
             self, product_name, test_config_file_name,
             engine_config_path=None, test_repo_package_name=None):
 
-        self._test_repo_package_name = test_repo_package_name
         self.product_name = product_name
         self.test_config_file_name = test_config_file_name
-        self.engine_config_path = engine_config_path or \
-            EngineConfigManager.ENGINE_CONFIG_PATH
+        self._overrides_allowed = True if os.environ.get(
+            "CAFE_ALLOW_MANAGED_ENV_VAR_OVERRIDES") is not None else False
+
+        # Anything passed into the text env manager should take
+        # precedence over environment variables, since the passed-in
+        # parameters are used by runners, and thus are usually set at
+        # runtime.
+        override = self._override(self.MANAGED_VARS.test_repo_package)
+        self._test_repo_package_name = test_repo_package_name or override
+
+        override = self._override(self.MANAGED_VARS.engine_config_path)
+        self.engine_config_path = (
+            engine_config_path or override 
+            or EngineConfigManager.ENGINE_CONFIG_PATH)
+
         self.engine_config_interface = EngineConfig(self.engine_config_path)
+
+    def _override(self, env_var_name):
+        """Return override value if overrides are allowed and if env var
+        is present.  Otherwise, return None
+        """
+
+        override = os.environ.get(env_var_name)
+        return override if self._overrides_allowed else None
 
     def finalize(self, create_log_dirs=True, set_os_env_vars=True):
         """Sets all non-configured values to the defaults in the engine.config
         file. set_defaults=False will override this behavior, but note that
         unless you manually set the os environment variables yourself, this
-        will result in undefined behavior
+        will result in undefined behavior.
 
         Creates all log dir paths (overriden by sending create_log_dirs=False)
         Checks that all set paths exists, raises exception if they dont.
         """
 
-        def _check(path):
+        def _check(path, msg=None):
             if not os.path.exists(path):
-                raise Exception('{0} does not exist'.format(path))
+                raise Exception(msg or '{0} does not exist'.format(path))
 
         def _create(path):
             if not os.path.exists(path):
                 os.makedirs(path)
 
-        _check(self.test_repo_path)
-        _check(self.test_data_directory)
-        _check(self.test_config_file_path)
+        _check(
+            self.test_repo_path,
+            "test_repo_path '{0}' does not exist".format(self.test_repo_path))
+        _check(
+            self.test_data_directory,
+            "test_data_directory '{0}' does not exist".format(
+                self.test_data_directory))
+        _check(
+            self.test_config_file_path,
+            "test_config_file_path '{0}' does not exist".format(
+                self.test_config_file_path))
 
         if create_log_dirs:
             _create(self.test_root_log_dir)
             _create(self.test_log_dir)
 
-        _check(self.test_root_log_dir)
-        _check(self.test_log_dir)
+        _check(
+            self.test_root_log_dir,
+            "test_root_log_dir '{0}' does not exist".format(
+                self.test_root_log_dir))
+        _check(
+            self.test_log_dir,
+            "test_log_dir '{0}' does not exist".format(self.test_log_dir))
 
-        if set_os_env_vars:
-            os.environ['CAFE_ENGINE_CONFIG_FILE_PATH'] = \
-                self.engine_config_path
-            os.environ["CAFE_TEST_REPO_PACKAGE"] = self.test_repo_package
-            os.environ["CAFE_TEST_REPO_PATH"] = self.test_repo_path
-            os.environ["CAFE_DATA_DIR_PATH"] = self.test_data_directory
-            os.environ["CAFE_ROOT_LOG_PATH"] = self.test_root_log_dir
-            os.environ["CAFE_TEST_LOG_PATH"] = self.test_log_dir
-            os.environ["CAFE_CONFIG_FILE_PATH"] = self.test_config_file_path
-            os.environ["CAFE_LOGGING_VERBOSITY"] = self.test_logging_verbosity
-            os.environ["CAFE_MASTER_LOG_FILE_NAME"] = \
-                self.test_master_log_file_name
+        #Set environment variables
+        for local_attr, env_var_name in self.MANAGED_VARS.items():
+            value = getattr(self, local_attr)
+            os.environ[env_var_name] = value
 
     @_lazy_property
     def test_repo_path(self):
@@ -171,6 +252,11 @@ class TestEnvManager(object):
         officially support test repo paths yet, even though every runner just
         gets the path to the test repo package.
         """
+
+        # This makes sure to return the env override value if it's already set
+        override = self._override(self.MANAGED_VARS.test_repo_path)
+        if override:
+            return str(override)
 
         module_info = None
         try:
@@ -189,70 +275,62 @@ class TestEnvManager(object):
         CAFE_TEST_REPO_PACKAGE
         """
 
+        # Override happens in __init__
         return os.path.expanduser(
             self._test_repo_package_name
             or self.engine_config_interface.default_test_repo)
 
     @_lazy_property
     def test_data_directory(self):
-        return os.path.expanduser(self.engine_config_interface.data_directory)
+        return (
+            self._override(self.MANAGED_VARS.test_data_directory)
+            or os.path.expanduser(self.engine_config_interface.data_directory))
 
     @_lazy_property
     def test_root_log_dir(self):
-        return os.path.expanduser(
-            os.path.join(
-                self.engine_config_interface.log_directory, self.product_name,
-                self.test_config_file_name))
+        return (
+            self._override(self.MANAGED_VARS.test_root_log_dir)
+            or os.path.expanduser(
+                os.path.join(
+                    self.engine_config_interface.log_directory,
+                    self.product_name, self.test_config_file_name)))
 
     @_lazy_property
     def test_log_dir(self):
         log_dir_name = str(datetime.datetime.now()).replace(" ", "_").replace(
             ":", "_")
-        return os.path.expanduser(
-            os.path.join(self.test_root_log_dir, log_dir_name))
+        return (
+            os.path.expanduser(
+                os.path.join(
+                    self.test_root_log_dir, self._override(
+                        self.MANAGED_VARS.test_log_dir) or log_dir_name)))
 
     @_lazy_property
     def test_config_file_path(self):
-        return os.path.expanduser(
-            os.path.join(
-                self.engine_config_interface.config_directory,
-                self.product_name, self.test_config_file_name))
+        return (
+            self._override(self.MANAGED_VARS.test_config_file_path)
+            or os.path.expanduser(
+                os.path.join(
+                    self.engine_config_interface.config_directory,
+                    self.product_name, self.test_config_file_name)))
 
     @_lazy_property
     def test_logging_verbosity(self):
         """Currently supports STANDARD and VERBOSE.
         TODO: Implement 'OFF' option that adds null handlers to all loggers
         """
-
-        return self.engine_config_interface.logging_verbosity
+        return (
+            self._override(self.MANAGED_VARS.test_logging_verbosity)
+            or self.engine_config_interface.logging_verbosity)
 
     @_lazy_property
     def test_master_log_file_name(self):
-        return self.engine_config_interface.master_log_file_name
+        return (
+            self._override(self.MANAGED_VARS.test_master_log_file_name)
+            or self.engine_config_interface.master_log_file_name)
 
 
 class EngineDirectoryManager(object):
-
-    class _Namespace(dict):
-        """Converts the top-level keys of this dictionary into a namespace.
-        Raises exception if any self.keys() collide with internal attributes.
-        """
-
-        def __init__(self, **kwargs):
-            dict.__init__(self, **kwargs)
-            collisions = set(kwargs) & set(dir(self))
-            if bool(collisions):
-                raise Exception(
-                    "Cannot set attribute {0}.  Namespace cannot contain "
-                    "any keys that collide with internal attribute "
-                    "names.".format([c for c in collisions]))
-
-        def __getattr__(self, name):
-            try:
-                return self[name]
-            except KeyError:
-                raise AttributeError(
-                    "Namespace has no attribute '{0}'".format(name))
 
     wrapper = textwrap.TextWrapper(
         initial_indent="* ", subsequent_indent="  ", break_long_words=False)
@@ -261,7 +339,7 @@ class EngineDirectoryManager(object):
     OPENCAFE_ROOT_DIR = os.path.join(
         PlatformManager.get_user_home_path(), ".opencafe")
 
-    OPENCAFE_SUB_DIRS = _Namespace(
+    OPENCAFE_SUB_DIRS = _NamespaceDict(
         LOG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'logs'),
         DATA_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'data'),
         TEMP_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'temp'),
