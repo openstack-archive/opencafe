@@ -18,6 +18,7 @@ import collections
 import inspect
 import six
 from six.moves import zip_longest
+from importlib import import_module
 
 from types import FunctionType
 from unittest import TestCase
@@ -74,12 +75,43 @@ def data_driven_test(*dataset_sources, **kwargs):
     return decorator
 
 
+class DummyDataDrivenClass(object):
+    pass
+
+
+def DataDrivenClass(*dataset_lists):
+    def decorator(cls):
+        # This case works but you are Decorating the class twice with the
+        # DataDrivenFixture
+        if getattr(cls, "__DATA_DRIVEN_FIXTURE__", False):
+            warn("DataDrivenFixture decorator is not needed with "
+                 "DataDrivenClass")
+        module = import_module(cls.__module__)
+        for dataset_list in dataset_lists:
+            for dataset in dataset_list:
+                class_name = "{0}_{1}".format(cls.__name__, dataset.name)
+                new_class = DataDrivenFixture(
+                    type(class_name, (cls,), dataset.data))
+                new_class.__module__ = cls.__module__
+                setattr(module, dataset.name, new_class)
+        return DummyDataDrivenClass
+    return decorator
+
+
 def DataDrivenFixture(cls):
     """Generates new unittest test methods from methods defined in the
     decorated class"""
+    # This case does not work because the DataDrivenClass doesn't return the
+    # class
+    if issubclass(cls, DummyDataDrivenClass):
+        raise DataDrivenFixtureError(
+            "DataDrivenFixture is not needed when using DataDrivenClass")
 
     if not issubclass(cls, TestCase):
         raise DataDrivenFixtureError
+
+    # adds a variable to tell if the DataDrivenFixture decorator is used
+    cls.__DATA_DRIVEN_FIXTURE__ = True
 
     test_case_attrs = dir(cls)
     for attr_name in test_case_attrs:
