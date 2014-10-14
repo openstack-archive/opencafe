@@ -15,6 +15,20 @@ limitations under the License.
 """
 
 import json
+from string import ascii_letters, digits
+ALLOWED_FIRST_CHAR = "_{0}".format(ascii_letters)
+ALLOWED_OTHER_CHARS = "_{0}{1}".format(ALLOWED_FIRST_CHAR, digits)
+
+
+def remove_invalid_characters(string):
+    if not string:
+        return string
+    for char in set(string) - set(ALLOWED_OTHER_CHARS):
+        string = string.replace(char, "")
+    if string:
+        while string and string[0] in digits:
+            string = string[1:]
+    return string
 
 
 class _Dataset(object):
@@ -24,7 +38,9 @@ class _Dataset(object):
         arguments defined in test method that consumes the dataset.
         name should be a string describing the dataset.
         """
-
+        if (name[0] not in ALLOWED_FIRST_CHAR or
+                set(name) - set(ALLOWED_OTHER_CHARS)):
+            raise Exception("Invalid characters in dataset name")
         self.name = name
         self.data = data_dict
         self.metadata = {'tags': tags or []}
