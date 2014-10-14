@@ -16,9 +16,11 @@ limitations under the License.
 
 import collections
 import inspect
+import re
 import six
 from six.moves import zip_longest
 
+from importlib import import_module
 from types import FunctionType
 from unittest import TestCase
 from warnings import warn, simplefilter
@@ -71,6 +73,23 @@ def data_driven_test(*dataset_sources, **kwargs):
             combined_lists += dataset_list
         setattr(func, DATA_DRIVEN_TEST_ATTR, combined_lists)
         return func
+    return decorator
+
+
+def DataDrivenClass(*dataset_lists):
+    """Use data driven class decorator. desigened to be used on a fixture"""
+    def decorator(cls):
+        module = import_module(cls.__module__)
+        for dataset_list in dataset_lists:
+            for dataset in dataset_list:
+                class_name = "{0}_{1}".format(cls.__name__, dataset.name)
+                class_name = re.sub(
+                    "fixture", "", class_name, flags=re.IGNORECASE)
+                new_class = DataDrivenFixture(
+                    type(class_name, (cls,), dataset.data))
+                new_class.__module__ = cls.__module__
+                setattr(module, dataset.name, new_class)
+        return cls
     return decorator
 
 

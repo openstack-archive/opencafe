@@ -15,6 +15,9 @@ limitations under the License.
 """
 
 import json
+from string import ascii_letters, digits
+ALLOWED_FIRST_CHAR = "_{0}".format(ascii_letters)
+ALLOWED_OTHER_CHARS = "_{0}{1}".format(ALLOWED_FIRST_CHAR, digits)
 
 
 class _Dataset(object):
@@ -24,7 +27,6 @@ class _Dataset(object):
         arguments defined in test method that consumes the dataset.
         name should be a string describing the dataset.
         """
-
         self.name = name
         self.data = data_dict
         self.metadata = {'tags': tags or []}
@@ -88,6 +90,25 @@ class DatasetList(list):
                         self[location].metadata['tags'] = list(
                             set(self[location].metadata.get('tags')).union(
                                 foreign_ds.metadata.get('tags')))
+
+    @staticmethod
+    def replace_invalid_characters(string, new_char="_"):
+        """This functions corrects string so the following is true
+        Identifiers (also referred to as names) are described by the
+        following lexical definitions:
+        identifier ::=  (letter|"_") (letter | digit | "_")*
+        letter     ::=  lowercase | uppercase
+        lowercase  ::=  "a"..."z"
+        uppercase  ::=  "A"..."Z"
+        digit      ::=  "0"..."9"
+        """
+        if not string:
+            return string
+        for char in set(string) - set(ALLOWED_OTHER_CHARS):
+            string = string.replace(char, new_char)
+        if string[0] in digits:
+            string = "{0}{1}".format(new_char, string[1:])
+        return string
 
 
 class DatasetGenerator(DatasetList):
