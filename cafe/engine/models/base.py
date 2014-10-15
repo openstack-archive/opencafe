@@ -113,7 +113,7 @@ class XML_ToolsMixin(object):
     def _remove_xml_etree_namespace(doc, namespace):
         """Remove namespace in the passed document in place."""
 
-        ns = six.u(namespace)
+        ns = six.u("{{{}}}".format(namespace))
         nsl = len(ns)
         for elem in doc.getiterator():
             for key in elem.attrib:
