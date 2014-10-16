@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: jose-idar <jose.idar@rackspace.com>
+Code-Review+2: Christopher Hunt <chris.hunt@RACKSPACE.COM>
+Workflow+1: Christopher Hunt <chris.hunt@RACKSPACE.COM>
+Submitted-by: Jenkins
+Submitted-at: Thu, 16 Oct 2014 13:07:31 +0000
+Reviewed-on: https://review.openstack.org/128742
+Project: stackforge/opencafe
+Branch: refs/heads/master
