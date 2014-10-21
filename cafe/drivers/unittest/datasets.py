@@ -48,9 +48,9 @@ class DatasetList(list):
 
         super(DatasetList, self).append(dataset)
 
-    def append_new_dataset(self, name, data_dict):
+    def append_new_dataset(self, name, data_dict, tags=None):
         """Creates and appends a new Dataset"""
-        self.append(_Dataset(name, data_dict))
+        self.append(_Dataset(name, data_dict, tags))
 
     def extend(self, dataset_list):
         if not isinstance(dataset_list, DatasetList):
