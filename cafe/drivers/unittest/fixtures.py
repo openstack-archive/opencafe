@@ -22,6 +22,7 @@ limitations under the License.
 import os
 import re
 import six
+import sys
 import unittest
 
 from cafe.drivers.base import FixtureReporter
@@ -100,30 +101,47 @@ class BaseTestFixture(unittest.TestCase):
                better pattern or working with the result object directly.
                This is related to the todo in L{TestRunMetrics}
         """
-        if six.PY2:
-            report = self._resultForDoCleanups
-        else:
-            report = self._outcomeForDoCleanups
+        if sys.version_info < (3, 4):
+            if six.PY2:
+                report = self._resultForDoCleanups
+            else:
+                report = self._outcomeForDoCleanups
 
-        if any(r for r in report.failures
-               if self._test_name_matches_result(self._testMethodName, r)):
-            self._reporter.stop_test_metrics(self._testMethodName, 'Failed')
-        elif any(r for r in report.errors
-                 if self._test_name_matches_result(self._testMethodName, r)):
-            self._reporter.stop_test_metrics(self._testMethodName, 'ERRORED')
+            if any(r for r in report.failures
+                   if self._test_name_matches_result(self._testMethodName, r)):
+                self._reporter.stop_test_metrics(self._testMethodName,
+                                                 'Failed')
+            elif any(r for r in report.errors
+                     if self._test_name_matches_result(self._testMethodName,
+                                                       r)):
+                self._reporter.stop_test_metrics(self._testMethodName,
+                                                 'ERRORED')
+            else:
+                self._reporter.stop_test_metrics(self._testMethodName,
+                                                 'Passed')
         else:
-            self._reporter.stop_test_metrics(self._testMethodName, 'Passed')
+            for method, errors in self._outcome.errors:
+                if self._test_name_matches_result(self._testMethodName,
+                                                  method):
+                    self._reporter.stop_test_metrics(self._testMethodName,
+                                                     'Failed')
+                else:
+                    self._reporter.stop_test_metrics(self._testMethodName,
+                                                     'Passed')
 
         # Let the base handle whatever hoodoo it needs
         super(BaseTestFixture, self).tearDown()
 
     def _test_name_matches_result(self, name, test_result):
         """Checks if a test result matches a specific test name."""
-        # Try to get the result portion of the tuple
-        try:
-            result = test_result[0]
-        except IndexError:
-            return False
+        if sys.version_info < (3, 4):
+            # Try to get the result portion of the tuple
+            try:
+                result = test_result[0]
+            except IndexError:
+                return False
+        else:
+            result = test_result
 
         # Verify the object has the correct property
         if hasattr(result, '_testMethodName'):
