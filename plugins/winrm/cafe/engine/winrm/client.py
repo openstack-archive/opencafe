@@ -32,6 +32,7 @@ class BaseWinRMClient(BaseClient):
         @param host: IP address or host name to connect to
         @type host: string
         """
+        super(BaseWinRMClient, self).__init__()
         self.host = host
         self.connection = None
         self.shell_id = None
