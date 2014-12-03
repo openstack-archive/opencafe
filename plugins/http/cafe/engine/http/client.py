@@ -21,6 +21,9 @@ from time import time
 from cafe.common.reporting import cclogging
 from cafe.engine.clients.base import BaseClient
 
+from requests.packages import urllib3
+urllib3.disable_warnings()
+
 
 def _log_transaction(log, level=cclogging.logging.DEBUG):
 
