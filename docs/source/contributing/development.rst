@@ -8,9 +8,9 @@ Gerrit Account Setup
 Before contributing code, you will need an account with the OpenStack Gerrit instance.
 This Gerrit instance uses Launchpad accounts for authentication, and also requires additional steps to
 properly setup your SSH keys. The OpenStack Gerrit wiki has very detailed instructions on how to
-`set up your account <https://wiki.openstack.org/wiki/Gerrit_Workflow#Account_Setup>`_,
-`install git-review <https://wiki.openstack.org/wiki/Gerrit_Workflow#Git_Review_Installation>`_, and
-`how to verify that you can submit code <https://wiki.openstack.org/wiki/Gerrit_Workflow#Project_Setup>`_.
+`set up your account <http://docs.openstack.org/infra/manual/developers.html#account-setup>`_,
+`install git-review <http://docs.openstack.org/infra/manual/developers.html#installing-git-review>`_, and
+`how to verify that you can submit code <http://docs.openstack.org/infra/manual/developers.html#starting-work-on-a-new-project>`_.
 
 
 Starting a Feature
