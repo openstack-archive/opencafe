@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import collections
 import inspect
 import re
 import six
@@ -198,25 +197,23 @@ class memoized(object):
         log_name = "{0}.{1}".format(
             cclogging.get_object_namespace(args[0]), self.__name__)
         self._start_logging(log_name)
-        if not isinstance(args, collections.Hashable):
-            # uncacheable. a list, for instance.
-            # better to not cache than blow up.
+
+        try:
+            hash(args)
+        except TypeError:  # unhashable arguments in args
             value = self.func(*args)
-            self.func._log.debug("Uncacheable.  Data returned")
-            self._stop_logging()
-            return value
-
-        if args in self.cache:
-            self.func._log.debug("Cached data returned.")
-            self._stop_logging()
-            return self.cache[args]
-
+            debug = "Uncacheable.  Data returned"
         else:
-            value = self.func(*args)
-            self.cache[args] = value
-            self.func._log.debug("Data cached for future calls")
-            self._stop_logging()
-            return value
+            if args in self.cache:
+                value = self.cache[args]
+                debug = "Cached data returned."
+            else:
+                value = self.cache[args] = self.func(*args)
+                debug = "Data cached for future calls"
+
+        self.func._log.debug(debug)
+        self._stop_logging()
+        return value
 
     def __repr__(self):
         """Return the function's docstring."""
