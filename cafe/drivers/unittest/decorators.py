@@ -81,16 +81,15 @@ def DataDrivenClass(*dataset_lists):
     def decorator(cls):
         module = import_module(cls.__module__)
         cls = DataDrivenFixture(cls)
+        class_name = re.sub("fixture", "", cls.__name__, flags=re.IGNORECASE)
         if not re.match(".*fixture", cls.__name__, flags=re.IGNORECASE):
             cls.__name__ = "{0}Fixture".format(cls.__name__)
         for dataset_list in dataset_lists:
             for dataset in dataset_list:
-                class_name = "{0}_{1}".format(cls.__name__, dataset.name)
-                class_name = re.sub(
-                    "fixture", "", class_name, flags=re.IGNORECASE)
-                new_class = type(class_name, (cls,), dataset.data)
+                class_name_new = "{0}_{1}".format(class_name, dataset.name)
+                new_class = type(class_name_new, (cls,), dataset.data)
                 new_class.__module__ = cls.__module__
-                setattr(module, dataset.name, new_class)
+                setattr(module, class_name_new, new_class)
         return cls
     return decorator
 
