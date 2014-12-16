@@ -14,8 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from cafe.common.reporting import cclogging
+import json
 import six
+
+from cafe.common.reporting import cclogging
 
 
 class CommonToolsMixin(object):
@@ -274,3 +276,19 @@ class AutoMarshallingDictModel(dict, AutoMarshallingModel):
 
     def __str__(self):
         return dict.__str__(self)
+
+
+class AutoMarshallingJsonModel(AutoMarshallingModel):
+    """Convenience class for JSON-based models
+
+    Models derived exclusively from JSON should inherit from this
+    class rather than directly inheriting AutoMarshallingModel
+    """
+
+    def __init__(self):
+        super(AutoMarshallingJsonModel, self).__init__()
+
+    @classmethod
+    def _json_to_obj(cls, serialized_str):
+        json_dict = json.loads(serialized_str)
+        return cls._dict_to_obj(json_dict)
