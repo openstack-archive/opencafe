@@ -20,7 +20,6 @@ import os
 from six.moves import configparser
 from six import add_metaclass
 
-
 from cafe.common.reporting import cclogging
 try:
     from cafe.engine.mongo.client import BaseMongoClient
@@ -79,6 +78,10 @@ CONFIG_KEY = 'CAFE_{section_name}_{key}'
 @add_metaclass(abc.ABCMeta)
 class DataSource(object):
 
+    def __init__(self):
+        self._log = cclogging.logging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
+
     def get(self, item_name, default=None):
         raise NotImplementedError
 
@@ -117,9 +120,7 @@ class DataSource(object):
 class EnvironmentVariableDataSource(DataSource):
 
     def __init__(self, section_name):
-        self._log = cclogging.getLogger(
-            cclogging.get_object_namespace(self.__class__))
-
+        super(EnvironmentVariableDataSource, self).__init__()
         self._section_name = section_name
 
     def get(self, item_name, default=None):
@@ -139,8 +140,7 @@ class EnvironmentVariableDataSource(DataSource):
 class ConfigParserDataSource(DataSource):
 
     def __init__(self, config_file_path, section_name):
-        self._log = cclogging.getLogger(
-            cclogging.get_object_namespace(self.__class__))
+        super(ConfigParserDataSource, self).__init__()
 
         self._data_source = configparser.SafeConfigParser()
         self._section_name = section_name
@@ -263,8 +263,7 @@ class DictionaryDataSource(DataSource):
 class JSONDataSource(DictionaryDataSource):
 
     def __init__(self, config_file_path, section_name):
-        self._log = cclogging.getLogger(
-            cclogging.get_object_namespace(self.__class__))
+        super(JSONDataSource, self).__init__()
 
         self._section_name = section_name
 
@@ -285,8 +284,10 @@ class JSONDataSource(DictionaryDataSource):
 
 class MongoDataSource(DictionaryDataSource):
 
-    def __init__(self, hostname, db_name, username, password,
-                 config_name, section_name):
+    def __init__(
+            self, hostname, db_name, username, password, config_name,
+            section_name):
+        super(MongoDataSource, self).__init__()
         self._section_name = section_name
 
         self.db = BaseMongoClient(
@@ -304,7 +305,7 @@ class BaseConfigSectionInterface(object):
     """
 
     def __init__(self, config_file_path, section_name):
-        self._log = cclogging.getLogger(
+        self._log = cclogging.logging.getLogger(
             cclogging.get_object_namespace(self.__class__))
         self._override = EnvironmentVariableDataSource(
             section_name)

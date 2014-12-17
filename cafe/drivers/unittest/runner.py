@@ -27,8 +27,7 @@ from inspect import isclass
 from multiprocessing import Process, Manager
 from re import search
 from traceback import print_exc
-from cafe.common.reporting.cclogging import init_root_log_handler
-from cafe.common.reporting.cclogging import log_results
+from cafe.common.reporting import cclogging
 from cafe.common.reporting.reporter import Reporter
 from cafe.configurator.managers import TestEnvManager
 from cafe.drivers.unittest.decorators import (
@@ -184,8 +183,8 @@ class SuiteBuilder(object):
 
         method = getattr(class_, method_name)
 
-        if (dict(method.__dict__)
-                and TAGS_DECORATOR_TAG_LIST_NAME in method.__dict__):
+        if (dict(method.__dict__) and
+                TAGS_DECORATOR_TAG_LIST_NAME in method.__dict__):
             if tags and not attrs:
                 tag_flag = self._check_tags(method, tags, token)
                 load_test_flag = tag_flag
@@ -236,10 +235,10 @@ class SuiteBuilder(object):
         if self.tags:
             tag_list, attrs, token = self._parse_tags(self.tags)
 
-        if (hasattr(loaded_module, "load_tests")
-                and not self.supress
-                and not self.method_regex
-                and self.tags is None):
+        if (hasattr(loaded_module, "load_tests") and
+                not self.supress and
+                not self.method_regex and
+                self.tags is None):
             load_tests = getattr(loaded_module, "load_tests")
             suite.addTests(load_tests(loader, None, None))
             return suite
@@ -685,7 +684,9 @@ class UnittestRunner(object):
         self.test_env.test_data_directory = (
             self.test_env.test_data_directory or self.cl_args.data_directory)
         self.test_env.finalize()
-        init_root_log_handler()
+        cclogging.init_root_log_handler()
+        self._log = cclogging.getLogger(
+            cclogging.get_object_namespace(self.__class__))
         self.product = self.cl_args.product
         self.print_mug_and_paths(self.test_env)
 
@@ -867,11 +868,68 @@ class UnittestRunner(object):
             reporter.generate_report(
                 result_type=result_type, path=results_path)
 
-        log_results(result)
+        self._log_results(result)
         if not result.wasSuccessful():
             exit_code = 1
 
         return exit_code
+
+    def _log_results(self, result):
+        """Replicates the printing functionality of unittest's runner.run() but
+        log's instead of prints
+        """
+
+        infos = []
+        expected_fails = unexpected_successes = skipped = 0
+
+        try:
+            results = list(map(len, (
+                result.expectedFailures, result.unexpectedSuccesses,
+                result.skipped)))
+            expected_fails, unexpected_successes, skipped = results
+        except AttributeError:
+            pass
+
+        if not result.wasSuccessful():
+            failed, errored = list(map(len, (result.failures, result.errors)))
+
+            if failed:
+                infos.append("failures={0}".format(failed))
+            if errored:
+                infos.append("errors={0}".format(errored))
+
+            self.log_errors('ERROR', result, result.errors)
+            self.log_errors('FAIL', result, result.failures)
+            self._log.info("Ran {0} Tests".format(result.testsRun))
+            self._log.info('FAILED ')
+        else:
+            self._log.info("Ran {0} Tests".format(result.testsRun))
+            self._log.info("Passing all tests")
+
+        if skipped:
+            infos.append("skipped={0}".format(str(skipped)))
+        if expected_fails:
+            infos.append("expected failures={0}".format(expected_fails))
+        if unexpected_successes:
+            infos.append("unexpected successes={0}".format(
+                str(unexpected_successes)))
+        if infos:
+            self._log.info(" ({0})\n".format((", ".join(infos),)))
+        else:
+            self._log.info("\n")
+
+        print('=' * 150)
+        print("Detailed logs: {0}".format(os.getenv("CAFE_TEST_LOG_PATH")))
+        print('-' * 150)
+
+    def log_errors(self, label, result, errors):
+        border1 = '=' * 45
+        border2 = '-' * 45
+
+        for test, err in errors:
+            msg = "{0}: {1}\n".format(label, result.getDescription(test))
+            self._log.info(
+                "{0}\n{1}\n{2}\n{3}".format(border1, msg, border2, err))
 
 
 def entry_point():
