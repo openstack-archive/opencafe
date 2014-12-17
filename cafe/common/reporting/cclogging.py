@@ -13,17 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+import sys
 import logging
 import os
 import sys
+
+# When raising warnings in the module, only print them once, and don't
+# show any line numbers or stacktraces (simply print the messages to stderr)
+import warnings
+warnings.simplefilter('once', Warning)
+warnings.showwarning = \
+    lambda msg, category, filename, lineno: sys.stderr.write(str(msg))
+
 try:
     from collections import OrderedDict
 except ImportError:
     # python 2.6 or earlier, use backport
     from ordereddict import OrderedDict
-
-log = logging.getLogger('RunnerLog')
 
 
 def logsafe_str(data):
@@ -74,29 +80,27 @@ def parse_class_namespace_string(class_string):
     class_string = class_string.replace("<class '", "")
     return str(class_string)
 
-
 def getLogger(log_name, log_level=None):
     """Convenience function to create a logger and set it's log level at the
     same time. Log level defaults to logging.DEBUG
     """
 
-    # Create new log
-    new_log = logging.getLogger(name=log_name)
-    new_log.setLevel(log_level or logging.DEBUG)
+    # Create requested log
+    requested_log = logging.getLogger(name=log_name)
     verbosity = os.getenv('CAFE_LOGGING_VERBOSITY')
 
     if verbosity == 'VERBOSE':
-        if logging.getLogger(log_name).handlers == []:
-            # Special case for root log handler
-            if log_name == "":
-                log_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
-            # Add handler by default for all new loggers
-            new_log.addHandler(setup_new_cchandler(log_name))
+        # By default, logs don't get handlers when they're created.
+        # Setting the logger to 'VERBOSE' will add handlers for every log
+        # that gets created.
+        if log_name == "":
+            # Root logger needs to be specially handled
+            return init_root_log_handler()
+        if requested_log.handlers == []:
+            requested_log.setLevel(log_level or logging.DEBUG)
+            requested_log.addHandler(setup_new_cchandler(log_name))
 
-    # Add support for adding null log handlers by default when
-    # logging_verbosity == 'OFF'
-
-    return new_log
+    return requested_log
 
 
 def setup_new_cchandler(
@@ -112,94 +116,46 @@ def setup_new_cchandler(
     try:
         log_dir = os.path.expanduser(log_dir)
     except Exception as exception:
-        sys.stderr.write(
-            "\nUnable to verify log directory: {0}\n".format(exception))
+        warnings.warn(
+            "\nUnable to verify existence of log directory: "
+            "{0}\nError: {1}".format(log_dir, exception.message), Warning)
 
     try:
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
     except Exception as exception:
-        sys.stderr.write(
-            "\nError creating log directory: {0}\n".format(exception))
+        warnings.warn(
+            "\nError creating log directory: "
+            "{0}\nError: {1}".format(log_dir, exception.message), Warning)
 
     log_path = os.path.join(log_dir, "{0}.log".format(log_file_name))
 
     # Set up handler with encoding and msg formatter in log directory
-    log_handler = logging.FileHandler(log_path, "a+",
-                                      encoding=encoding or "UTF-8", delay=True)
+    log_handler = logging.FileHandler(
+        log_path, "a+", encoding=encoding or "UTF-8", delay=True)
 
     fmt = msg_format or "%(asctime)s: %(levelname)s: %(name)s: %(message)s"
     log_handler.setFormatter(logging.Formatter(fmt=fmt))
 
     return log_handler
 
-
-def log_results(result):
-    """Replicates the printing functionality of unittest's runner.run() but
-    log's instead of prints
-    """
-
-    infos = []
-    expected_fails = unexpected_successes = skipped = 0
-
-    try:
-        results = list(map(len, (
-            result.expectedFailures, result.unexpectedSuccesses,
-            result.skipped)))
-        expected_fails, unexpected_successes, skipped = results
-    except AttributeError:
-        pass
-
-    if not result.wasSuccessful():
-        failed, errored = list(map(len, (result.failures, result.errors)))
-
-        if failed:
-            infos.append("failures={0}".format(failed))
-        if errored:
-            infos.append("errors={0}".format(errored))
-
-        log_errors('ERROR', result, result.errors)
-        log_errors('FAIL', result, result.failures)
-        log.info("Ran {0} Tests".format(result.testsRun))
-        log.info('FAILED ')
-    else:
-        log.info("Ran {0} Tests".format(result.testsRun))
-        log.info("Passing all tests")
-
-    if skipped:
-        infos.append("skipped={0}".format(str(skipped)))
-    if expected_fails:
-        infos.append("expected failures={0}".format(expected_fails))
-    if unexpected_successes:
-        infos.append("unexpected successes={0}".format(
-            str(unexpected_successes)))
-    if infos:
-        log.info(" ({0})\n".format((", ".join(infos),)))
-    else:
-        log.info("\n")
-
-    print('=' * 150)
-    print("Detailed logs: {0}".format(
-        os.getenv("CAFE_TEST_LOG_PATH")))
-    print('-' * 150)
-
-
-def log_errors(label, result, errors):
-    border1 = '=' * 45
-    border2 = '-' * 45
-
-    for test, err in errors:
-        msg = "{0}: {1}\n".format(label, result.getDescription(test))
-        log.info('{0}\n{1}\n{2}\n{3}'.format(border1, msg, border2, err))
-
-
-def init_root_log_handler():
+def init_root_log_handler(override_handler=None):
     """Setup root log handler if the root logger doesn't already have one"""
 
-    if not getLogger('').handlers:
+    root_log = logging.getLogger()
+    if override_handler:
+        root_log.addHandler(override_handler)
+    elif not root_log.handlers:
         master_log_file_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
-        getLogger('').addHandler(
-            setup_new_cchandler(master_log_file_name))
+        if master_log_file_name is None:
+            warnings.warn(
+                "Environment variable 'CAFE_MASTER_LOG_FILE_NAME' is not "
+                "set. A null root log handler will be used, no logs will be "
+                "written.", Warning)
+            root_log.addHandler(logging.NullHandler())
+        else:
+            root_log.addHandler(setup_new_cchandler(master_log_file_name))
+    return root_log
 
 
 def log_info_block(
