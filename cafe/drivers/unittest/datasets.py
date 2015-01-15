@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from itertools import product
 import json
 from string import ascii_letters, digits
 ALLOWED_FIRST_CHAR = "_{0}".format(ascii_letters)
@@ -110,6 +111,22 @@ class DatasetList(list):
         if string[0] in digits:
             string = "{0}{1}".format(new_char, string[1:])
         return string
+
+
+class DatasetListCombiner(DatasetList):
+    """
+    Class that can be used to combine multiple DatasetList objects together.
+    Produces the product of combining every dataset from each list together
+    with the names merged together. The data is overridden in a cascading
+    fashion, similar to CSS, where the last dataset takes priority.
+    """
+
+    def __init__(self, *datasets):
+        for data in product(*datasets):
+            my_dic = {}
+            [my_dic.update(d.data) for d in data]
+            self.append_new_dataset(
+                "_".join([x.name for x in data]), my_dic)
 
 
 class DatasetGenerator(DatasetList):
