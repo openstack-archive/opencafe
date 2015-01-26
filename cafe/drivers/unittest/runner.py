@@ -760,12 +760,14 @@ class UnittestRunner(object):
         """
         master_suite = OpenCafeUnittestTestSuite()
         parallel_test_list = []
+        test_count = 0
 
         builder = SuiteBuilder(self.cl_args, self.test_env.test_repo_package)
         test_runner = self.get_runner(self.cl_args)
 
         if self.cl_args.parallel:
             parallel_test_list = builder.generate_suite_list()
+            test_count = len(parallel_test_list)
             if self.cl_args.dry_run:
                 for suite in parallel_test_list:
                     for test in suite:
@@ -775,9 +777,9 @@ class UnittestRunner(object):
                 parallel_test_list, test_runner,
                 result_type=self.cl_args.result,
                 results_path=self.cl_args.result_directory)
-            exit(exit_code)
         else:
             master_suite = builder.generate_suite()
+            test_count = master_suite.countTestCases()
             if self.cl_args.dry_run:
                 for test in master_suite:
                     print(test)
@@ -786,7 +788,12 @@ class UnittestRunner(object):
                 master_suite, test_runner, result_type=self.cl_args.result,
                 results_path=self.cl_args.result_directory)
 
-            exit(exit_code)
+        # Exit with a non-zero exit code if no tests where run, so that
+        # external monitoring programs (like Jenkins) can tell
+        # something is up
+        if test_count <= 0:
+            exit_code = 1
+        exit(exit_code)
 
     def run_parallel(
             self, test_suites, test_runner, result_type=None,
