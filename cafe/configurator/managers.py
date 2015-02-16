@@ -186,8 +186,9 @@ class TestEnvManager(object):
 
         override = self._override(self.MANAGED_VARS.engine_config_path)
         self.engine_config_path = (
-            engine_config_path or override
-            or EngineConfigManager.ENGINE_CONFIG_PATH)
+            engine_config_path or
+            override or
+            EngineConfigManager.ENGINE_CONFIG_PATH)
 
         self.engine_config_interface = EngineConfig(self.engine_config_path)
 
@@ -277,23 +278,24 @@ class TestEnvManager(object):
 
         # Override happens in __init__
         return os.path.expanduser(
-            self._test_repo_package_name
-            or self.engine_config_interface.default_test_repo)
+            self._test_repo_package_name or
+            self.engine_config_interface.default_test_repo)
 
     @_lazy_property
     def test_data_directory(self):
         return (
-            self._override(self.MANAGED_VARS.test_data_directory)
-            or os.path.expanduser(self.engine_config_interface.data_directory))
+            self._override(self.MANAGED_VARS.test_data_directory) or
+            os.path.expanduser(self.engine_config_interface.data_directory))
 
     @_lazy_property
     def test_root_log_dir(self):
         return (
-            self._override(self.MANAGED_VARS.test_root_log_dir)
-            or os.path.expanduser(
+            self._override(self.MANAGED_VARS.test_root_log_dir) or
+            os.path.expanduser(
                 os.path.join(
                     self.engine_config_interface.log_directory,
-                    self.product_name, self.test_config_file_name)))
+                    self.product_name,
+                    self.test_config_file_name)))
 
     @_lazy_property
     def test_log_dir(self):
@@ -308,11 +310,12 @@ class TestEnvManager(object):
     @_lazy_property
     def test_config_file_path(self):
         return (
-            self._override(self.MANAGED_VARS.test_config_file_path)
-            or os.path.expanduser(
+            self._override(self.MANAGED_VARS.test_config_file_path) or
+            os.path.expanduser(
                 os.path.join(
                     self.engine_config_interface.config_directory,
-                    self.product_name, self.test_config_file_name)))
+                    self.product_name,
+                    self.test_config_file_name)))
 
     @_lazy_property
     def test_logging_verbosity(self):
@@ -320,14 +323,14 @@ class TestEnvManager(object):
         TODO: Implement 'OFF' option that adds null handlers to all loggers
         """
         return (
-            self._override(self.MANAGED_VARS.test_logging_verbosity)
-            or self.engine_config_interface.logging_verbosity)
+            self._override(self.MANAGED_VARS.test_logging_verbosity) or
+            self.engine_config_interface.logging_verbosity)
 
     @_lazy_property
     def test_master_log_file_name(self):
         return (
-            self._override(self.MANAGED_VARS.test_master_log_file_name)
-            or self.engine_config_interface.master_log_file_name)
+            self._override(self.MANAGED_VARS.test_master_log_file_name) or
+            self.engine_config_interface.master_log_file_name)
 
 
 class EngineDirectoryManager(object):
