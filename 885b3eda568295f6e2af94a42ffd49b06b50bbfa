@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Nathan Buckner <nathan.buckner@rackspace.com>
+Workflow+1: Nathan Buckner <nathan.buckner@rackspace.com>
+Code-Review+2: Christopher Hunt <chris.hunt@RACKSPACE.COM>
+Code-Review+1: Anna Eilering <anna.eilering@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 19 Feb 2015 22:39:28 +0000
+Reviewed-on: https://review.openstack.org/156389
+Project: stackforge/opencafe
+Branch: refs/heads/master
