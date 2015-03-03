@@ -159,6 +159,7 @@ def init_root_log_handler(override_handler=None):
             root_log.addHandler(logging.NullHandler())
         else:
             root_log.addHandler(setup_new_cchandler(master_log_file_name))
+            root_log.setLevel(logging.DEBUG)
     return root_log
 
 
