@@ -19,6 +19,7 @@ from subprocess import call
 from setuptools import setup, find_packages
 from setuptools.command.install import install as _install
 from setuptools.command.test import test as TestCommand
+call(['easy_install', 'six'])
 
 
 # Post-install engine configuration
@@ -87,9 +88,9 @@ setup(
     author='CafeHub',
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://opencafe.readthedocs.org',
+    setup_requires=requires,
     packages=find_packages(),
     namespace_packages=['cafe'],
-    install_requires=requires,
     license=open('LICENSE').read(),
     zip_safe=False,
     classifiers=(
