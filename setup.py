@@ -17,6 +17,7 @@ limitations under the License.
 import sys
 from subprocess import call
 from setuptools import setup, find_packages
+from setuptools.command import easy_install as _easy_install
 from setuptools.command.install import install as _install
 from setuptools.command.test import test as TestCommand
 
@@ -47,7 +48,7 @@ def _post_install(dir):
     -----------------------------------------------------------------
     """)
 
-# Reading Requires
+# Read in requirements
 requires = open('pip-requires').readlines()
 
 # Add additional requires for Python 2.6 support
@@ -59,6 +60,10 @@ if sys.version_info < (2, 7):
 # cmdclass hook allows setup to make post install call
 class install(_install):
     def run(self):
+
+        # Workaround for problem in six that prevents installation when part of
+        # of some package requirements
+        _easy_install.main(['-U', 'six'])
         _install.run(self)
         self.execute(
             _post_install, (self.install_lib,),
@@ -87,9 +92,9 @@ setup(
     author='CafeHub',
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://opencafe.readthedocs.org',
+    install_requires=requires,
     packages=find_packages(),
     namespace_packages=['cafe'],
-    install_requires=requires,
     license=open('LICENSE').read(),
     zip_safe=False,
     classifiers=(
