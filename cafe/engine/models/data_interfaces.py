@@ -142,7 +142,7 @@ class ConfigParserDataSource(DataSource):
     def __init__(self, config_file_path, section_name):
         super(ConfigParserDataSource, self).__init__()
 
-        self._data_source = configparser.SafeConfigParser()
+        self._data_source = configparser.SafeConfigParser(defaults=os.environ)
         self._section_name = section_name
 
         # Check if the path exists
