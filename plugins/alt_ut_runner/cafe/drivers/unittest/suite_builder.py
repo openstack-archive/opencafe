@@ -23,7 +23,7 @@ import unittest
 
 from cafe.drivers.unittest.common import print_exception, get_error
 from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
-from cafe.drivers.unittest.decorators import TAGS_DECORATOR_TAG_LIST_NAME
+from cafe.drivers.unittest.decorators import TAGS_LIST_ATTR
 
 
 class SuiteBuilder(object):
@@ -135,7 +135,7 @@ class SuiteBuilder(object):
         foo and bar will be matched including a test that contains
         (foo, bar, bazz)
         """
-        test_tags = getattr(test, TAGS_DECORATOR_TAG_LIST_NAME, [])
+        test_tags = getattr(test, TAGS_LIST_ATTR, [])
         if self.all_tags:
             return all([tag in test_tags for tag in self.tags])
         else:
