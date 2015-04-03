@@ -115,7 +115,7 @@ class XML_ToolsMixin(object):
 
         ns = six.u("{{{0}}}".format(namespace))
         nsl = len(ns)
-        for elem in doc.getiterator():
+        for elem in list(doc.iter()):
             for key in elem.attrib:
                 if key.startswith(ns):
                     new_key = key[nsl:]
