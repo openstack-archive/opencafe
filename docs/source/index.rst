@@ -28,6 +28,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   cafe/index
    getting_started/index
    contributing/index
    architecture/index
