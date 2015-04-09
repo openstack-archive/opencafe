@@ -1,5 +1,5 @@
 """
-Copyright 2013 Rackspace
+Copyright 2015 Rackspace
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -142,10 +142,12 @@ class ConfigParserDataSource(DataSource):
     def __init__(self, config_file_path, section_name):
         super(ConfigParserDataSource, self).__init__()
 
-        cafe_env_var = {key: value for key, value in os.environ.iteritems()
+        cafe_env_var = {
+            key: value for key, value in os.environ.iteritems()
             if key.startswith('CAFE_')}
 
-        self._data_source = configparser.SafeConfigParser(defaults=cafe_env_var)
+        self._data_source = configparser.SafeConfigParser(
+            defaults=cafe_env_var)
         self._section_name = section_name
 
         # Check if the path exists
