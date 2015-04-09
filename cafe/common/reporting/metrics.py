@@ -1,5 +1,5 @@
 """
-Copyright 2013 Rackspace
+Copyright 2015 Rackspace
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-"""
-@summary: Generic Classes for test statistics
-"""
 from datetime import datetime
 import os
 import csv
@@ -26,15 +23,7 @@ import sys
 
 class TestRunMetrics(object):
     """
-    @summary: Generic Timer used to track any time span
-    @ivar start_time: Timestamp from the start of the timer
-    @type start_time: C{datetime}
-    @ivar stop_time: Timestamp of the end of the timer
-    @type stop_time: C{datetime}
-    @todo: This is a stop gap. It will be necessary to override large portions
-           of the runner and the default unittest.TestCase architecture to make
-           this auto-magically work with unittest properly.
-           This should be a child of unittest.TestResult
+    Contains test timing and results metrics for a test.
     """
     def __init__(self):
         self.total_tests = 0
@@ -47,7 +36,7 @@ class TestRunMetrics(object):
 
 class TestResultTypes(object):
     """
-    @summary: Types dictating an individual Test Case result
+    Types dictating an individual Test Case result
     @cvar PASSED: Test has passed
     @type PASSED: C{str}
     @cvar FAILED: Test has failed

@@ -1,7 +1,40 @@
 import sphinx_rtd_theme
+import sys
+import os
+import shlex
+import sphinx_rtd_theme
+
+package_path=os.path.abspath("../../../opencafe")
+sys.path.append(package_path)
+
+
+def remove_module_docstring_license(app, what, name, obj, options, lines):
+  license = [
+    u'Copyright 2015 Rackspace',
+    u'',
+    u'Licensed under the Apache License, Version 2.0 (the "License");',
+    u'you may not use this file except in compliance with the License.',
+    u'You may obtain a copy of the License at',
+    u'',
+    u'    http://www.apache.org/licenses/LICENSE-2.0',
+    u'',
+    u'Unless required by applicable law or agreed to in writing, software',
+    u'distributed under the License is distributed on an "AS IS" BASIS,',
+    u'WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.'
+    , u'See the License for the specific language governing permissions and',
+    u'limitations under the License.']
+
+  if what == "module":
+    if lines[:13] == license:
+      del lines[:13]
+
+def setup(app):
+  app.connect("autodoc-process-docstring", remove_module_docstring_license)
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -15,19 +48,19 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'OpenCAFE'
-copyright = u'2013, Rackspace'
+copyright = u'2015, RackspaceQE'
 
 # The short X.Y version.
-version = '0.1.0'
+version = '0.2.0'
 # The full version, including alpha/beta/rc tags.
-release = '0.1.0'
+release = '0.2.0'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ['_build']
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'friendly'
+pygments_style = 'monokai'
 
 
 # -- Options for HTML output ----------------------------------------------

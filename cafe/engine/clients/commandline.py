@@ -1,9 +1,9 @@
 """
-Copyright 2013 Rackspace
+Copyright 2015 Rackspace
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+You may obtain a copy of the License at:
 
     http://www.apache.org/licenses/LICENSE-2.0
 
@@ -14,10 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-"""Provides low level connectivity to the commandline via popen()
-@note: Primarily intended to serve as base classes for a specific
-       command line client Class
-"""
 import os
 import sys
 from subprocess import Popen, PIPE, CalledProcessError
@@ -29,18 +25,19 @@ from cafe.engine.models.commandline_response import CommandLineResponse
 
 
 class BaseCommandLineClient(BaseClient):
-    """Wrapper for driving/parsing a command line program
-    @ivar base_command: This processes base command string. (I.E. 'ls', 'pwd')
-    @type base_command: C{str}
-    @note: This class is dependent on a local installation of the wrapped
-           client process.  The thing you run has to be there!
+    """
+    Provides low level connectivity to the commandline via popen()
+
+    Primarily intended to serve as base classes for a specific command line
+    client Class. This class is dependent on a local installation of the 
+    wrapped client process. The thing you run has to be there!
     """
 
     def __init__(self, base_command=None, env_var_dict=None):
         """
-        @param base_command: This processes base command string.
-                             (I.E. 'ls', 'pwd')
-        @type base_command: C{str}
+        :param base_command: This shell command to execute, e.g. 'ls' or 'pwd'
+        :param dict env_var_dict: Environment variables to inject into env
+                                  before execution.
         """
 
         super(BaseCommandLineClient, self).__init__()

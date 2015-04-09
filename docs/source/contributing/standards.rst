@@ -25,7 +25,7 @@ Rules of Law
 
 
 Development Standards
-------------------
+---------------------
 - It is **HIGHLY** encouraged that if you have not already read (and even if
   it's been a while since you have) the Python Enhancement Proposals (PEPs)
   PEP-8 and PEP 20 that you do so.
@@ -50,10 +50,12 @@ Development Standards
   on the open parenthesis of a function call.
 - Long strings should be handled by wrapping the string in parenthesis
   and having quote delimited strings per line within.
+
 Example::
     long_string = ('I cannot fit this whole phrase on one '
                    'line, but I can properly format this string '
                    'by using this type of structure.')
+
 - Do not write "except:", use "except Exception:" at the very least
 - Use try/except where logical. Avoid wrapping large blocks of code in
   in huge try/except blocks.

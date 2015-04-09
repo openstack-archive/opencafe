@@ -1,5 +1,5 @@
 """
-Copyright 2013 Rackspace
+Copyright 2015 Rackspace
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,12 +24,13 @@ class SQLClientException(Exception):
 
 class BaseSQLClient(BaseClient):
     """
-    This is meant to be a base support client for DBAPI 2.0 clients. This
-    client is not meant to be used directly. New clients will extend this
+    Base support client for DBAPI 2.0 clients.
+
+    This client is not meant to be used directly. New clients will extend this
     client and live inside of the individual CAFE.
 
     For more information on the DBAPI 2.0 standard please visit:
-    http://www.python.org/dev/peps/pep-0249
+    .. seealso:: http://www.python.org/dev/peps/pep-0249
     """
 
     _log = cclogging.getLogger(__name__)
@@ -41,16 +42,16 @@ class BaseSQLClient(BaseClient):
         """
         Connects to self._driver with passed parameters
 
-        @param data_source_name: The data source name
-        @type data_source_name: String
-        @param user: Username
-        @type user: String
-        @param password: Password
-        @type password: String
-        @param host: Hostname
-        @type host: String
-        @param database: Database Name
-        @type database: String
+        :param data_source_name: The data source name
+        :type data_source_name: string
+        :param user: Username
+        :type user: string
+        :param password: Password
+        :type password: string
+        :param host: Hostname
+        :type host: string
+        :param database: Database Name
+        :type database: string
         """
         if self._driver is None:
             message = 'Driver not set.'
@@ -74,13 +75,13 @@ class BaseSQLClient(BaseClient):
         For more information on the execute command see:
         http://www.python.org/dev/peps/pep-0249/#id15
 
-        @param operation: The operation being executed
-        @type operation: String
-        @param parameters: Sequence or map that wil be bound to variables in
+        :param operation: The operation being executed
+        :type operation: string
+        :param parameters: Sequence or map that wil be bound to variables in
                            the operation
-        @type parameters: String or dictionary
-        @param cursor: A pre-existing cursor
-        @type cursor: object
+        :type parameters: string or dictionary
+        :param cursor: A pre-existing cursor
+        :type cursor: cursor object
         """
         if self._connection is None:
             message = 'Connection not set.'
@@ -102,13 +103,13 @@ class BaseSQLClient(BaseClient):
         For more information on the execute command see:
         http://www.python.org/dev/peps/pep-0249/#executemany
 
-        @param operation: The operation being executed
-        @type operation: String
-        @param seq_of_parameters: The sequence or mappings that will be run
+        :param operation: The operation being executed
+        :type operation: string
+        :param seq_of_parameters: The sequence or mappings that will be run
                                   against the operation
-        @type seq_of_parameters: String or object
-        @param cursor: A pre-existing cursor
-        @type cursor: object
+        :type seq_of_parameters: string or object
+        :param cursor: A pre-existing cursor
+        :type cursor: cursor object
         """
         if self._connection is None:
             message = 'Connection not set.'
