@@ -1,5 +1,5 @@
 """
-Copyright 2013 Rackspace
+Copyright 2015 Rackspace
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,6 +17,6 @@ limitations under the License.
 __title__ = 'cafe'
 __author__ = 'Rackspace Cloud QE'
 __license__ = 'Apache License Version 2.0'
-__copyright__ = 'Copyright 2013 Rackspace Inc.'
+__copyright__ = 'Copyright 2015 Rackspace Inc.'
 
 __import__('pkg_resources').declare_namespace(__name__)
