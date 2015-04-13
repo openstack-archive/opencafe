@@ -1,5 +1,5 @@
 """
-Copyright 2013 Rackspace
+Copyright 2015 Rackspace
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ from winrm.exceptions import WinRMTransportError
 from winrm.protocol import Protocol
 
 from cafe.engine.clients.base import BaseClient
-from cafe.engine.models.winrm_response import WinRMResponse
+from plugins.winrm.cafe.engine.winrm.models.winrm_response \
+    import WinRMResponse
 
 
 class BaseWinRMClient(BaseClient):
