@@ -1,24 +1,16 @@
-"""
-Copyright 2013 Rackspace
+# Copyright 2015 Rackspace
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
-
-"""
-@summary: Base Classes for Test Fixtures
-@note: Corresponds DIRECTLY TO A unittest.TestCase
-@see: http://docs.python.org/library/unittest.html#unittest.TestCase
-"""
 import os
 import re
 import six
@@ -30,17 +22,18 @@ from cafe.drivers.base import FixtureReporter
 
 class BaseTestFixture(unittest.TestCase):
     """
-    @summary: This should be used as the base class for any unittest tests,
-              meant to be used instead of unittest.TestCase.
-    @see: http://docs.python.org/library/unittest.html#unittest.TestCase
+    Base class that all cafe unittest test fixtures should inherit from
+
+    .. seealso:: http://docs.python.org/library/unittest.html#unittest.TestCase
     """
 
     __test__ = True
 
     def shortDescription(self):
         """
-        @summary: Returns a formatted description of the test
+        Returns a formatted description of the test
         """
+
         short_desc = None
 
         if os.environ.get("VERBOSE", None) == "true" and self._testMethodDoc:
@@ -58,8 +51,7 @@ class BaseTestFixture(unittest.TestCase):
     @classmethod
     def assertClassSetupFailure(cls, message):
         """
-        @summary: Use this if you need to fail from a Test Fixture's
-                  setUpClass() method
+        Use this if you need to fail from a Test Fixture's setUpClass()
         """
         cls.fixture_log.error("FATAL: %s:%s" % (cls.__name__, message))
         raise AssertionError("FATAL: %s:%s" % (cls.__name__, message))
@@ -67,9 +59,9 @@ class BaseTestFixture(unittest.TestCase):
     @classmethod
     def assertClassTeardownFailure(cls, message):
         """
-        @summary: Use this if you need to fail from a Test Fixture's
-                  tearUpClass() method
+        Use this if you need to fail from a Test Fixture's tearDownClass()
         """
+
         cls.fixture_log.error("FATAL: %s:%s" % (cls.__name__, message))
         raise AssertionError("FATAL: %s:%s" % (cls.__name__, message))
 
@@ -84,6 +76,7 @@ class BaseTestFixture(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls._reporter.stop()
+
         # Call super teardown after to avoid tearing down the class before we
         # can run our own tear down stuff.
         super(BaseTestFixture, cls).tearDownClass()
@@ -101,6 +94,7 @@ class BaseTestFixture(unittest.TestCase):
                better pattern or working with the result object directly.
                This is related to the todo in L{TestRunMetrics}
         """
+
         if sys.version_info < (3, 4):
             if six.PY2:
                 report = self._resultForDoCleanups
@@ -128,12 +122,14 @@ class BaseTestFixture(unittest.TestCase):
                 else:
                     self._reporter.stop_test_metrics(self._testMethodName,
                                                      'Passed')
-
-        # Let the base handle whatever hoodoo it needs
+        # Continue inherited tearDown()
         super(BaseTestFixture, self).tearDown()
 
     def _test_name_matches_result(self, name, test_result):
-        """Checks if a test result matches a specific test name."""
+        """
+        Checks if a test result matches a specific test name.
+        """
+
         if sys.version_info < (3, 4):
             # Try to get the result portion of the tuple
             try:
@@ -151,6 +147,10 @@ class BaseTestFixture(unittest.TestCase):
 
     @classmethod
     def _do_class_cleanup_tasks(cls):
+        """
+        Runs the tasks designated by the use of addClassCleanup
+        """
+
         for func, args, kwargs in reversed(cls._class_cleanup_tasks):
             cls.fixture_log.debug(
                 "Running class cleanup task: {0}({1}, {2})".format(
@@ -174,7 +174,9 @@ class BaseTestFixture(unittest.TestCase):
 
     @classmethod
     def addClassCleanup(cls, function, *args, **kwargs):
-        """Named to match unittest's addCleanup.
+        """
+        Provides an addCleanup-like method that can be used in classmethods
+
         ClassCleanup tasks run if setUpClass fails, or after tearDownClass.
         (They don't depend on tearDownClass running)
         """
@@ -184,8 +186,9 @@ class BaseTestFixture(unittest.TestCase):
 
 class BaseBurnInTestFixture(BaseTestFixture):
     """
-    @summary: Base test fixture that allows for Burn-In tests
+    Base test fixture that allows for Burn-In tests
     """
+
     @classmethod
     def setUpClass(cls):
         super(BaseBurnInTestFixture, cls).setUpClass()

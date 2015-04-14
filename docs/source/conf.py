@@ -1,7 +1,15 @@
 import sphinx_rtd_theme
+import sys
+import os
+import shlex
+
+package_path = os.path.abspath("../../../opencafe")
+sys.path.append(package_path)
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -15,19 +23,19 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'OpenCAFE'
-copyright = u'2013, Rackspace'
+copyright = u'2015, RackspaceQE'
 
 # The short X.Y version.
-version = '0.1.0'
+version = '0.2.0'
 # The full version, including alpha/beta/rc tags.
-release = '0.1.0'
+release = '0.2.0'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ['_build']
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'friendly'
+pygments_style = 'monokai'
 
 
 # -- Options for HTML output ----------------------------------------------
@@ -69,6 +77,11 @@ man_pages = [
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [('index', 'OpenCAFE', u'OpenCAFE Documentation',
-                      u'Rackspace', 'OpenCAFE',
-                      'One line description of project.', 'Miscellaneous')]
+texinfo_documents = [
+    ('index',
+     'OpenCAFE',
+     u'OpenCAFE Documentation',
+     u'Rackspace',
+     'OpenCAFE',
+     'One line description of project.',
+     'Miscellaneous')]
