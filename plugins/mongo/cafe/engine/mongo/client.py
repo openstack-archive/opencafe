@@ -26,6 +26,7 @@ class BaseMongoClient(BaseClient):
     _log = cclogging.getLogger(__name__)
 
     def __init__(self, hostname, db_name, username, password):
+        super(BaseMongoClient, self).__init__()
         self.hostname = hostname
         self.db_name = db_name
         self.username = username
@@ -96,16 +97,18 @@ class BaseMongoClient(BaseClient):
 
         return self.SUCCESS
 
-    def find_one(self, db_obj_name, filter=dict()):
+    def find_one(self, db_obj_name, filter=None):
+        result_filter = filter or dict()
         if not self.is_connected():
             return self.FAILED
 
         db_obj = self.db[db_obj_name]
-        return db_obj.find_one(filter)
+        return db_obj.find_one(result_filter)
 
-    def delete(self, db_obj_name, filter=dict(), just_one=True):
+    def delete(self, db_obj_name, filter=None, just_one=True):
+        result_filter = filter or dict()
         if not self.is_connected():
             return self.FAILED
 
         db_obj = self.db[db_obj_name]
-        return db_obj.remove(filter, just_one)
+        return db_obj.remove(result_filter, just_one)
