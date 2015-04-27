@@ -140,9 +140,10 @@ class ConfigParserDataSource(DataSource):
         super(ConfigParserDataSource, self).__init__()
 
         cafe_env_var = {key: value for key, value in os.environ.iteritems()
-            if key.startswith('CAFE_')}
+                        if key.startswith('CAFE_')}
 
-        self._data_source = configparser.SafeConfigParser(defaults=cafe_env_var)
+        self._data_source = configparser.SafeConfigParser(
+            defaults=cafe_env_var)
         self._section_name = section_name
 
         # Check if the path exists
