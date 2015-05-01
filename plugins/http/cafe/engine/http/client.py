@@ -22,6 +22,19 @@ from requests.packages import urllib3
 urllib3.disable_warnings()
 
 
+def timer(method):
+    def timed(*args, **kw):
+        ts = time()
+        response = method(*args, **kw)
+        te = time()
+        elapsed = te - ts
+
+        setattr(response, 'cafe_elapsed', elapsed)
+
+        return response
+    return timed
+
+
 def _log_transaction(log, level=cclogging.logging.DEBUG):
 
     def _safe_decode(text, incoming='utf-8', errors='replace'):
@@ -63,11 +76,9 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
 
             # Make the request and time it's execution
             response = None
-            elapsed = None
+
             try:
-                start = time()
                 response = func(*args, **kwargs)
-                elapsed = time() - start
             except Exception as exception:
                 log.critical('Call to Requests failed due to exception')
                 log.exception(exception)
@@ -109,7 +120,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             logline = ''.join([
                 '\n{0}\nRESPONSE RECEIVED\n{0}\n'.format('-' * 17),
                 'response status..: {0}\n'.format(response),
-                'response time....: {0}\n'.format(elapsed),
+                'response time....: {0}\n'.format(response.cafe_elapsed),
                 'response headers.: {0}\n'.format(response.headers),
                 'response body....: {0}\n'.format(response.content),
                 '-' * 79])
@@ -158,6 +169,7 @@ class BaseHTTPClient(BaseClient):
 
     @_inject_exception(_exception_handlers)
     @_log_transaction(log=_log)
+    @timer
     def request(self, method, url, **kwargs):
         """ Performs <method> HTTP request to <url> using the requests lib"""
         return requests.request(method, url, **kwargs)
