@@ -23,7 +23,6 @@ urllib3.disable_warnings()
 
 
 def _log_transaction(log, level=cclogging.logging.DEBUG):
-
     def _safe_decode(text, incoming='utf-8', errors='replace'):
             """Decodes incoming text/bytes string using `incoming`
                if they're not already unicode.
