@@ -107,19 +107,20 @@ class XML_ToolsMixin(object):
         return xml_etree
 
     @staticmethod
-    def _remove_xml_etree_namespace(doc, namespace):
-        """Remove namespace in the passed document in place."""
+    def _remove_xml_etree_namespace(doc, *namespaces):
+        """Remove namespaces in the passed document in place."""
 
-        ns = six.u("{{{0}}}".format(namespace))
-        nsl = len(ns)
-        for elem in list(doc.iter()):
-            for key in elem.attrib:
-                if key.startswith(ns):
-                    new_key = key[nsl:]
-                    elem.attrib[new_key] = elem.attrib[key]
-                    del elem.attrib[key]
-            if elem.tag.startswith(ns):
-                elem.tag = elem.tag[nsl:]
+        for namespace in namespaces:
+            ns = six.u("{{{0}}}".format(namespace))
+            nsl = len(ns)
+            for elem in list(doc.iter()):
+                for key in elem.attrib:
+                    if key.startswith(ns):
+                        new_key = key[nsl:]
+                        elem.attrib[new_key] = elem.attrib[key]
+                        del elem.attrib[key]
+                if elem.tag.startswith(ns):
+                    elem.tag = elem.tag[nsl:]
         return doc
 
 
