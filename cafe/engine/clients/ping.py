@@ -55,4 +55,7 @@ class PingClient(object):
         except Exception:
             # If there is no match, fail
             return False
+
+        # ensure the process is ended
+        process.kill()
         return packet_loss_percent != '100'
