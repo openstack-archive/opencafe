@@ -17,10 +17,11 @@ import argparse
 import errno
 import importlib
 import os
+import re
 import sys
 
 from cafe.configurator.managers import EngineConfigManager
-from cafe.drivers.unittest.common import print_exception, get_error
+from cafe.drivers.base import print_exception, get_error
 from cafe.engine.config import EngineConfig
 
 
@@ -140,6 +141,22 @@ class TagAction(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
+class RegexAction(argparse.Action):
+    """
+        Processes regex option.
+    """
+    def __call__(self, parser, namespace, values, option_string=None):
+        regex_list = []
+        for regex in values:
+            try:
+                regex_list.append(re.compile(regex))
+            except re.error as exception:
+                parser.error(
+                    "RegexAction: Invalid regex {0} reason: {1}".format(
+                        regex, exception))
+        setattr(namespace, self.dest, regex_list)
+
+
 class VerboseAction(argparse.Action):
     """
         Custom action that sets VERBOSE environment variable.
@@ -158,7 +175,7 @@ class ArgumentParser(argparse.ArgumentParser):
         usage_string = """
             cafe-runner <config> <testrepos>... [--fail-fast]
                 [--supress-load-tests] [--dry-run]
-                [--data-directory=DATA_DIRECTORY] [--dotpath-regex=REGEX...]
+                [--data-directory=DATA_DIRECTORY] [--regex-list=REGEX...]
                 [--file] [--parallel=(class|test)] [--result=(json|xml)]
                 [--result-directory=RESULT_DIRECTORY] [--tags=TAG...]
                 [--verbose=VERBOSE]
@@ -222,11 +239,15 @@ class ArgumentParser(argparse.ArgumentParser):
             help="Data directory override")
 
         self.add_argument(
-            "--dotpath-regex", "-d",
+            "--regex-list", "-d",
+            action=RegexAction,
             nargs="+",
             default=[],
             metavar="REGEX",
-            help="Package Filter")
+            help="Filter by regex against dotpath down to test level"
+                 "Example: tests.repo.cafe_tests.NoDataGenerator.test_fail"
+                 "Example: 'NoDataGenerator\.*fail'"
+                 "Takes in a list and matches on any")
 
         self.add_argument(
             "--file", "-F",
