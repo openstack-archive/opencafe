@@ -10,33 +10,31 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
-import inspect
-import re
-import six
-from six.moves import zip_longest
-
 from importlib import import_module
-from types import FunctionType
 from unittest import TestCase
 from warnings import warn, simplefilter
+import inspect
+import re
 
 from cafe.common.reporting import cclogging
+from cafe.drivers.unittest.datasets import DatasetList
 
-TAGS_DECORATOR_TAG_LIST_NAME = "__test_tags__"
-TAGS_DECORATOR_ATTR_DICT_NAME = "__test_attrs__"
 DATA_DRIVEN_TEST_ATTR = "__data_driven_test_data__"
 DATA_DRIVEN_TEST_PREFIX = "ddtest_"
+TAGS_DECORATOR_ATTR_DICT_NAME = "__test_attrs__"
+TAGS_DECORATOR_TAG_LIST_NAME = "__test_tags__"
+PARALLEL_TAGS_LIST_ATTR = "__parallel_test_tags__"
 
 
 class DataDrivenFixtureError(Exception):
+    """Error if you apply DataDrivenClass to class that isn't a TestCase"""
     pass
 
 
-def _add_tags(func, tags):
-    if not getattr(func, TAGS_DECORATOR_TAG_LIST_NAME, None):
-        setattr(func, TAGS_DECORATOR_TAG_LIST_NAME, [])
-    func.__test_tags__ = list(set(func.__test_tags__).union(set(tags)))
+def _add_tags(func, tags, attr):
+    if not getattr(func, attr, None):
+        setattr(func, attr, [])
+    setattr(func, attr, list(set(getattr(func, attr)).union(set(tags))))
     return func
 
 
@@ -52,8 +50,15 @@ def tags(*tags, **attrs):
     cafe-runner at run time
     """
     def decorator(func):
-        func = _add_tags(func, tags)
+        """Calls _add_tags/_add_attrs to add tags to a func"""
+        func = _add_tags(func, tags, TAGS_DECORATOR_TAG_LIST_NAME)
         func = _add_attrs(func, attrs)
+
+        # add tags for parallel runner
+        func = _add_tags(func, tags, PARALLEL_TAGS_LIST_ATTR)
+        func = _add_tags(
+            func, ["{0}={1}".format(k, v) for k, v in attrs.items()],
+            PARALLEL_TAGS_LIST_ATTR)
         return func
     return decorator
 
@@ -61,11 +66,19 @@ def tags(*tags, **attrs):
 def data_driven_test(*dataset_sources, **kwargs):
     """Used to define the data source for a data driven test in a
     DataDrivenFixture decorated Unittest TestCase class"""
-
     def decorator(func):
-        # dataset_source checked for backward compatibility
-        combined_lists = kwargs.get("dataset_source") or []
+        """Combines and stores DatasetLists in __data_driven_test_data__"""
+        dep_message = "DatasetList object required for data_generator"
+        combined_lists = kwargs.get("dataset_source") or DatasetList()
+        for key, value in kwargs:
+            if key != "dataset_source" and isinstance(value, DatasetList):
+                value.apply_test_tags(key)
+            elif not isinstance(value, DatasetList):
+                warn(dep_message, DeprecationWarning)
+            combined_lists += value
         for dataset_list in dataset_sources:
+            if not isinstance(dataset_list, DatasetList):
+                warn(dep_message, DeprecationWarning)
             combined_lists += dataset_list
         setattr(func, DATA_DRIVEN_TEST_ATTR, combined_lists)
         return func
@@ -75,6 +88,9 @@ def data_driven_test(*dataset_sources, **kwargs):
 def DataDrivenClass(*dataset_lists):
     """Use data driven class decorator. designed to be used on a fixture"""
     def decorator(cls):
+        """Creates classes with variables named after datasets.
+        Names of classes are equal to (class_name with out fixture) + ds_name
+        """
         module = import_module(cls.__module__)
         cls = DataDrivenFixture(cls)
         class_name = re.sub("fixture", "", cls.__name__, flags=re.IGNORECASE)
@@ -93,66 +109,53 @@ def DataDrivenClass(*dataset_lists):
 def DataDrivenFixture(cls):
     """Generates new unittest test methods from methods defined in the
     decorated class"""
+    def create_func(original_test, new_name, kwargs):
+        """Creates a function to add to class for ddtests"""
+        def new_test(self):
+            """Docstring gets replaced by test docstring"""
+            func = getattr(self, original_test.__name__)
+            func(**kwargs)
+        new_test.__name__ = new_name
+        new_test.__doc__ = original_test.__doc__
+        return new_test
 
     if not issubclass(cls, TestCase):
         raise DataDrivenFixtureError
 
-    test_case_attrs = dir(cls)
-    for attr_name in test_case_attrs:
+    for attr_name in dir(cls):
         if attr_name.startswith(DATA_DRIVEN_TEST_PREFIX) is False:
             # Not a data driven test, skip it
             continue
-
-        original_test = getattr(cls, attr_name, None).__func__
-        test_data = getattr(original_test, DATA_DRIVEN_TEST_ATTR, None)
-
-        if test_data is None:
-            # no data was provided to the datasource decorator or this is not a
-            # data driven test, skip it.
+        original_test = getattr(cls, attr_name, None)
+        if not callable(original_test):
             continue
+
+        test_data = getattr(original_test, DATA_DRIVEN_TEST_ATTR, [])
 
         for dataset in test_data:
             # Name the new test based on original and dataset names
-            base_test_name = str(original_test.__name__)[
-                int(len(DATA_DRIVEN_TEST_PREFIX)):]
-            new_test_name = "test_{0}_{1}".format(
-                base_test_name, dataset.name)
+            base_test_name = attr_name[int(len(DATA_DRIVEN_TEST_PREFIX)):]
+            new_test_name = DatasetList.replace_invalid_characters(
+                "test_{0}_{1}".format(base_test_name, dataset.name))
 
-            # Create a new test from the old test
-            new_test = FunctionType(
-                six.get_function_code(original_test),
-                six.get_function_globals(original_test),
-                name=new_test_name)
+            new_test = create_func(original_test, new_test_name, dataset.data)
 
             # Copy over any other attributes the original test had (mainly to
             # support test tag decorator)
-            for attr in list(set(dir(original_test)) - set(dir(new_test))):
-                setattr(new_test, attr, getattr(original_test, attr))
-
-            # Change the new test's default keyword values to the appropriate
-            # new data as defined by the datasource decorator
-            args, _, _, defaults = inspect.getargspec(original_test)
-
-            # Self doesn't have a default, so we need to remove it
-            args.remove('self')
-
-            # Make sure we take into account required arguments
-            kwargs = dict(
-                zip_longest(
-                    args[::-1], list(defaults or ())[::-1], fillvalue=None))
-
-            kwargs.update(dataset.data)
-
-            # Make sure the updated values are in the correct order
-            new_default_values = [kwargs[arg] for arg in args]
-            setattr(new_test, "func_defaults", tuple(new_default_values))
+            for key, value in vars(original_test).items():
+                if key != DATA_DRIVEN_TEST_ATTR:
+                    setattr(new_test, key, value)
 
             # Set dataset tags and attrs
-            new_test = _add_tags(new_test, dataset.metadata.get('tags', []))
+            new_test = _add_tags(
+                new_test, dataset.metadata.get('tags', []),
+                TAGS_DECORATOR_TAG_LIST_NAME)
+            new_test = _add_tags(
+                new_test, dataset.metadata.get('tags', []),
+                PARALLEL_TAGS_LIST_ATTR)
 
             # Add the new test to the decorated TestCase
             setattr(cls, new_test_name, new_test)
-
     return cls
 
 
@@ -216,6 +219,7 @@ class memoized(object):
         return self.func.__doc__
 
     def _start_logging(self, log_file_name):
+        """Starts logging"""
         setattr(self.func, '_log_handler', cclogging.setup_new_cchandler(
             log_file_name))
         setattr(self.func, '_log', cclogging.getLogger(''))
@@ -230,4 +234,5 @@ class memoized(object):
                     self.__name__))
 
     def _stop_logging(self):
-            self.func._log.removeHandler(self.func._log_handler)
+        """Stop logging"""
+        self.func._log.removeHandler(self.func._log_handler)
