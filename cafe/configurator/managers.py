@@ -22,7 +22,9 @@ import shutil
 from subprocess import Popen, PIPE
 
 from six.moves.configparser import SafeConfigParser
+
 from cafe.engine.config import EngineConfig
+import cafe
 
 if not platform.system().lower() == 'windows':
     import pwd
@@ -618,6 +620,8 @@ class EnginePluginManager(object):
         try:
             process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
             standard_out, standard_error = process.communicate()
+            Popen("python -m compileall -f {0}".format(cafe.__path__[0]),
+                  stdout=PIPE, stderr=PIPE, shell=True)
         except Exception as e:
             msg = '* Plugin install failed {0}\n{1}\n'.format(cmd, e)
             print(wrap(msg))
