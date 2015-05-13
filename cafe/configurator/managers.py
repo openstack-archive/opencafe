@@ -11,6 +11,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import compileall
 import datetime
 import imp
 import os
@@ -22,7 +23,9 @@ import shutil
 from subprocess import Popen, PIPE
 
 from six.moves.configparser import SafeConfigParser
+
 from cafe.engine.config import EngineConfig
+import cafe
 
 if not platform.system().lower() == 'windows':
     import pwd
@@ -592,6 +595,8 @@ class EnginePluginManager(object):
 
         for plugin_name in plugin_names:
             cls.install_plugin(plugin_name)
+        compileall.compile_dir(
+            cafe.__path__[0], maxlevels=1000, force=1, quiet=1)
 
     @classmethod
     def install_plugin(cls, plugin_name):
