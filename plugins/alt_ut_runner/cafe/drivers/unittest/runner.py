@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright 2015 Rackspace
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -14,7 +13,7 @@
 
 from __future__ import print_function
 
-from multiprocessing import Process, Queue, active_children
+from multiprocessing import Process, Queue
 from StringIO import StringIO
 from unittest.runner import _WritelnDecorator
 import importlib
@@ -68,14 +67,14 @@ class UnittestRunner(object):
             self.cl_args.data_directory or self.test_env.test_data_directory)
         self.test_env.finalize()
         cclogging.init_root_log_handler()
-
-        self.cl_args.testrepos = import_repos(self.cl_args.testrepos)
         self.print_configuration(self.test_env, self.cl_args.testrepos)
+        self.cl_args.testrepos = import_repos(self.cl_args.testrepos)
+
         self.suites = SuiteBuilder(
             testrepos=self.cl_args.testrepos,
             tags=self.cl_args.tags,
             all_tags=self.cl_args.all_tags,
-            dotpath_regex=self.cl_args.dotpath_regex,
+            regex_list=self.cl_args.regex_list,
             file_=self.cl_args.file,
             dry_run=self.cl_args.dry_run,
             exit_on_error=self.cl_args.exit_on_error).get_suites()
@@ -97,31 +96,23 @@ class UnittestRunner(object):
             to_worker.put(None)
 
         start = time.time()
+
+        # A second try catch is needed here because queues can cause locking
+        # when they go out of scope, especially when termination signals used
         try:
             for _ in range(workers):
                 proc = Consumer(to_worker, from_worker, verbose, failfast)
                 worker_list.append(proc)
                 proc.start()
 
-            while active_children():
-                if from_worker.qsize():
-                    results.append(self.log_result(from_worker.get()))
-
-            while not from_worker.empty():
+            for _ in self.suites:
                 results.append(self.log_result(from_worker.get()))
 
             tests_run, errors, failures = self.compile_results(
                 time.time() - start, results)
         except KeyboardInterrupt:
-            for proc in worker_list:
-                try:
-                    os.kill(proc.pid, 9)
-                except:
-                    # Process already exited, control C signal hit process
-                    # when not in a test
-                    pass
             print_exception("Runner", "run", "Keyboard Interrupt, exiting...")
-            exit(get_error())
+            os.killpg(0, 9)
         return bool(sum([errors, failures, not tests_run]))
 
     @staticmethod
@@ -145,9 +136,9 @@ class UnittestRunner(object):
         print("Percolated Configuration")
         print("-" * 150)
         if repos:
-            print("BREWING FROM: ....: {0}".format(repos[0].__name__))
+            print("BREWING FROM: ....: {0}".format(repos[0]))
             for repo in repos[1:]:
-                print("{0}{1}".format(" " * 20, repo.__name__))
+                print("{0}{1}".format(" " * 20, repo))
         print("ENGINE CONFIG FILE: {0}".format(test_env.engine_config_path))
         print("TEST CONFIG FILE..: {0}".format(test_env.test_config_file_path))
         print("DATA DIRECTORY....: {0}".format(test_env.test_data_directory))
@@ -181,8 +172,9 @@ class UnittestRunner(object):
         result_dict = {"tests": 0, "errors": 0, "failures": 0}
         for dic in results:
             result = dic["result"]
-            suite = dic["suite"]
-            result_parser = SummarizeResults(vars(result), suite, run_time)
+            tests = [suite for suite in self.suites
+                     if suite.cafe_uuid == dic["cafe_uuid"]][0]
+            result_parser = SummarizeResults(vars(result), tests, run_time)
             all_results += result_parser.gather_results()
             summary = result_parser.summary_result()
             for key in result_dict:
@@ -252,11 +244,19 @@ class Consumer(Process):
                     record.msg = "{0}\n{1}".format(
                         record.msg, traceback.format_exc(record.exc_info))
                 record.exc_info = None
-            dic = {"result": result, "logs": handler._records, "suite": suite}
+            dic = {
+                "result": result,
+                "logs": handler._records,
+                "cafe_uuid": suite.cafe_uuid}
+
             self.from_worker.put(dic)
 
 
 def entry_point():
     """Function setup.py links cafe-runner to"""
-    runner = UnittestRunner()
-    exit(runner.run())
+    try:
+        runner = UnittestRunner()
+        exit(runner.run())
+    except KeyboardInterrupt:
+        print_exception("Runner", "run", "Keyboard Interrupt, exiting...")
+        os.killpg(0, 9)

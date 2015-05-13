@@ -16,23 +16,23 @@ from __future__ import print_function
 from inspect import isclass, ismethod
 import importlib
 import pkgutil
-import re
 import unittest
+import uuid
 
-from cafe.drivers.unittest.common import print_exception, get_error
+from cafe.drivers.base import print_exception, get_error
 from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
-from cafe.drivers.unittest.decorators import TAGS_LIST_ATTR
+from cafe.drivers.unittest.decorators import TAGS_DECORATOR_TAG_LIST_NAME
 
 
 class SuiteBuilder(object):
     """Builds suites for OpenCafe Unittest Runner"""
     def __init__(
-            self, testrepos, tags=None, all_tags=False, dotpath_regex=None,
+            self, testrepos, tags=None, all_tags=False, regex_list=None,
             file_=None, dry_run=False, exit_on_error=False):
         self.testrepos = testrepos
         self.tags = tags or []
         self.all_tags = all_tags
-        self.regex_list = dotpath_regex or []
+        self.regex_list = regex_list or []
         self.exit_on_error = exit_on_error
         self.dry_run = dry_run
         # dict format {"ubroast.test.test1.TestClass": ["test_t1", "test_t2"]}
@@ -52,6 +52,8 @@ class SuiteBuilder(object):
                 for test in suite:
                     print(test)
             exit(0)
+        for suite in test_suites:
+            suite.cafe_uuid = uuid.uuid4()
         return test_suites
 
     def load_file(self):
@@ -99,10 +101,6 @@ class SuiteBuilder(object):
                 obj = getattr(loaded_module, objname, None)
                 if (isclass(obj) and issubclass(obj, unittest.TestCase) and
                         "fixture" not in obj.__name__.lower()):
-                    if getattr(obj, "__test__", None) is not None:
-                        print("Feature __test__ deprecated: Not skipping:"
-                              "{0}".format(obj.__name__))
-                        print("Use unittest.skip(reason)")
                     classes.append(obj)
         return classes
 
@@ -122,7 +120,7 @@ class SuiteBuilder(object):
         ret_val = ismethod(test) and self._check_tags(test)
         regex_val = not self.regex_list
         for regex in self.regex_list:
-            regex_val |= bool(re.search(regex, full_path))
+            regex_val |= bool(regex.search(full_path))
         return ret_val & regex_val
 
     def _check_tags(self, test):
@@ -133,7 +131,7 @@ class SuiteBuilder(object):
         foo and bar will be matched including a test that contains
         (foo, bar, bazz)
         """
-        test_tags = getattr(test, TAGS_LIST_ATTR, [])
+        test_tags = getattr(test, TAGS_DECORATOR_TAG_LIST_NAME, [])
         if self.all_tags:
             return all([tag in test_tags for tag in self.tags])
         else:

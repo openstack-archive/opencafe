@@ -11,6 +11,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+"""
+@summary: Base Classes for Test Fixtures
+@note: Corresponds DIRECTLY TO A unittest.TestCase
+@see: http://docs.python.org/library/unittest.html#unittest.TestCase
+"""
 import os
 import re
 import six
@@ -22,18 +27,17 @@ from cafe.drivers.base import FixtureReporter
 
 class BaseTestFixture(unittest.TestCase):
     """
-    Base class that all cafe unittest test fixtures should inherit from
-
-    .. seealso:: http://docs.python.org/library/unittest.html#unittest.TestCase
+    @summary: This should be used as the base class for any unittest tests,
+              meant to be used instead of unittest.TestCase.
+    @see: http://docs.python.org/library/unittest.html#unittest.TestCase
     """
 
     __test__ = True
 
     def shortDescription(self):
         """
-        Returns a formatted description of the test
+        @summary: Returns a formatted description of the test
         """
-
         short_desc = None
 
         if os.environ.get("VERBOSE", None) == "true" and self._testMethodDoc:
@@ -42,6 +46,9 @@ class BaseTestFixture(unittest.TestCase):
         return short_desc
 
     def logDescription(self):
+        """
+        @summary: Returns a formatted description from the _testMethodDoc
+        """
         log_desc = None
         if self._testMethodDoc:
             log_desc = "\n{0}".format(
@@ -51,22 +58,24 @@ class BaseTestFixture(unittest.TestCase):
     @classmethod
     def assertClassSetupFailure(cls, message):
         """
-        Use this if you need to fail from a Test Fixture's setUpClass()
+        @summary: Use this if you need to fail from a Test Fixture's
+                  setUpClass() method
         """
-        cls.fixture_log.error("FATAL: %s:%s" % (cls.__name__, message))
+        cls.fixture_log.error("FATAL: %s:%s", cls.__name__, message)
         raise AssertionError("FATAL: %s:%s" % (cls.__name__, message))
 
     @classmethod
     def assertClassTeardownFailure(cls, message):
         """
-        Use this if you need to fail from a Test Fixture's tearDownClass()
+        @summary: Use this if you need to fail from a Test Fixture's
+                  tearUpClass() method
         """
-
-        cls.fixture_log.error("FATAL: %s:%s" % (cls.__name__, message))
+        cls.fixture_log.error("FATAL: %s:%s", cls.__name__, message)
         raise AssertionError("FATAL: %s:%s" % (cls.__name__, message))
 
     @classmethod
     def setUpClass(cls):
+        """@summary: Adds logging/reporting to Unittest setUpClass"""
         super(BaseTestFixture, cls).setUpClass()
         cls._reporter = FixtureReporter(cls)
         cls.fixture_log = cls._reporter.logger.log
@@ -75,13 +84,14 @@ class BaseTestFixture(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        """@summary: Adds stop reporting to Unittest setUpClass"""
         cls._reporter.stop()
-
         # Call super teardown after to avoid tearing down the class before we
         # can run our own tear down stuff.
         super(BaseTestFixture, cls).tearDownClass()
 
     def setUp(self):
+        """@summary: Logs test metrics"""
         self.shortDescription()
         self._reporter.start_test_metrics(
             self.__class__.__name__, self._testMethodName,
@@ -94,7 +104,6 @@ class BaseTestFixture(unittest.TestCase):
                better pattern or working with the result object directly.
                This is related to the todo in L{TestRunMetrics}
         """
-
         if sys.version_info < (3, 4):
             if six.PY2:
                 report = self._resultForDoCleanups
@@ -114,7 +123,7 @@ class BaseTestFixture(unittest.TestCase):
                 self._reporter.stop_test_metrics(self._testMethodName,
                                                  'Passed')
         else:
-            for method, errors in self._outcome.errors:
+            for method, _ in self._outcome.errors:
                 if self._test_name_matches_result(self._testMethodName,
                                                   method):
                     self._reporter.stop_test_metrics(self._testMethodName,
@@ -125,11 +134,9 @@ class BaseTestFixture(unittest.TestCase):
         # Continue inherited tearDown()
         super(BaseTestFixture, self).tearDown()
 
-    def _test_name_matches_result(self, name, test_result):
-        """
-        Checks if a test result matches a specific test name.
-        """
-
+    @staticmethod
+    def _test_name_matches_result(name, test_result):
+        """@summary: Checks if a test result matches a specific test name."""
         if sys.version_info < (3, 4):
             # Try to get the result portion of the tuple
             try:
@@ -147,17 +154,14 @@ class BaseTestFixture(unittest.TestCase):
 
     @classmethod
     def _do_class_cleanup_tasks(cls):
-        """
-        Runs the tasks designated by the use of addClassCleanup
-        """
-
+        """@summary: Runs class cleanup tasks added during testing"""
         for func, args, kwargs in reversed(cls._class_cleanup_tasks):
             cls.fixture_log.debug(
-                "Running class cleanup task: {0}({1}, {2})".format(
-                    func.__name__,
-                    ", ".join([str(arg) for arg in args]),
-                    ", ".join(["{0}={1}".format(
-                        str(k), str(kwargs[k])) for k in kwargs])))
+                "Running class cleanup task: %s(%s, %s)",
+                func.__name__,
+                ", ".join([str(arg) for arg in args]),
+                ", ".join(["{0}={1}".format(
+                    str(k), str(kwargs[k])) for k in kwargs]))
             try:
                 func(*args, **kwargs)
             except Exception as exception:
@@ -166,17 +170,15 @@ class BaseTestFixture(unittest.TestCase):
                 cls.fixture_log.exception(exception)
                 cls.fixture_log.error(
                     "classTearDown failure: Exception occured while trying to"
-                    " execute class teardown task: {0}({1}, {2})".format(
-                        func.__name__,
-                        ", ".join([str(arg) for arg in args]),
-                        ", ".join(["{0}={1}".format(
-                            str(k), str(kwargs[k])) for k in kwargs])))
+                    " execute class teardown task: %s(%s, %s)",
+                    func.__name__,
+                    ", ".join([str(arg) for arg in args]),
+                    ", ".join(["{0}={1}".format(
+                        str(k), str(kwargs[k])) for k in kwargs]))
 
     @classmethod
     def addClassCleanup(cls, function, *args, **kwargs):
-        """
-        Provides an addCleanup-like method that can be used in classmethods
-
+        """@summary: Named to match unittest's addCleanup.
         ClassCleanup tasks run if setUpClass fails, or after tearDownClass.
         (They don't depend on tearDownClass running)
         """
@@ -186,15 +188,16 @@ class BaseTestFixture(unittest.TestCase):
 
 class BaseBurnInTestFixture(BaseTestFixture):
     """
-    Base test fixture that allows for Burn-In tests
+    @summary: Base test fixture that allows for Burn-In tests
     """
-
     @classmethod
     def setUpClass(cls):
+        """@summary: inits burning testing variables"""
         super(BaseBurnInTestFixture, cls).setUpClass()
         cls.test_list = []
         cls.iterations = 0
 
     @classmethod
     def addTest(cls, test_case):
+        """@summary: Adds a test case"""
         cls.test_list.append(test_case)

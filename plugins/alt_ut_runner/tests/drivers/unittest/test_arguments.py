@@ -52,9 +52,9 @@ class PositiveDataGenerator(DatasetList):
             "arg_update": ["--result-directory", "/"],
             "update": {"result_directory": "/"}})
 
-        self.append_new_dataset("dotpath_regex", {
+        self.append_new_dataset("regex_list", {
             "arg_update": ["-d", ".*", "..."],
-            "update": {"dotpath_regex": [".*", "..."]}})
+            "update": {"regex_list": [".*", "..."]}})
 
         self.append_new_dataset("dry_run", {
             "arg_update": ["--dry-run"],
@@ -113,7 +113,7 @@ class ArgumentsTests(unittest.TestCase):
     """ArgumentParser Tests"""
     good_package = "tests.repo"
     bad_package = "tests.fakerepo"
-    good_module = "tests.repo.test_module"
+    good_module = "tests.repo.cafe_tests"
     bad_module = "tests.repo.blah"
     bad_path = "tests."
     good_config = CONFIG_NAME
@@ -125,7 +125,7 @@ class ArgumentsTests(unittest.TestCase):
         "tags": [],
         "all_tags": False,
         "data_directory": None,
-        "dotpath_regex": [],
+        "regex_list": [],
         "dry_run": False,
         "exit_on_error": False,
         "failfast": False,
@@ -142,8 +142,8 @@ class ArgumentsTests(unittest.TestCase):
     def setUpClass(cls):
         super(ArgumentsTests, cls).setUpClass()
         file_ = open(cls.config, "w")
-        file_.write("test_fail (tests.repo.test_module.NoDataGenerator)\n")
-        file_.write("test_pass (tests.repo.test_module.NoDataGenerator)\n")
+        file_.write("test_fail (tests.repo.cafe_tests.NoDataGenerator)\n")
+        file_.write("test_pass (tests.repo.cafe_tests.NoDataGenerator)\n")
         file_.close()
 
     def get_updated_expected(self, **kwargs):
