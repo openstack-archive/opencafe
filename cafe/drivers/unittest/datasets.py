@@ -12,20 +12,21 @@
 # under the License.
 
 from itertools import product
-import json
 from string import ascii_letters, digits
+import json
+
 ALLOWED_FIRST_CHAR = "_{0}".format(ascii_letters)
 ALLOWED_OTHER_CHARS = "{0}{1}".format(ALLOWED_FIRST_CHAR, digits)
 
 
 class _Dataset(object):
+    """Defines a set of data to be used as input for a data driven test.
+    data_dict should be a dictionary with keys matching the keyword
+    arguments defined in test method that consumes the dataset.
+    name should be a string describing the dataset.
+    This class should not be accessed directly. Use or extend DatasetList.
+    """
     def __init__(self, name, data_dict, tags=None):
-        """Defines a set of data to be used as input for a data driven test.
-        data_dict should be a dictionary with keys matching the keyword
-        arguments defined in test method that consumes the dataset.
-        name should be a string describing the dataset.
-        """
-
         self.name = name
         self.data = data_dict
         self.metadata = {'tags': tags or []}
@@ -58,7 +59,6 @@ class DatasetList(list):
             raise TypeError(
                 "extend() argument must be type DatasetList, not {0}".format(
                     type(dataset_list)))
-
         super(DatasetList, self).extend(dataset_list)
 
     def extend_new_datasets(self, dataset_list):
@@ -66,19 +66,17 @@ class DatasetList(list):
         self.extend(dataset_list)
 
     def apply_test_tags(self, *tags):
+        """Applys tags to all tests in dataset list"""
         for dataset in self:
             dataset.apply_test_tags(tags)
 
     def dataset_names(self):
+        """Gets a list of dataset names from dataset list"""
         return [ds.name for ds in self]
 
     def dataset_name_map(self):
-        name_map = {}
-        count = 0
-        for ds in self:
-            name_map[count] = ds.name
-            count += 1
-        return name_map
+        """Creates a dictionary with key=count and value=dataset name"""
+        return {count: ds.name for count, ds in enumerate(self)}
 
     def merge_dataset_tags(self, *dataset_lists):
         local_name_map = self.dataset_name_map()
@@ -118,11 +116,14 @@ class DatasetListCombiner(DatasetList):
     """
 
     def __init__(self, *datasets):
-        for data in product(*datasets):
+        super(DatasetListCombiner, self).__init__()
+        for dataset_list in product(*datasets):
             tmp_dic = {}
-            [tmp_dic.update(d.data) for d in data]
-            self.append_new_dataset(
-                "_".join([x.name for x in data]), tmp_dic)
+            names = []
+            for dataset in dataset_list:
+                tmp_dic.update(dataset.data)
+                names.append(dataset.name)
+            self.append_new_dataset("_".join(names), tmp_dic)
 
 
 class DatasetGenerator(DatasetList):
@@ -133,6 +134,7 @@ class DatasetGenerator(DatasetList):
     """
 
     def __init__(self, list_of_dicts, base_dataset_name=None):
+        super(DatasetGenerator, self).__init__()
         count = 0
         for kwdict in list_of_dicts:
             test_name = "{0}_{1}".format(base_dataset_name or "dataset", count)
@@ -146,6 +148,7 @@ class TestMultiplier(DatasetList):
     """
 
     def __init__(self, num_range):
+        super(TestMultiplier, self).__init__()
         for num in range(num_range):
             name = "{0}".format(num)
             self.append_new_dataset(name, dict())
@@ -161,6 +164,7 @@ class DatasetFileLoader(DatasetList):
     load order, so that not all datasets need to be named.
     """
     def __init__(self, file_object):
+        super(DatasetFileLoader, self).__init__()
         content = json.loads(str(file_object.read()))
         count = 0
         for dataset in content:

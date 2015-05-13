@@ -11,101 +11,78 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from unittest.suite import _ErrorHolder
+import json
+
 
 class SummarizeResults(object):
-
-    def __init__(self, result_dict, master_testsuite,
-                 execution_time):
-        for keys, values in list(result_dict.items()):
-            setattr(self, keys, values)
-        self.master_testsuite = master_testsuite
+    """Reads in vars dict from suite and builds a Summarized results obj"""
+    def __init__(self, result_dict, tests, execution_time):
         self.execution_time = execution_time
+        self.all_tests = tests
+        self.failures = result_dict.get("failures", [])
+        self.skipped = result_dict.get("skipped", [])
+        self.errors = result_dict.get("errors", [])
+        self.tests_run = result_dict.get("testsRun", 0)
 
     def get_passed_tests(self):
-        all_tests = []
-        failed_tests = []
-        skipped_tests = []
-        errored_tests = []
-        setup_errored_classes = []
-        setup_errored_tests = []
-        passed_obj_list = []
-        for test in vars(self.master_testsuite).get('_tests'):
-            all_tests.append(test)
-        for failed_test in self.failures:
-            failed_tests.append(failed_test[0])
-        for skipped_test in self.skipped:
-            skipped_tests.append(skipped_test[0])
-        for errored_test in self.errors:
-            if errored_test[0].__class__.__name__ != '_ErrorHolder':
-                errored_tests.append(errored_test[0])
-            else:
-                setup_errored_classes.append(
-                    str(errored_test[0]).split(".")[-1].rstrip(')'))
-        if len(setup_errored_classes) != 0:
-            for item_1 in all_tests:
-                for item_2 in setup_errored_classes:
-                    if item_2 == item_1.__class__.__name__:
-                        setup_errored_tests.append(item_1)
+        """Gets a list of results objects for passed tests"""
+        errored_tests = [
+            t[0] for t in self.errors if not isinstance(t[0], _ErrorHolder)]
+        setup_errored_classes = [
+            str(t[0]).split(".")[-1].rstrip(')')
+            for t in self.errors if isinstance(t[0], _ErrorHolder)]
+        setup_errored_tests = [
+            t for t in self.all_tests
+            if t.__class__.__name__ in setup_errored_classes]
 
-        passed_tests = list(set(all_tests) - set(failed_tests) -
-                            set(skipped_tests) - set(errored_tests) -
-                            set(setup_errored_tests))
+        passed_tests = list(
+            set(self.all_tests) -
+            set([test[0] for test in self.failures]) -
+            set([test[0] for test in self.skipped]) -
+            set(errored_tests) - set(setup_errored_tests))
 
-        for passed_test in passed_tests:
-            passed_obj = Result(passed_test.__class__.__name__,
-                                vars(passed_test).get('_testMethodName'))
-            passed_obj_list.append(passed_obj)
-
-        return passed_obj_list
-
-    def get_skipped_tests(self):
-        skipped_obj_list = []
-        for item in self.skipped:
-            skipped_obj = Result(item[0].__class__.__name__,
-                                 vars(item[0]).get('_testMethodName'),
-                                 skipped_msg=item[1])
-            skipped_obj_list.append(skipped_obj)
-        return skipped_obj_list
-
-    def get_errored_tests(self):
-        errored_obj_list = []
-        for item in self.errors:
-            if item[0].__class__.__name__ is not '_ErrorHolder':
-                errored_obj = Result(item[0].__class__.__name__,
-                                     vars(item[0]).get('_testMethodName'),
-                                     error_trace=item[1])
-            else:
-                errored_obj = Result(str(item[0]).split(" ")[0],
-                                     str(item[0]).split(".")[-1].rstrip(')'),
-                                     error_trace=item[1])
-            errored_obj_list.append(errored_obj)
-        return errored_obj_list
-
-    def parse_failures(self):
-        failure_obj_list = []
-        for failure in self.failures:
-            failure_obj = Result(failure[0].__class__.__name__,
-                                 vars(failure[0]).get('_testMethodName'),
-                                 failure[1])
-            failure_obj_list.append(failure_obj)
-
-        return failure_obj_list
+        return [self._create_result(t) for t in passed_tests]
 
     def summary_result(self):
-        summary_res = {'tests': str(self.testsRun),
-                       'errors': str(len(self.errors)),
-                       'failures': str(len(self.failures)),
-                       'skipped': str(len(self.skipped))}
-        return summary_res
+        """Returns a dictionary containing counts of tests and statuses"""
+        return {
+            'tests': self.tests_run,
+            'errors': len(self.errors),
+            'failures': len(self.failures),
+            'skipped': len(self.skipped)}
 
     def gather_results(self):
-        executed_tests = (self.get_passed_tests() + self.parse_failures() +
-                          self.get_errored_tests() + self.get_skipped_tests())
+        """Gets a result obj for all tests ran and failed setup classes"""
+        return (
+            self.get_passed_tests() +
+            [self._create_result(t, "failures") for t in self.failures] +
+            [self._create_result(t, "errored") for t in self.errors] +
+            [self._create_result(t, "skipped") for t in self.skipped])
 
-        return executed_tests
+    @staticmethod
+    def _create_result(test, type_="passed"):
+        """Creates a Result object from a test and type of test"""
+        msg_type = {"failures": "failure_trace", "skipped": "skipped_msg",
+                    "errored": "error_trace"}
+        if type_ == "passed":
+            dic = {"test_method_name": getattr(test, '_testMethodName', ""),
+                   "test_class_name": test.__class__.__name__}
+
+        elif (type_ in ["failures", "skipped", "errored"] and
+              not isinstance(test[0], _ErrorHolder)):
+            dic = {"test_method_name": getattr(test[0], '_testMethodName', ""),
+                   "test_class_name": test[0].__class__.__name__,
+                   msg_type.get(type_, "error_trace"): test[1]}
+        else:
+            dic = {"test_method_name": str(test[0]).split(" ")[0],
+                   "test_class_name": str(test[0]).split(".")[-1].rstrip(')'),
+                   msg_type.get(type_, "error_trace"): test[1]}
+        return Result(**dic)
 
 
 class Result(object):
+    """Result object used to create the json and xml results"""
     def __init__(
             self, test_class_name, test_method_name, failure_trace=None,
             skipped_msg=None, error_trace=None):
@@ -117,7 +94,4 @@ class Result(object):
         self.error_trace = error_trace
 
     def __repr__(self):
-        values = []
-        for prop in self.__dict__:
-            values.append("%s: %s" % (prop, self.__dict__[prop]))
-        return dict('{' + ', '.join(values) + '}')
+        return json.dumps(self.__dict__)
