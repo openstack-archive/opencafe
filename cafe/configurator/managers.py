@@ -33,10 +33,11 @@ class PackageNotFoundError(Exception):
 
 
 class _NamespaceDict(dict):
-    """A dict-like object that allows dotted access to it's top-level
-    values via its top-level keys.
-    Raises an Exception if any keys self.keys() collide with internal
-    attributes.
+    """
+    A dict-like object that allows dotted access via its top-level keys.
+
+    Raises an Exception if any keys in self.keys() collide with reserved 
+    (internal to dict()) attributes.
     """
 
     def __init__(self, **kwargs):
@@ -65,8 +66,10 @@ class _NamespaceDict(dict):
 
 
 class _lazy_property(object):
-    """To be used for lazy evaluation of an object attribute.
-    Property should represent non-mutable data, as it replaces itself.
+    """
+    Acts like @property, except it sets itself on first access.
+
+    Property value should represent non-mutable data, as it replaces itself.
     """
 
     def __init__(self, func):
@@ -81,6 +84,10 @@ class _lazy_property(object):
 
 
 class PlatformManager(object):
+    """
+    Methods for dealing with the OS cafe is running on
+    """
+
     USING_WINDOWS = (platform.system().lower() == 'windows')
     USING_VIRTUALENV = hasattr(sys, 'real_prefix')
 
@@ -136,22 +143,25 @@ class PlatformManager(object):
 
 
 class TestEnvManager(object):
-    """Manages setting all required and optional environment variables used by
-    the engine and it's implementations.
+    """Sets all environment variables used by cafe and it's implementations.
+
     Wraps all internally-set and config-controlled environment variables
     in read-only properties for easy access. Useful for writing bootstrappers
     for runners and scripts.
 
     Set the environment variable "CAFE_ALLOW_MANAGED_ENV_VAR_OVERRIDES" to any
-    value to enable overrides for other managed environment variables.
+    value to enable overrides for derived environment variables.
+    (The full list of these is availabile in the attribute MANAGED_VARS
 
     NOTE: The TestEnvManager is only responsible for setting these vars,
-    it has no control over how they are used, so override them at your own
-    risk!
-    Specifically, If you set CAFE_TEST_REPO_PATH, you should also set the
+    it has no control over how they are used by the engine or its
+    implementations, so override them at your own risk!
+
+    USAGE HINTS:
+    If you set CAFE_TEST_REPO_PATH, you should also set the
     CAFE_TEST_REPO_PACKAGE accordingly, as having them point to
     different things could cause undefined behavior.  (The path is normally
-    derived from the package)
+    derived from the package).
     """
 
     MANAGED_VARS = _NamespaceDict(
@@ -190,20 +200,20 @@ class TestEnvManager(object):
         self.engine_config_interface = EngineConfig(self.engine_config_path)
 
     def _override(self, env_var_name):
-        """Return override value if overrides are allowed and if env var
-        is present.  Otherwise, return None
-        """
+        """if overrides are allowed, return env var if present."""
 
         override = os.environ.get(env_var_name)
         return override if self._overrides_allowed else None
 
-    def finalize(self, create_log_dirs=True, set_os_env_vars=True):
-        """Sets all non-configured values to the defaults in the engine.config
-        file. set_defaults=False will override this behavior, but note that
-        unless you manually set the os environment variables yourself, this
-        will result in undefined behavior.
-
-        Creates all log dir paths (overriden by sending create_log_dirs=False)
+    def finalize(self, create_log_dirs=True):
+        """
+        Calls all lazy_properties in the TestEnvManager.
+        
+        Sets all lazy_properties to their configured or derived values.
+        To override this behavior, simply don't call finalize():  note
+        that unless you manually set the os environment variables yourself
+        this will result in undefined behavior.
+        Creates all log directories, overriden by making create_log_dirs=False.
         Checks that all set paths exists, raises exception if they dont.
         """
 
@@ -246,9 +256,11 @@ class TestEnvManager(object):
 
     @_lazy_property
     def test_repo_path(self):
-        """NOTE:  There is no default for test_repo_path because we don't
-        officially support test repo paths yet, even though every runner just
-        gets the path to the test repo package.
+        """
+        Defaults to the abs path of the package defined by test_repo_package.
+
+        Indeded use:
+        USed by runners for test discovery.
         """
 
         # This makes sure to return the env override value if it's already set
@@ -267,7 +279,11 @@ class TestEnvManager(object):
 
     @_lazy_property
     def test_repo_package(self):
-        """NOTE: The actual test repo package is never used by any current
+        """
+        default_test_repo in engine.config
+        Overriden via CAFE_TEST_REPO_PACKAGE
+        
+        The actual test repo package is never used by any current
         runners, instead they reference the root path to the tests.  For that
         reason, it sets the CAFE_TEST_REPO_PATH directly as well as
         CAFE_TEST_REPO_PACKAGE
@@ -280,12 +296,27 @@ class TestEnvManager(object):
 
     @_lazy_property
     def test_data_directory(self):
+        """
+        default_test_repo in engine.config
+        Overriden via CAFE_DATA_DIR_PATH
+
+        Indended use:
+        Absolute path to the location of all test data.
+        """
         return (
             self._override(self.MANAGED_VARS.test_data_directory) or
             os.path.expanduser(self.engine_config_interface.data_directory))
 
     @_lazy_property
     def test_root_log_dir(self):
+        """
+        test_root_log_dir in engine.config
+        Overriden via CAFE_ROOT_LOG_PATH
+
+        Intended use:
+        The name of the directory under which the test log dir will be
+        created.
+        """
         return (
             self._override(self.MANAGED_VARS.test_root_log_dir) or
             os.path.expanduser(
@@ -296,6 +327,14 @@ class TestEnvManager(object):
 
     @_lazy_property
     def test_log_dir(self):
+        """
+        A join of test_root_log_dir and a date-timestamp
+        The date-timestamp is overriden via CAFE_TEST_LOG_PATH
+
+        Intended use:
+        The name of the directory inside test_root_log_dir that all test
+        logs will be stored in.
+        """
         log_dir_name = str(datetime.datetime.now()).replace(" ", "_").replace(
             ":", "_")
         return (
@@ -306,6 +345,15 @@ class TestEnvManager(object):
 
     @_lazy_property
     def test_config_file_path(self):
+        """
+        A join of config_directory in engine.config, the product_name and 
+        test_config_file_name passed in at instantiation.
+        Overriden in it's entirety via CAFE_CONFIG_FILE_PATH
+
+        Intended use:
+        The path to the test config file in use.  Used as a default by 
+        all cafe configs.
+        """
         return (
             self._override(self.MANAGED_VARS.test_config_file_path) or
             os.path.expanduser(
@@ -316,8 +364,13 @@ class TestEnvManager(object):
 
     @_lazy_property
     def test_logging_verbosity(self):
-        """Currently supports STANDARD and VERBOSE.
-        TODO: Implement 'OFF' option that adds null handlers to all loggers
+        """
+        test_logging_verbosity in engine.config
+        Overriden via CAFE_LOGGING_VERBOSITY
+
+        Intended use:
+        Controls the verbosity of cafe logs. See cclogging.py
+        Currently supports 'STANDARD' and 'VERBOSE'.
         """
         return (
             self._override(self.MANAGED_VARS.test_logging_verbosity) or
@@ -325,6 +378,14 @@ class TestEnvManager(object):
 
     @_lazy_property
     def test_master_log_file_name(self):
+        """
+        master_log_file_name in engine.config
+        Overriden via CAFE_MASTER_LOG_FILE_NAME
+
+        Intended use:
+        The name of the file that cafe's root log filehandler will write
+        to by default.
+        """
         return (
             self._override(self.MANAGED_VARS.test_master_log_file_name) or
             self.engine_config_interface.master_log_file_name)
