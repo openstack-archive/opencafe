@@ -1,0 +1,24 @@
+_cafe_runner()
+{
+    local cur configs packages options
+    options='--help --dry-run --exit-on-error --failfast --list --supress-load-tests --data-directory --regex-list --file --parallel --result --result-directory --tags --verbose --workers'
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ ${cur} == -* ]]; then
+        COMPREPLY=( $(compgen -W "${options}" -- ${cur}) )
+        return 0
+    fi
+
+    if [[ ${COMP_CWORD} < 2 ]]; then
+        configs=`python -c "from cafe.drivers.unittest.autocomplete import print_configs;print_configs()"`
+        COMPREPLY=( $(compgen -W "${configs}" -- ${cur}) )
+        return 0
+    fi
+    packages=`echo $cur | python -c "import sys;from cafe.drivers.unittest.autocomplete import print_imports;print_imports(sys.stdin.read())"`
+    compopt -o nospace
+    COMPREPLY=( $(compgen -W "${packages}" -- ${cur}) )
+    return 0
+}
+complete -F _cafe_runner cafe-runner
+
