@@ -173,16 +173,17 @@ class ArgumentParser(argparse.ArgumentParser):
     def __init__(self):
         desc = "Open Common Automation Framework Engine"
         usage_string = """
-            cafe-runner <config> <testrepos>... [--fail-fast]
-                [--supress-load-tests] [--dry-run]
-                [--data-directory=DATA_DIRECTORY] [--regex-list=REGEX...]
-                [--file] [--parallel=(class|test)] [--result=(json|xml)]
-                [--result-directory=RESULT_DIRECTORY] [--tags=TAG...]
-                [--verbose=VERBOSE]
+            cafe-runner <config> <testrepos>... [--failfast]
+                [--dry-run] [--data-directory=DATA_DIRECTORY]
+                [--regex-list=REGEX...] [--file] [--parallel=(class|test)]
+                [--result=(json|xml)] [--result-directory=RESULT_DIRECTORY]
+                [--tags=TAG...] [--verbose=VERBOSE] [--exit-on-error]
+                [--workers=NUM]
             cafe-runner <config> <testrepo>... --list
             cafe-runner --list
             cafe-runner --help
             """
+
         super(ArgumentParser, self).__init__(
             usage=usage_string, description=desc)
 
@@ -227,11 +228,6 @@ class ArgumentParser(argparse.ArgumentParser):
             nargs=0,
             help="Lists configs if no repo is specified otherwise lists tests"
                  " for all the specified repos.")
-
-        self.add_argument(
-            "--supress-load-tests", "-s",
-            action="store_true",
-            help="supress load tests method")
 
         self.add_argument(
             "--data-directory", "-D",
