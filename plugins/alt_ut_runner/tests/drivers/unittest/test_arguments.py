@@ -68,10 +68,6 @@ class PositiveDataGenerator(DatasetList):
             "arg_update": ["--failfast"],
             "update": {"failfast": True}})
 
-        self.append_new_dataset("supress_load_tests", {
-            "arg_update": ["--supress-load-tests"],
-            "update": {"supress_load_tests": True}})
-
         self.append_new_dataset("parallel_class", {
             "arg_update": ["--parallel", "class"],
             "update": {"parallel": "class"}})
@@ -129,7 +125,6 @@ class ArgumentsTests(unittest.TestCase):
         "dry_run": False,
         "exit_on_error": False,
         "failfast": False,
-        "supress_load_tests": False,
         "parallel": None,
         "result": None,
         "result_directory": "./",
@@ -161,7 +156,12 @@ class ArgumentsTests(unittest.TestCase):
         try:
             args = ArgumentParser().parse_args(arg_list)
             for key, value in expected.items():
-                self.assertEqual(value, getattr(args, key, "NoValueFound"))
+                if key == "regex_list":
+                    self.assertEqual(
+                        value, [i.pattern for i in getattr(args, key, [])])
+                else:
+                    self.assertEqual(value, getattr(args, key, "NoValueFound"))
+
         except SystemExit as exception:
             if exception.code != 0:
                 self.assertEqual(exception, None)
