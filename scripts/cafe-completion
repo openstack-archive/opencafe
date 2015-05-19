@@ -1,0 +1,60 @@
+_cafe_runner()
+{
+    local cur configs packages options product
+    COMPREPLY=()
+    #get current word
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    #Consumer only exists in the parallel runner
+    python -c "from cafe.drivers.unittest.runner import Consumer" 2>/dev/null
+    status=$?
+
+    #if last call was successful (0 return status we have the parallel runner
+    if ((1 > $status)); then
+
+        # process list options
+        options='--help --dry-run --exit-on-error --list --data-directory --regex-list --file --parallel --result --result-directory --tags --verbose --workers'
+        if [[ ${cur} == -* ]]; then
+            COMPREPLY=( $(compgen -W "${options}" -- ${cur}) )
+            COMPREPLY="${COMPREPLY} "
+            return 0
+        fi
+
+        # process configs
+        if [[ ${COMP_CWORD} < 2 ]]; then
+            configs=`python -c "from cafe.drivers.unittest.autocomplete import print_configs;print_configs()"`
+            COMPREPLY=( $(compgen -W "${configs}" -- ${cur}) )
+            COMPREPLY="${COMPREPLY} "
+            return 0
+        fi
+
+        # process repos (this does not account for option params)
+        packages=`echo $cur | python -c "import sys;from cafe.drivers.unittest.autocomplete import print_imports;print_imports(sys.stdin.read())"`
+        COMPREPLY=( $(compgen -W "${packages}" -- ${cur}) )
+        return 0
+
+    else # the normal runner
+        options='--help --test-repo  --verbose --fail-fast --supress-load-tests --packages --module-regex --module --method-regex --tags --result --result-directory --parallel --dry-run --data-directory --data --list'
+        if [[ ${cur} == -* ]]; then
+            COMPREPLY=( $(compgen -W "${options}" -- ${cur}) )
+            COMPREPLY="${COMPREPLY} "
+            return 0
+        fi
+
+        # process product completion
+        if [[ ${COMP_CWORD} < 2 ]]; then
+            products=`python -c "from cafe.drivers.unittest.autocomplete import print_products;print_products()"`
+            COMPREPLY=( $(compgen -W "${products}" -- ${cur}) )
+            COMPREPLY="${COMPREPLY} "
+            return 0
+        fi
+
+        # process configs by product
+        configs=`python -c "import sys;from cafe.drivers.unittest.autocomplete import print_configs_by_product;print_configs_by_product(\"${COMP_WORDS[1]}\")"`
+        COMPREPLY=( $(compgen -W "${configs}" -- ${cur}) )
+        COMPREPLY="${COMPREPLY} "
+        return 0
+    fi
+}
+complete -o nospace -F _cafe_runner cafe-runner
+
