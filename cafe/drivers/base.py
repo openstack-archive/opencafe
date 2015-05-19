@@ -11,9 +11,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from __future__ import print_function
+from traceback import print_exc
+from warnings import warn
 import argparse
 import os
-from warnings import warn
+import sys
+
 from cafe.common.reporting.cclogging import \
     get_object_namespace, getLogger, setup_new_cchandler, log_info_block
 from cafe.common.reporting.metrics import \
@@ -185,3 +189,27 @@ def print_mug(name, brewing_from):
     print(border)
     print(mug)
     print(border)
+
+
+def print_exception(file_=None, method=None, value=None, exception=None):
+    """
+        Prints exceptions in a standard format to stderr.
+    """
+    print("{0}".format("=" * 70), file=sys.stderr)
+    if file_:
+        print("{0}:".format(file_), file=sys.stderr, end=" ")
+    if method:
+        print("{0}:".format(method), file=sys.stderr, end=" ")
+    if value:
+        print("{0}:".format(value), file=sys.stderr, end=" ")
+    if exception:
+        print("{0}:".format(exception), file=sys.stderr, end=" ")
+    print("\n{0}".format("-" * 70), file=sys.stderr)
+    if exception is not None:
+        print_exc(file=sys.stderr)
+    print(file=sys.stderr)
+
+
+def get_error(exception=None):
+    """Gets errno from exception or returns one"""
+    return getattr(exception, "errno", 1)
