@@ -30,7 +30,7 @@ execution on Windows
 
 Installation
 ------------
-Open CAFE Core can be [installed with pip](https://pypi.python.org/pypi/pip) from the git repository after it is cloned to a local machine.
+Open CAFE Core can be `installed with pip <https://pypi.python.org/pypi/pip>`_ from the git repository after it is cloned to a local machine.
 
 * Clone this repository to your local machine
 * CD to the root directory in your cloned repository.
@@ -56,11 +56,11 @@ Following are some notes on Open CAFE lingo and concepts.
     Although the engine can serve as a basic framework for testing, it's meant to be used as the base for the implementation of a product-specific testing framework.
 
 * Product
-    Anything that's being tested by an implementation of Open CAFE Core. If you would like to see a refernce implementation, there is an [Open Source implementation](https://github.com/stackforge) based on [OpenStack](http://http://www.openstack.org/)
+    Anything that's being tested by an implementation of Open CAFE Core. If you would like to see a refernce implementation, there is an `Open Source implementation <https://github.com/stackforge>`_ based on `OpenStack <http://www.openstack.org/>`_.
 
 
 * Client / Client Method
-    A **client** is an "at-least-one"-to-"at-most-one" mapping of a product's functionality to a collection of client methods.  Using a [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer) as an example, a client that represents that API in CAFE will contain at least one (but possibly more) method(s) for every function exposed by that API.  Should a call in the API prove to be too difficult or cumbersome to define via a single **client method**, then multiple client methods can be defined such that as a whole they represent the complete set of that API call's functionality. A **client method** should never be a superset of more than one call's functionality.
+    A **client** is an "at-least-one"-to-"at-most-one" mapping of a product's functionality to a collection of client methods.  Using a `REST API <https://en.wikipedia.org/wiki/Representational_state_transfer>`_ as an example, a client that represents that API in CAFE will contain at least one (but possibly more) method(s) for every function exposed by that API.  Should a call in the API prove to be too difficult or cumbersome to define via a single **client method**, then multiple client methods can be defined such that as a whole they represent the complete set of that API call's functionality. A **client method** should never be a superset of more than one call's functionality.
 
 * Behavior
     A **behavior** is a many-to-many mapping of client methods to business logic, functioning as compound methods.  An example behavior might be to POST content, perform a GET to verify the POST, and then return the verified data
