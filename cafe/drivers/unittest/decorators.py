@@ -70,7 +70,7 @@ def data_driven_test(*dataset_sources, **kwargs):
         """Combines and stores DatasetLists in __data_driven_test_data__"""
         dep_message = "DatasetList object required for data_generator"
         combined_lists = kwargs.get("dataset_source") or DatasetList()
-        for key, value in kwargs:
+        for key, value in kwargs.items():
             if key != "dataset_source" and isinstance(value, DatasetList):
                 value.apply_test_tags(key)
             elif not isinstance(value, DatasetList):
