@@ -109,6 +109,7 @@ setup(
     entry_points={
         'console_scripts':
         ['cafe-runner = cafe.drivers.unittest.runner:entry_point',
+         'cafe-parallel = cafe.drivers.unittest.runner_parallel:entry_point',
          'behave-runner = cafe.drivers.behave.runner:entry_point',
          'vows-runner = cafe.drivers.pyvows.runner:entry_point',
          'specter-runner = cafe.drivers.specter.runner:entry_point',
