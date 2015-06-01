@@ -112,6 +112,7 @@ setup(
          'behave-runner = cafe.drivers.behave.runner:entry_point',
          'vows-runner = cafe.drivers.pyvows.runner:entry_point',
          'specter-runner = cafe.drivers.specter.runner:entry_point',
+         'testr-runner = cafe.drivers.testr.runner:entry_point',
          'cafe-config = cafe.configurator.cli:entry_point']},
     tests_require=['tox'],
     cmdclass={
