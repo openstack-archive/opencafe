@@ -13,6 +13,7 @@
 
 from datetime import datetime
 import os
+import errno
 import csv
 import six
 import sys
@@ -114,8 +115,11 @@ class CSVWriter(object):
         self.headers = headers
 
         # create the dir if it does not exist
-        if not os.path.exists(log_dir):
+        try:
             os.makedirs(log_dir)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
 
         # get full path
         self.full_path = os.path.normpath(os.path.join(log_dir, file_name))
