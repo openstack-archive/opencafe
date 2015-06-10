@@ -40,6 +40,7 @@ class _FixtureLogger(object):
 
     def stop(self):
         """Removes handler from log to stop logging"""
+        self.log_handler.close()
         self.log.removeHandler(self.log_handler)
         self._is_logging = False
 
