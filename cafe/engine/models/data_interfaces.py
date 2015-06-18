@@ -320,7 +320,7 @@ class BaseConfigSectionInterface(object):
 
     def get_raw(self, item_name, default=None):
         return self._override.get_raw(item_name, None) or \
-            self._data_source.get(item_name, default)
+            self._data_source.get_raw(item_name, default)
 
     def get_boolean(self, item_name, default=None):
         value = self._override.get_boolean(item_name, None)
