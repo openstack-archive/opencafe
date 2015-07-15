@@ -43,7 +43,7 @@ Remember, open CAFE is just the core driver/engine. You have to build an impleme
 Configuration
 --------------
 Open CAFE works out of the box with the cafe-runner (cafe.drivers.unittest). CAFE will auto-generate a base engine.config during installation. This
-base configuration will be installed to: <USER_HOME>/.cloudcafe/configs/engine.config
+base configuration will be installed to: <USER_HOME>/.opencafe/configs/engine.config
 
 If you wish to modify default installation values you can update the engine.config file after CAFE installation. Keep in mind that the Engine will
 over-write this file on installation/upgrade.
