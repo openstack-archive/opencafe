@@ -62,7 +62,7 @@ class UnittestRunner(object):
         self.print_mug()
         self.cl_args = ArgumentParser().parse_args()
         self.test_env = TestEnvManager(
-            "", self.cl_args.config, test_repo_package_name="")
+            "", self.cl_args.config, test_repo_package_name="os")
         self.test_env.test_data_directory = (
             self.cl_args.data_directory or self.test_env.test_data_directory)
         self.test_env.finalize()
