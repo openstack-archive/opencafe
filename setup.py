@@ -86,7 +86,7 @@ class Tox(TestCommand):
 # Normal setup stuff
 setup(
     name='opencafe',
-    version='0.2.0',
+    version='0.2.1',
     description='The Common Automation Framework Engine',
     long_description='{0}'.format(open('README.rst').read()),
     author='CafeHub',
