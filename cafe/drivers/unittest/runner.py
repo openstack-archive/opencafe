@@ -22,7 +22,7 @@ from importlib import import_module
 from inspect import isclass
 from multiprocessing import Process, Manager
 from re import search
-from traceback import print_exc
+from traceback import format_exc
 from cafe.common.reporting import cclogging
 from cafe.common.reporting.reporter import Reporter
 from cafe.configurator.managers import TestEnvManager
@@ -213,20 +213,14 @@ class SuiteBuilder(object):
         """
         loads the found tests and builds the test suite
         """
+
+        # Let any exceptions bubble up
+        loaded_module = import_module(module_path)
+
         tag_list = []
         attrs = {}
         loader = unittest.TestLoader()
         suite = OpenCafeUnittestTestSuite()
-        try:
-            loaded_module = import_module(module_path)
-        except Exception as e:
-            sys.stderr.write("{0}\n".format("=" * 70))
-            sys.stderr.write(
-                "Failed to load module '{0}'\n".format(module_path, e))
-            sys.stderr.write("{0}\n".format("-" * 70))
-            print_exc(file=sys.stderr)
-            sys.stderr.write("{0}\n".format("-" * 70))
-            return
 
         if self.tags:
             tag_list, attrs, token = self._parse_tags(self.tags)
@@ -257,14 +251,23 @@ class SuiteBuilder(object):
         test_repo = import_module(self.test_repo_name)
         prefix = "{0}.".format(test_repo.__name__)
         product_path = "{0}{1}".format(prefix, self.product)
+
         modnames = []
+        module_load_errors = []
+
         for importer, modname, is_pkg in pkgutil.walk_packages(
                 path=test_repo.__path__, prefix=prefix,
-                onerror=lambda x: None):
+                onerror=module_load_errors.append):
             if not is_pkg and modname.startswith(product_path):
                 if (not self.module_regex or
                         self.module_regex in modname.rsplit(".", 1)[1]):
                     modnames.append(modname)
+
+        if module_load_errors:
+            sys.stderr.write('Unable to load modules during discovery:\n')
+            for e in module_load_errors:
+                msg = "    {err}\n".format(err=str(e))
+                sys.stderr.write(msg)
 
         filter_mods = []
         for modname in modnames:
@@ -276,34 +279,53 @@ class SuiteBuilder(object):
             if add_package:
                 filter_mods.append(modname)
         filter_mods.sort()
-        return filter_mods
+
+        return filter_mods, True if module_load_errors else False
+
+    def _populate(self, suite_obj, suite_obj_append_callback):
+        modules, module_load_errors = self.get_modules()
+
+        suite_errors = []
+        for modname in modules:
+            suite = None
+            try:
+                suite = self.build_suite(modname)
+            except Exception:
+                suite_errors.append((modname, format_exc()))
+
+            if suite:
+                suite_obj_append_callback(suite)
+
+        # Print all the suite build errors at once to avoid interleaved
+        # output
+        for err in suite_errors:
+            module, stack_trace = err
+            stack_trace = "    " + stack_trace
+            stack_trace.replace("\n", "\n    ")
+
+            msg = (
+                "{sep}\nFailed to load module: {mod}\n"
+                "{stack_trace}\n{sep}\n".format(
+                    sep="-" * 70, mod=module, stack_trace=stack_trace))
+            sys.stderr.write(msg)
+
+        return suite_obj, module_load_errors, True if suite_errors else False
 
     def generate_suite(self):
         """
-        creates a single unittest test suite
+        creates and returns a single unittest test suite, and
+        any errors generated during discovery and test loading
         """
         master_suite = OpenCafeUnittestTestSuite()
-        modules = self.get_modules()
-
-        for modname in modules:
-            suite = self.build_suite(modname)
-            if suite:
-                master_suite.addTests(suite)
-        return master_suite
+        return self._populate(master_suite, master_suite.addTests)
 
     def generate_suite_list(self):
         """
-        creates a list containing unittest test suites
+        creates and returns a list containing unittest test suites, and
+        any errors generated during discovery and test loading
         """
-        master_suite_list = []
-        modules = self.get_modules()
-
-        for modname in modules:
-            suite = self.build_suite(modname)
-
-            if suite and len(suite._tests):
-                master_suite_list.append(suite)
-        return master_suite_list
+        master_suite_list = list()
+        return self._populate(master_suite_list, master_suite_list.append)
 
 
 class _UnittestRunnerCLI(object):
@@ -569,7 +591,24 @@ class _UnittestRunnerCLI(object):
             "-f", "--fail-fast",
             default=False,
             action="store_true",
-            help="fail fast")
+            help="Immediately stop and fail the test run as soon as any test "
+            "fails.")
+
+        argparser.add_argument(
+            "--fail-on-discovery-error",
+            default=False,
+            action="store_true",
+            help="Fail the test run if any exceptions happen during "
+            "package discovery ('discovery') or test suite loading ('loading')"
+        )
+
+        argparser.add_argument(
+            "--fail-on-load-error",
+            default=False,
+            action="store_true",
+            help="Fail the test run if any exceptions happen during "
+            "package discovery ('discovery') or test suite loading ('loading')"
+        )
 
         argparser.add_argument(
             "-s", "--supress-load-tests",
@@ -758,40 +797,54 @@ class UnittestRunner(object):
         master_suite = OpenCafeUnittestTestSuite()
         parallel_test_list = []
         test_count = 0
+        mod_err = None
+        suite_err = None
 
         builder = SuiteBuilder(self.cl_args, self.test_env.test_repo_package)
         test_runner = self.get_runner(self.cl_args)
 
         if self.cl_args.parallel:
-            parallel_test_list = builder.generate_suite_list()
+            parallel_test_list, mod_err, suite_err = \
+                builder.generate_suite_list()
             test_count = len(parallel_test_list)
             if self.cl_args.dry_run:
                 for suite in parallel_test_list:
                     for test in suite:
                         print(test)
-                exit(0)
-            exit_code = self.run_parallel(
-                parallel_test_list, test_runner,
-                result_type=self.cl_args.result,
-                results_path=self.cl_args.result_directory)
+            else:
+                exit_code = self.run_parallel(
+                    parallel_test_list, test_runner,
+                    result_type=self.cl_args.result,
+                    results_path=self.cl_args.result_directory)
         else:
-            master_suite = builder.generate_suite()
+            master_suite, mod_err, suite_err = builder.generate_suite()
             test_count = master_suite.countTestCases()
             if self.cl_args.dry_run:
                 for test in master_suite:
                     print(test)
-                exit(0)
-            exit_code = self.run_serialized(
-                master_suite, test_runner, result_type=self.cl_args.result,
-                results_path=self.cl_args.result_directory)
+            else:
+                exit_code = self.run_serialized(
+                    master_suite, test_runner, result_type=self.cl_args.result,
+                    results_path=self.cl_args.result_directory)
 
         """
-        Exit with a non-zero exit code if no tests where run, so that
-        external monitoring programs (like Jenkins) can tell
-        something is up
+        Exit with a non-zero exit code under certain circumstances so that
+        external monitoring programs (like Jenkins) can tell something
+        went wrong.
         """
+        # No tests are discovered
         if test_count <= 0:
             exit_code = 1
+
+        # Errors happened during the test importing / suite building step
+        if self.cl_args.fail_on_load_error and suite_err:
+            exit_code = 1
+
+        # Errors happened during the initial test repo loading / discovery
+        # step
+        if self.cl_args.fail_on_discovery_error and mod_err:
+            exit_code = 1
+
         exit(exit_code)
 
     def run_parallel(
