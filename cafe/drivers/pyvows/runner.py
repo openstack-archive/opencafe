@@ -14,7 +14,7 @@
 import argparse
 import os
 import subprocess
-from cafe.configurator.managers import TestEnvManager
+from cafe.engine.config import EngineConfig
 
 
 def entry_point():
@@ -41,15 +41,11 @@ def entry_point():
         help="Options to pass to PyVows")
 
     args = argparser.parse_args()
-    config = str(args.config[0])
     product = str(args.product[0])
     vows_opts = args.vows_opts
 
-    test_env_manager = TestEnvManager(product, config)
-    test_env_manager.finalize()
-
     product_root_test_path = os.path.join(
-        test_env_manager.test_repo_path, product)
+        EngineConfig().default_test_repo, product)
 
     # Attempts to use first positional argument after product config as a
     # sub-path to the test repo path. If not a sub-path, raise exception.
@@ -65,7 +61,7 @@ def entry_point():
             raise Exception(
                 "{directory} is not a sub-path in the {repo} repo.".format(
                     directory=vows_opts[0],
-                    repo=test_env_manager.test_repo_package))
+                    repo=EngineConfig().default_test_repo))
     else:
         vows_opts.insert(0, product_root_test_path)
 
