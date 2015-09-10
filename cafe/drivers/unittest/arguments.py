@@ -20,14 +20,11 @@ import os
 import re
 import sys
 
-from cafe.configurator.managers import EngineConfigManager
 from cafe.drivers.base import print_exception, get_error
 from cafe.engine.config import EngineConfig
+from cafe.engine.models.data_interfaces import CONFIG_KEY
 
-
-ENGINE_CONFIG = EngineConfig(
-    os.environ.get("CAFE_ENGINE_CONFIG_FILE_PATH") or
-    EngineConfigManager.ENGINE_CONFIG_PATH)
+ENGINE_CONFIG = EngineConfig()
 
 
 def tree(start):
@@ -61,11 +58,13 @@ class ConfigAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
         value = value if value.endswith('.config') else "{0}.config".format(
             value)
-        path = "{0}/{1}".format(ENGINE_CONFIG.config_directory, value)
+        path = os.path.join(ENGINE_CONFIG.config_directory, value)
         if not os.path.exists(path):
             parser.error(
                 "ConfigAction: Config does not exist: {0}".format(path))
             exit(errno.ENOENT)
+        env_name = CONFIG_KEY.format(section_name="ENGINE", key="test_config")
+        os.environ[env_name] = value
         setattr(namespace, self.dest, value)
 
 
