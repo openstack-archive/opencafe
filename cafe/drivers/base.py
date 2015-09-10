@@ -15,13 +15,13 @@ from __future__ import print_function
 from traceback import print_exc
 from warnings import warn
 import argparse
-import os
 import sys
 
 from cafe.common.reporting.cclogging import \
     get_object_namespace, getLogger, setup_new_cchandler, log_info_block
 from cafe.common.reporting.metrics import \
     TestRunMetrics, TestResultTypes, PBStatisticsLog
+from cafe.engine.config import EngineConfig
 
 
 class _FixtureLogger(object):
@@ -95,7 +95,7 @@ class FixtureReporter(object):
         self.metrics.total_tests += 1
         self.test_metrics = TestRunMetrics()
         self.test_metrics.timer.start()
-        root_log_dir = os.environ['CAFE_ROOT_LOG_PATH']
+        root_log_dir = EngineConfig().root_log_dir
         self.stats_log = PBStatisticsLog(
             "{0}.{1}.statistics.csv".format(class_name, test_name),
             "{0}/statistics/".format(root_log_dir))
