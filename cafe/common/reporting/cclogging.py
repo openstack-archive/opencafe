@@ -18,6 +18,9 @@ import os
 # When raising warnings in the module, only print them once, and don't
 # show any line numbers or stacktraces (simply print the messages to stderr)
 import warnings
+
+from cafe.engine.config import EngineConfig
+
 warnings.simplefilter('once', Warning)
 warnings.showwarning = \
     lambda msg, category, filename, lineno: sys.stderr.write(str(msg))
@@ -88,7 +91,7 @@ def getLogger(log_name=None, log_level=None):
 
     # Create requested log
     requested_log = logging.getLogger(name=log_name)
-    verbosity = os.getenv('CAFE_LOGGING_VERBOSITY')
+    verbosity = EngineConfig().logging_verbosity
 
     if verbosity == 'VERBOSE':
         # By default, logs don't get handlers when they're created.
@@ -112,7 +115,7 @@ def setup_new_cchandler(
     File handler defaults: 'a+', encoding=encoding or "UTF-8", delay=True
     """
 
-    log_dir = log_dir or os.getenv('CAFE_TEST_LOG_PATH')
+    log_dir = log_dir or EngineConfig().test_log_dir
 
     try:
         log_dir = os.path.expanduser(log_dir)
@@ -148,16 +151,9 @@ def init_root_log_handler(override_handler=None):
     if override_handler:
         root_log.addHandler(override_handler)
     elif not root_log.handlers:
-        master_log_file_name = os.getenv('CAFE_MASTER_LOG_FILE_NAME')
-        if master_log_file_name is None:
-            warnings.warn(
-                "Environment variable 'CAFE_MASTER_LOG_FILE_NAME' is not "
-                "set. A null root log handler will be used, no logs will be "
-                "written.", Warning)
-            root_log.addHandler(logging.NullHandler())
-        else:
-            root_log.addHandler(setup_new_cchandler(master_log_file_name))
-            root_log.setLevel(logging.DEBUG)
+        root_log.addHandler(setup_new_cchandler(
+            EngineConfig().master_log_file_name))
+        root_log.setLevel(logging.DEBUG)
     return root_log
 
 
