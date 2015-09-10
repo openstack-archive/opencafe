@@ -18,6 +18,7 @@ from six.moves import configparser
 from six import add_metaclass
 
 from cafe.common.reporting import cclogging
+from cafe.engine.config import EngineConfig
 try:
     from cafe.engine.mongo.client import BaseMongoClient
 except:
@@ -40,33 +41,6 @@ class NonExistentConfigPathError(Exception):
 class ConfigEnvironmentVariableError(Exception):
     pass
 
-
-# This is a decorator
-def expected_values(*values):
-    def decorator(fn):
-        def wrapped():
-            class UnexpectedConfigOptionValueError(Exception):
-                pass
-            value = fn()
-            if value not in values:
-                raise UnexpectedConfigOptionValueError(value)
-            return fn()
-        return wrapped
-    return decorator
-
-
-def _get_path_from_env(os_env_var):
-    try:
-        return os.environ[os_env_var]
-    except KeyError:
-        msg = "'{0}' environment variable was not set.".format(
-            os_env_var)
-        raise ConfigEnvironmentVariableError(msg)
-    except Exception as exception:
-        print(
-            "Unexpected exception when attempting to access '{1}'"
-            " environment variable.".format(os_env_var))
-        raise exception
 
 # Standard format to for flat key/value data sources
 CONFIG_KEY = 'CAFE_{section_name}_{key}'
@@ -336,13 +310,11 @@ class BaseConfigSectionInterface(object):
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
-    def __init__(self, config_file_path=None, section_name=None):
-        section_name = (section_name or
-                        getattr(self, 'SECTION_NAME', None) or
-                        getattr(self, 'CONFIG_SECTION_NAME', None))
+    SECTION_NAME = None
 
-        config_file_path = config_file_path or _get_path_from_env(
-            'CAFE_CONFIG_FILE_PATH')
+    def __init__(self, config_file_path=None, section_name=None):
+        section_name = section_name or self.SECTION_NAME
+        config_file_path = config_file_path or EngineConfig().test_config
 
         super(ConfigSectionInterface, self).__init__(
             config_file_path, section_name)
