@@ -25,11 +25,12 @@ from re import search
 from traceback import print_exc
 from cafe.common.reporting import cclogging
 from cafe.common.reporting.reporter import Reporter
-from cafe.configurator.managers import TestEnvManager
 from cafe.drivers.unittest.decorators import (
     TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME)
 from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
+from cafe.engine.config import EngineConfig
+from cafe.engine.models.data_interfaces import CONFIG_KEY
 
 
 def tree(directory, padding, print_files=False):
@@ -311,15 +312,10 @@ class _UnittestRunnerCLI(object):
     class ListAction(argparse.Action):
 
         def __call__(self, parser, namespace, values, option_string=None):
-
+            ec = EngineConfig()
             product = namespace.product or ""
-            test_env_mgr = TestEnvManager(
-                product, None, test_repo_package_name=namespace.test_repo)
-            test_dir = os.path.expanduser(
-                os.path.join(test_env_mgr.test_repo_path, product))
-            product_config_dir = os.path.expanduser(os.path.join(
-                test_env_mgr.engine_config_interface.config_directory,
-                product))
+            test_dir = os.path.join(ec.default_test_repo, product)
+            product_config_dir = os.path.join(ec.config_directory, product)
 
             def _print_test_tree():
                 print("\n<[TEST REPO]>\n")
@@ -331,7 +327,7 @@ class _UnittestRunnerCLI(object):
 
             def _print_product_tree():
                 print("\n<[PRODUCTS]>\n")
-                tree(test_env_mgr.test_repo_path, " ", print_files=False)
+                tree(ec.default_test_repo, " ", print_files=False)
 
             def _print_product_list():
                 print("\n<[PRODUCTS]>\n")
@@ -372,20 +368,19 @@ class _UnittestRunnerCLI(object):
 
     class ConfigAction(argparse.Action):
 
-        def __call__(self, parser, namespace, values, option_string=None):
+        def __call__(self, parser, namespace, value, option_string=None):
             # Make sure user provided config name ends with '.config'
-            if values is not None:
-                if not str(values).endswith('.config'):
-                    values = "{0}{1}".format(values, ".config")
-
-                test_env = TestEnvManager(namespace.product or "", values)
-                if not os.path.exists(test_env.test_config_file_path):
-                    print(
-                        "cafe-runner: error: config file at {0} does not "
-                        "exist".format(test_env.test_config_file_path))
-                    exit(1)
-
-            setattr(namespace, self.dest, values)
+            if not str(value).endswith('.config'):
+                value = "{0}{1}".format(value, ".config")
+            relative_path = os.path.join(namespace.product or "", value)
+            env_name = CONFIG_KEY.format(
+                section_name="ENGINE", key="test_config")
+            os.environ[env_name] = relative_path
+            if not os.path.exists(EngineConfig().test_config):
+                print("cafe-runner: error: config file at {0} does not "
+                      "exist".format(EngineConfig().test_config))
+                exit(1)
+            setattr(namespace, self.dest, value)
 
     class DataAction(argparse.Action):
 
@@ -670,24 +665,14 @@ class UnittestRunner(object):
 
     def __init__(self):
         self.cl_args = _UnittestRunnerCLI().get_cl_args()
-        self.test_env = TestEnvManager(
-            self.cl_args.product, self.cl_args.config,
-            test_repo_package_name=self.cl_args.test_repo)
-
-        # If something in the cl_args is supposed to override a default, like
-        # say that data directory or something, it needs to happen before
-        # finalize() is called
-        self.test_env.test_data_directory = (
-            self.test_env.test_data_directory or self.cl_args.data_directory)
-        self.test_env.finalize()
+        self.config = EngineConfig()
         cclogging.init_root_log_handler()
         self._log = cclogging.getLogger(
             cclogging.get_object_namespace(self.__class__))
         self.product = self.cl_args.product
-        self.print_mug_and_paths(self.test_env)
+        self.print_mug_and_paths()
 
-    @staticmethod
-    def print_mug_and_paths(test_env):
+    def print_mug_and_paths(self):
         print("""
     ( (
      ) )
@@ -701,11 +686,11 @@ class UnittestRunner(object):
         print("=" * 150)
         print("Percolated Configuration")
         print("-" * 150)
-        print("BREWING FROM: ....: {0}".format(test_env.test_repo_path))
-        print("ENGINE CONFIG FILE: {0}".format(test_env.engine_config_path))
-        print("TEST CONFIG FILE..: {0}".format(test_env.test_config_file_path))
-        print("DATA DIRECTORY....: {0}".format(test_env.test_data_directory))
-        print("LOG PATH..........: {0}".format(test_env.test_log_dir))
+        print("BREWING FROM: ....: {0}".format(self.config.default_test_repo))
+        print("ENGINE CONFIG FILE: {0}".format(self.config.CONFIG_PATH))
+        print("TEST CONFIG FILE..: {0}".format(self.config.test_config))
+        print("DATA DIRECTORY....: {0}".format(self.config.data_directory))
+        print("LOG PATH..........: {0}".format(self.config.test_log_dir))
         print("=" * 150)
 
     @staticmethod
@@ -759,7 +744,7 @@ class UnittestRunner(object):
         parallel_test_list = []
         test_count = 0
 
-        builder = SuiteBuilder(self.cl_args, self.test_env.test_repo_package)
+        builder = SuiteBuilder(self.cl_args, self.config.default_test_repo)
         test_runner = self.get_runner(self.cl_args)
 
         if self.cl_args.parallel:
@@ -915,7 +900,7 @@ class UnittestRunner(object):
             self._log.info("\n")
 
         print('=' * 150)
-        print("Detailed logs: {0}".format(os.getenv("CAFE_TEST_LOG_PATH")))
+        print("Detailed logs: {0}".format(self.config.test_log_dir))
         print('-' * 150)
 
     def log_errors(self, label, result, errors):

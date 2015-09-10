@@ -14,7 +14,7 @@
 import argparse
 import os
 import subprocess
-from cafe.configurator.managers import TestEnvManager
+from cafe.engine.config import EngineConfig
 from cafe.drivers.base import print_mug, parse_runner_args
 
 
@@ -24,15 +24,10 @@ def entry_point():
     arg_parser = argparse.ArgumentParser(prog='specter-runner')
     args = parse_runner_args(arg_parser)
 
-    config = str(args.config[0]) + '.config'
     product = str(args.product[0])
     cmd_opts = args.cmd_opts
 
-    test_env_manager = TestEnvManager(product, config)
-    test_env_manager.finalize()
-
-    test_path = os.path.join(
-        test_env_manager.test_repo_path, product)
+    test_path = os.path.join(EngineConfig().default_test_repo, product)
 
     call_args = ['specter', '--search', test_path, '--no-art']
 

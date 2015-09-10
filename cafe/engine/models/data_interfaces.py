@@ -18,6 +18,7 @@ from six.moves import configparser
 from six import add_metaclass
 
 from cafe.common.reporting import cclogging
+from cafe.engine.config import EngineConfig
 try:
     from cafe.engine.mongo.client import BaseMongoClient
 except:
@@ -336,13 +337,11 @@ class BaseConfigSectionInterface(object):
 
 
 class ConfigSectionInterface(BaseConfigSectionInterface):
-    def __init__(self, config_file_path=None, section_name=None):
-        section_name = (section_name or
-                        getattr(self, 'SECTION_NAME', None) or
-                        getattr(self, 'CONFIG_SECTION_NAME', None))
+    SECTION_NAME = None
 
-        config_file_path = config_file_path or _get_path_from_env(
-            'CAFE_CONFIG_FILE_PATH')
+    def __init__(self, config_file_path=None, section_name=None):
+        section_name = section_name or self.SECTION_NAME
+        config_file_path = config_file_path or EngineConfig().test_config
 
         super(ConfigSectionInterface, self).__init__(
             config_file_path, section_name)

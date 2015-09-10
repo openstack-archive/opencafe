@@ -26,7 +26,7 @@ import unittest
 
 from cafe.common.reporting import cclogging
 from cafe.common.reporting.reporter import Reporter
-from cafe.configurator.managers import TestEnvManager
+from cafe.engine.config import EngineConfig
 from cafe.drivers.unittest.arguments import ArgumentParser
 from cafe.drivers.base import print_exception, get_error
 from cafe.drivers.unittest.parsers import SummarizeResults
@@ -61,13 +61,9 @@ class UnittestRunner(object):
     def __init__(self):
         self.print_mug()
         self.cl_args = ArgumentParser().parse_args()
-        self.test_env = TestEnvManager(
-            "", self.cl_args.config, test_repo_package_name="")
-        self.test_env.test_data_directory = (
-            self.cl_args.data_directory or self.test_env.test_data_directory)
-        self.test_env.finalize()
+        self.config = EngineConfig()
         cclogging.init_root_log_handler()
-        self.print_configuration(self.test_env, self.cl_args.testrepos)
+        self.print_configuration(self.cl_args.testrepos)
         self.cl_args.testrepos = import_repos(self.cl_args.testrepos)
 
         self.suites = SuiteBuilder(
@@ -129,8 +125,7 @@ class UnittestRunner(object):
   |_______|
 === CAFE Runner ===""")
 
-    @staticmethod
-    def print_configuration(test_env, repos):
+    def print_configuration(self, repos):
         """Prints the config/logs/repo/data_directory"""
         print("=" * 150)
         print("Percolated Configuration")
@@ -139,10 +134,10 @@ class UnittestRunner(object):
             print("BREWING FROM: ....: {0}".format(repos[0]))
             for repo in repos[1:]:
                 print("{0}{1}".format(" " * 20, repo))
-        print("ENGINE CONFIG FILE: {0}".format(test_env.engine_config_path))
-        print("TEST CONFIG FILE..: {0}".format(test_env.test_config_file_path))
-        print("DATA DIRECTORY....: {0}".format(test_env.test_data_directory))
-        print("LOG PATH..........: {0}".format(test_env.test_log_dir))
+        print("ENGINE CONFIG FILE: {0}".format(self.config.CONFIG_PATH))
+        print("TEST CONFIG FILE..: {0}".format(self.config.test_config))
+        print("DATA DIRECTORY....: {0}".format(self.config.data_directory))
+        print("LOG PATH..........: {0}".format(self.config.test_log_dir))
         print("=" * 150)
 
     @staticmethod
@@ -203,7 +198,7 @@ class UnittestRunner(object):
                 ", " if failures and errors else "",
                 "errors={0}".format(errors) if errors else ""))
         print("{0}\nDetailed logs: {1}\n{2}".format(
-            "=" * 150, self.test_env.test_log_dir, "-" * 150))
+            "=" * 150, self.config.test_log_dir, "-" * 150))
         return tests, errors, failures
 
 
