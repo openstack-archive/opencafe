@@ -1,10 +1,8 @@
 import unittest
 import mock
 from uuid import uuid4
-from requests import Response
 import logging
 from cafe.common.reporting.cclogging import getLogger as CC_getLogger
-from cafe.common.reporting.cclogging import init_root_log_handler as IRLH
 
 mock_dict = dict(
     CAFE_TEST_LOG_PATH='/tmp',

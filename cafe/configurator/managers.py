@@ -21,11 +21,10 @@ import textwrap
 import getpass
 import shutil
 from subprocess import Popen, PIPE
-
 from six.moves.configparser import SafeConfigParser
 
-from cafe.engine.config import EngineConfig
 import cafe
+from cafe.engine.config import EngineConfig
 
 if not platform.system().lower() == 'windows':
     import pwd
@@ -408,8 +407,7 @@ class EngineDirectoryManager(object):
         LOG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'logs'),
         DATA_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'data'),
         TEMP_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'temp'),
-        CONFIG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'configs'),
-        PLUGIN_CACHE=os.path.join(OPENCAFE_ROOT_DIR, 'plugin_cache'))
+        CONFIG_DIR=os.path.join(OPENCAFE_ROOT_DIR, 'configs'),)
 
     @classmethod
     def create_engine_directories(cls):
@@ -612,38 +610,13 @@ class EngineConfigManager(object):
 
 
 class EnginePluginManager(object):
-
-    @classmethod
-    def copy_plugin_to_cache(
-            cls, plugins_src_dir, plugins_dest_dir, plugin_name):
-        """ Copies an individual plugin to the .opencafe plugin cache """
-        src_plugin_path = os.path.join(plugins_src_dir, plugin_name)
-        dest_plugin_path = os.path.join(plugins_dest_dir, plugin_name)
-
-        if os.path.exists(dest_plugin_path):
-            shutil.rmtree(dest_plugin_path)
-
-        shutil.copytree(src_plugin_path, dest_plugin_path)
-
-    @classmethod
-    def populate_plugin_cache(cls, plugins_src_dir):
-        """ Handles moving all plugin src data from package into the user's
-        .opencafe folder for installation by the cafe-config tool.
-        """
-
-        default_dest = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
-        plugins = next(os.walk(plugins_src_dir))[1]
-
-        for plugin_name in plugins:
-            cls.copy_plugin_to_cache(
-                plugins_src_dir, default_dest, plugin_name)
+    _PLUGIN_DIR = os.path.join(os.path.dirname(cafe.__file__), 'plugins')
 
     @classmethod
     def list_plugins(cls):
         """ Lists all plugins currently available in user's .opencafe cache"""
 
-        plugin_cache = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
-        plugin_folders = os.walk(plugin_cache).next()[1]
+        plugin_folders = os.walk(cls._PLUGIN_DIR).next()[1]
         wrap = textwrap.TextWrapper(initial_indent="  ",
                                     subsequent_indent="  ",
                                     break_long_words=False).fill
@@ -664,8 +637,7 @@ class EnginePluginManager(object):
     def install_plugin(cls, plugin_name):
         """ Install a single plugin by name into the current environment"""
 
-        plugin_cache = EngineDirectoryManager.OPENCAFE_SUB_DIRS.PLUGIN_CACHE
-        plugin_dir = os.path.join(plugin_cache, plugin_name)
+        plugin_dir = os.path.join(cls._PLUGIN_DIR, plugin_name)
         wrap = textwrap.TextWrapper(initial_indent="  ",
                                     subsequent_indent="  ",
                                     break_long_words=False).fill
