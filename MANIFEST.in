@@ -1,2 +1,2 @@
-include README.rst LICENSE pip-requires
-recursive-include plugins *
+include README.rst LICENSE
+recursive-include cafe/plugins *

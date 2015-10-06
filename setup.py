@@ -14,60 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import os
 import sys
-from subprocess import call
 from setuptools import setup, find_packages
-from setuptools.command import easy_install as _easy_install
-from setuptools.command.install import install as _install
 from setuptools.command.test import test as TestCommand
-
-
-# Post-install engine configuration
-def _post_install(dir):
-    call(['cafe-config', 'engine', '--init-install'])
-    call(['cafe-config', 'plugins', 'add', 'plugins'])
-    call(['cafe-config', 'plugins', 'install', 'http'])
-    print(
-        """
-         ( (
-            ) )
-        ........
-        |      |___
-        |      |_  |
-        |  :-) |_| |
-        |      |___|
-        |______|
-    === OpenCAFE ===
-
-    -----------------------------------------------------------------
-    If you wish to install additional plugins, you can do so through
-    the cafe-config tool.
-
-    Example:
-    $ cafe-config plugins install mongo
-    -----------------------------------------------------------------
-    """)
-
-# Read in requirements
-requires = open('pip-requires').readlines()
-
-# Add additional requires for Python 2.6 support
-if sys.version_info < (2, 7):
-    oldpy_requires = ['argparse>=1.2.1', 'unittest2>=0.5.1', 'ordereddict']
-    requires.extend(oldpy_requires)
-
-
-# cmdclass hook allows setup to make post install call
-class install(_install):
-    def run(self):
-
-        # Workaround for problem in six that prevents installation when part of
-        # of some package requirements
-        _easy_install.main(['-U', 'six'])
-        _install.run(self)
-        self.execute(
-            _post_install, (self.install_lib,),
-            msg="\nRunning post install tasks...")
 
 
 # tox integration
@@ -83,20 +33,29 @@ class Tox(TestCommand):
         errno = tox.cmdline(self.test_args)
         sys.exit(errno)
 
-# Normal setup stuff
+# Package the plugin cache as package data
+plugins = []
+dir_path = os.path.join(os.path.dirname(__file__), 'cafe', 'plugins')
+for dirpath, directories, filenames in os.walk(dir_path):
+    dirpath = dirpath.lstrip('cafe/')
+    for f in filenames:
+        if f.endswith('.pyc'):
+            continue
+        target_file = os.path.join(dirpath, f)
+        plugins.append(target_file)
+
 setup(
     name='opencafe',
-    version='0.2.1',
+    version='0.2.2',
     description='The Common Automation Framework Engine',
     long_description='{0}'.format(open('README.rst').read()),
     author='CafeHub',
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://opencafe.readthedocs.org',
-    install_requires=requires,
-    packages=find_packages(),
-    namespace_packages=['cafe'],
+    install_requires=['six'],
+    packages=find_packages(exclude=('tests*', 'docs')),
+    package_data={'cafe': plugins},
     license=open('LICENSE').read(),
-    zip_safe=False,
     classifiers=(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
@@ -115,6 +74,5 @@ setup(
          'specter-runner = cafe.drivers.specter.runner:entry_point',
          'cafe-config = cafe.configurator.cli:entry_point']},
     tests_require=['tox'],
-    cmdclass={
-        'install': install,
-        'test': Tox})
+    cmdclass={'test': Tox}
+    )

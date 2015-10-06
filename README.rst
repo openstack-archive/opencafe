@@ -1,8 +1,6 @@
 Open CAFE Core
-----------------------------
+==============
 
-
-.. code-block::
 
        ( (
           ) )
@@ -15,38 +13,114 @@ Open CAFE Core
     === CAFE Core ===
 
 
-The Open Common Automation Framework Engine is the core engine/driver used to build an automated testing framework. It is designed to be used as the
-base engine for building an automated framework for API and non-UI resource testing. It is designed to support functional, integration and
-reliability testing. The engine is **NOT** designed to support performance or load testing.
+OpenCAFE, the Open Common Automation Framework Engine, is designed to be used
+as the base for building an automated testing framework for API and other
+(non-UI) testing.
+It is designed to support all kinds of testing methodologies, such as unit,
+functional and integration testing, using a model-based approach.
+Although the engine is not designed with performance or load testing in mind,
+as it prioritizes repeatability and (verbose) logging over performance, it can
+be used to that end.
 
-CAFE core provides a model, a pattern and assorted common tools for building automated tests. It provides its own light weight unittest based
-runner, however, it is designed to be modular. It can be extended to support most test case front ends/runners (nose, pytest, lettuce, testr, etc...)
-through driver plug-ins.
+
+Installation
+============
+>Source code is available at https://github.com/stackforge/opencafe
 
 Supported Operating Systems
 ---------------------------
-Open CAFE Core has been developed primarily in Linux and MAC environments, however, it supports installation and
-execution on Windows
+Open CAFE Core has been developed primarily on and for Linux, but supports
+installation and execution on BSD and other *nix's, as well as OS X and
+modern Windows.  It can be installed from pypi via pip or from source.
 
-Installation
-------------
-Open CAFE Core can be `installed with pip <https://pypi.python.org/pypi/pip>`_ from the git repository after it is cloned to a local machine.
+>**It is recommended that you install OpenCAFE in a python
+virtualenv.**
 
-* Clone this repository to your local machine
-* CD to the root directory in your cloned repository.
-* Run "pip install . --upgrade" and pip will auto install all dependencies.
+via pip
 
-After the CAFE Core is installed you will have command line access to the default unittest runner, the cafe-runner. (See cafe-runner --help for more info)
+    pip install opencafe
 
-Remember, open CAFE is just the core driver/engine. You have to build an implementation and test repository that use it!
+from source
 
-Configuration
+    $ git clone https://github.com/stackforge/opencafe.git
+     $ cd opencafe
+     $ python setup.py install
+
+Post-install Configuration
+==========================
+Post-install, the ``cafe-config`` cli tool will become available.
+It is used for installing
+plugins and initializing the engine's default ``.opencafe`` directory.
+
+Initialization
 --------------
-Open CAFE works out of the box with the cafe-runner (cafe.drivers.unittest). CAFE will auto-generate a base engine.config during installation. This
-base configuration will be installed to: <USER_HOME>/.opencafe/configs/engine.config
+OpenCAFE uses a set of default locations for logging, storing
+test configurations, test data, statistics, and the like; all of which are
+set in, and read from, the ``engine.config`` file (in order to make it easy
+for the end user to override the default behavior).  The ``engine.config``
+file, and the directories it references, can be created on demand by running:
 
-If you wish to modify default installation values you can update the engine.config file after CAFE installation. Keep in mind that the Engine will
-over-write this file on installation/upgrade.
+``cafe-config init``
+
+> This will create a directory named ``.opencafe`` in the user's home
+directory, or in the case of a python virtualenv, in the virtualenv root
+folder.
+
+Installing Plugins
+------------------
+The ``cafe-config plugins`` command is used to list and install plugins.
+
+Example:
+
+    $ cafe-config plugins list
+    =================================
+    * Available Plugins
+      ... http
+      ... mongo
+      ... winrm
+      ... elasticsearch
+      ... soap
+      ... skip_on_issue
+      ... rsyslog
+      ... ssh
+    =================================
+
+    $ cafe-config plugins install http
+    =================================
+    * Installing Plugins
+      ... http
+    =================================
+
+> Note: There is currently no way to reliably have an implementation of
+        OpenCAFE require specific plugins at install time, due to issues
+        with pip=>7.0.0.  We are working on an overhaul of the plugin system
+        that should remedy the situation.
+
+Package Structure Overview
+==========================
+``cafe.common.reporting``
+-------------------------
+Provides tools for logging and reporting.
+This namespace should be used by plugins to add logging and reporting features.
+
+``cafe.configurator``
+---------------------
+Used by the ``cafe-config`` cli tool for setting up new installations of opencafe.
+
+``cafe.drivers``
+----------------
+Houses various test runner wrappers and supporting tools.
+This namespace should be used by plugins to add new test runner support.
+
+``cafe.engine``
+---------------
+Includes the base classes that OpenCAFE implementations will use to create behaviors, configs, clients and models.
+This namespace should be used by plugins to add new clients.
+
+``cafe.resources``
+------------------
+Deprecated.
+Historically contained all modules that reference external resources to OpenCAFE. Currently acts only as a namespace for backward compatability with some plugins.
 
 Terminology
 -----------
@@ -57,7 +131,6 @@ Following are some notes on Open CAFE lingo and concepts.
 
 * Product
     Anything that's being tested by an implementation of Open CAFE Core. If you would like to see a refernce implementation, there is an `Open Source implementation <https://github.com/stackforge>`_ based on `OpenStack <http://www.openstack.org/>`_.
-
 
 * Client / Client Method
     A **client** is an "at-least-one"-to-"at-most-one" mapping of a product's functionality to a collection of client methods.  Using a `REST API <https://en.wikipedia.org/wiki/Representational_state_transfer>`_ as an example, a client that represents that API in CAFE will contain at least one (but possibly more) method(s) for every function exposed by that API.  Should a call in the API prove to be too difficult or cumbersome to define via a single **client method**, then multiple client methods can be defined such that as a whole they represent the complete set of that API call's functionality. A **client method** should never be a superset of more than one call's functionality.
@@ -70,22 +143,3 @@ Following are some notes on Open CAFE lingo and concepts.
 
 * Provider
     This is meant to be a convenience facade that performs configuration of clients and behaviors to provide configuration-based default combinations of different clients and behaviors.
-
-Basic CAFE Package Anatomy
---------------------------
-Below is a short description of the top level CAFE Packages.
-
-* cafe
-    This is the root package. The wellspring from which the CAFE flows...
-
-* common
-    Contains modules common the entire engine. This is the primary namespace for tools, data generators, common reporting classes, etc...
-
-* engine
-    Contains all the base implementations of clients, behaviors, models to be used by a CAFE implementation. It also contains supported generic clients, behaviors and models. For instance, the engine.clients.remote_instance clients are meant to be used directly by an implementation.
-
-* drivers
-    The end result of CAFE is to build an implementation to talk to a particular product or products, and a repository of automated test cases. The drivers package is specifically for building CAFE support for various Python based test runners. There is a default unittest based driver implemented which heavily extends the basic unittest functionality. Driver plug-ins can easily be constructed to add CAFE support for most of the popular ones already available (nose, pytest, lettuce, testr, etc...) or even for 100% custom test case drivers if desired.
-
-* resources
-    Contains all modules that reference external resources to OpenCAFE. One example of an external resource is a Launchpad tracker.
