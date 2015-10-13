@@ -1,6 +1,7 @@
 Open CAFE Core
 ==============
 
+::
 
        ( (
           ) )
@@ -11,7 +12,6 @@ Open CAFE Core
         |       |___|
         |_______|
     === CAFE Core ===
-
 
 OpenCAFE, the Open Common Automation Framework Engine, is designed to be used
 as the base for building an automated testing framework for API and other
@@ -25,26 +25,29 @@ be used to that end.
 
 Installation
 ============
->Source code is available at https://github.com/stackforge/opencafe
+Source code is available at https://github.com/stackforge/opencafe
 
 Supported Operating Systems
 ---------------------------
 Open CAFE Core has been developed primarily on and for Linux, but supports
-installation and execution on BSD and other *nix's, as well as OS X and
+installation and execution on BSD and other \*nix's, as well as OS X and
 modern Windows.  It can be installed from pypi via pip or from source.
 
->**It is recommended that you install OpenCAFE in a python
-virtualenv.**
+**It is recommended that you install OpenCAFE in a python virtualenv.**
 
-via pip
+From pypi via pip
 
-    pip install opencafe
+::
 
-from source
+    $ pip install opencafe
+
+From source
+
+::
 
     $ git clone https://github.com/stackforge/opencafe.git
-     $ cd opencafe
-     $ python setup.py install
+    $ cd opencafe
+    $ python setup.py install
 
 Post-install Configuration
 ==========================
@@ -62,7 +65,7 @@ file, and the directories it references, can be created on demand by running:
 
 ``cafe-config init``
 
-> This will create a directory named ``.opencafe`` in the user's home
+This will create a directory named ``.opencafe`` in the user's home
 directory, or in the case of a python virtualenv, in the virtualenv root
 folder.
 
@@ -71,6 +74,8 @@ Installing Plugins
 The ``cafe-config plugins`` command is used to list and install plugins.
 
 Example:
+
+::
 
     $ cafe-config plugins list
     =================================
@@ -90,11 +95,6 @@ Example:
     * Installing Plugins
       ... http
     =================================
-
-> Note: There is currently no way to reliably have an implementation of
-        OpenCAFE require specific plugins at install time, due to issues
-        with pip=>7.0.0.  We are working on an overhaul of the plugin system
-        that should remedy the situation.
 
 Package Structure Overview
 ==========================
