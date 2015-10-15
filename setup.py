@@ -37,7 +37,7 @@ class Tox(TestCommand):
 plugins = []
 dir_path = os.path.join(os.path.dirname(__file__), 'cafe', 'plugins')
 for dirpath, directories, filenames in os.walk(dir_path):
-    dirpath = dirpath.lstrip('cafe/')
+    dirpath = dirpath.partition('cafe/')[2]
     for f in filenames:
         if f.endswith('.pyc'):
             continue
