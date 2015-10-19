@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: jose-idar <jose.idar@rackspace.com>
+Workflow+1: jose-idar <jose.idar@rackspace.com>
+Code-Review+2: Anna Eilering <anna.eilering@rackspace.com>
+Workflow+1: Anna Eilering <anna.eilering@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 19 Oct 2015 16:23:09 +0000
+Reviewed-on: https://review.openstack.org/237063
+Project: openstack/opencafe
+Branch: refs/heads/master
