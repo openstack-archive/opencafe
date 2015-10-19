@@ -25,7 +25,7 @@ be used to that end.
 
 Installation
 ============
-Source code is available at https://github.com/stackforge/opencafe
+Source code is available at https://github.com/openstack/opencafe
 
 Supported Operating Systems
 ---------------------------
@@ -45,7 +45,7 @@ From source
 
 ::
 
-    $ git clone https://github.com/stackforge/opencafe.git
+    $ git clone https://github.com/openstack/opencafe.git
     $ cd opencafe
     $ python setup.py install
 
@@ -130,7 +130,7 @@ Following are some notes on Open CAFE lingo and concepts.
     Although the engine can serve as a basic framework for testing, it's meant to be used as the base for the implementation of a product-specific testing framework.
 
 * Product
-    Anything that's being tested by an implementation of Open CAFE Core. If you would like to see a refernce implementation, there is an `Open Source implementation <https://github.com/stackforge>`_ based on `OpenStack <http://www.openstack.org/>`_.
+    Anything that's being tested by an implementation of Open CAFE Core. If you would like to see a reference implementation, there is an `Open Source implementation <https://github.com/stackforge>`_ based on `OpenStack <http://www.openstack.org/>`_.
 
 * Client / Client Method
     A **client** is an "at-least-one"-to-"at-most-one" mapping of a product's functionality to a collection of client methods.  Using a `REST API <https://en.wikipedia.org/wiki/Representational_state_transfer>`_ as an example, a client that represents that API in CAFE will contain at least one (but possibly more) method(s) for every function exposed by that API.  Should a call in the API prove to be too difficult or cumbersome to define via a single **client method**, then multiple client methods can be defined such that as a whole they represent the complete set of that API call's functionality. A **client method** should never be a superset of more than one call's functionality.

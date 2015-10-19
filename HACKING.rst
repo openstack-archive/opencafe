@@ -1,6 +1,6 @@
-=================
+================
 Coding Standards
-=================
+================
 OpenCAFE standards are intended to allow flexability in solving coding issues,
 while maintaining uniformity and overall code quality.
 
