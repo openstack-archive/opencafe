@@ -207,6 +207,10 @@ class ConfigParserDataSource(DataSource):
 
 class DictionaryDataSource(DataSource):
 
+    def __init__(self, data, section_name):
+        self._data_source = data
+        self._section_name = section_name
+
     def get(self, item_name, default=None):
         section = self._data_source.get(self._section_name)
         if section is None:

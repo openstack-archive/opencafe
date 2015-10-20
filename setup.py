@@ -19,6 +19,9 @@ import sys
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
+# Establish a consistent base directory relative to the setup.py file
+os.chdir(os.path.abspath(os.path.dirname(__file__)))
+
 
 # tox integration
 class Tox(TestCommand):
@@ -35,9 +38,9 @@ class Tox(TestCommand):
 
 # Package the plugin cache as package data
 plugins = []
-dir_path = os.path.join(os.path.dirname(__file__), 'cafe', 'plugins')
+dir_path = os.path.join('cafe', 'plugins')
 for dirpath, directories, filenames in os.walk(dir_path):
-    dirpath = dirpath.partition('cafe/')[2]
+    dirpath = dirpath.lstrip('cafe{0}'.format(os.sep))
     for f in filenames:
         if f.endswith('.pyc'):
             continue
