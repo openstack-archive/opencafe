@@ -17,7 +17,7 @@ from winrm.exceptions import WinRMTransportError
 from winrm.protocol import Protocol
 
 from cafe.engine.clients.base import BaseClient
-from plugins.winrm.cafe.engine.winrm.models.winrm_response \
+from cafe.engine.winrm.models.winrm_response \
     import WinRMResponse
 
 
