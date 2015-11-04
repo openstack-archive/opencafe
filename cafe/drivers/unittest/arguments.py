@@ -260,7 +260,7 @@ class ArgumentParser(argparse.ArgumentParser):
 
         self.add_argument(
             "--result", "-R",
-            choices=["json", "xml"],
+            choices=["json", "xml", "subunit"],
             help="Generates a specified formatted result file")
 
         self.add_argument(
