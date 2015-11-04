@@ -13,6 +13,7 @@
 
 from cafe.common.reporting.json_report import JSONReport
 from cafe.common.reporting.xml_report import XMLReport
+from cafe.common.reporting.subunit_report import SubunitReport
 
 
 class Reporter:
@@ -29,6 +30,8 @@ class Reporter:
             report = JSONReport()
         elif result_type == 'xml':
             report = XMLReport()
+        elif result_type == 'subunit':
+            report = SubunitReport()
 
         report.generate_report(
             result_parser=self.result_parser, all_results=self.all_results,
