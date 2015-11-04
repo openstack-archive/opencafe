@@ -606,7 +606,7 @@ class _UnittestRunnerCLI(object):
 
         argparser.add_argument(
             "--result",
-            choices=["json", "xml"],
+            choices=["json", "xml", "subunit"],
             help="generates a specified formatted result file")
 
         argparser.add_argument(
