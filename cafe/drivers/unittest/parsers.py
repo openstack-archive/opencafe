@@ -67,16 +67,20 @@ class SummarizeResults(object):
                     "errored": "error_trace"}
         if type_ == "passed":
             dic = {"test_method_name": getattr(test, '_testMethodName', ""),
-                   "test_class_name": test.__class__.__name__}
+                   "test_class_name": "{0}.{1}".format(
+                       str(test.__class__.__module__),
+                       str(test.__class__.__name__))}
 
         elif (type_ in ["failures", "skipped", "errored"] and
               not isinstance(test[0], _ErrorHolder)):
             dic = {"test_method_name": getattr(test[0], '_testMethodName', ""),
-                   "test_class_name": test[0].__class__.__name__,
+                   "test_class_name": "{0}.{1}".format(
+                       str(test[0].__class__.__module__),
+                       str(test[0].__class__.__name__)),
                    msg_type.get(type_, "error_trace"): test[1]}
         else:
             dic = {"test_method_name": str(test[0]).split(" ")[0],
-                   "test_class_name": str(test[0]).split(".")[-1].rstrip(')'),
+                   "test_class_name": str(test[0]).split("(")[1].rstrip(")"),
                    msg_type.get(type_, "error_trace"): test[1]}
         return Result(**dic)
 
