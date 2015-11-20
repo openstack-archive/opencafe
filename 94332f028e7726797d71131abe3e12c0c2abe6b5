@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: jose-idar <jose.idar@rackspace.com>
+Code-Review+2: Nathan Buckner <nathan.buckner@rackspace.com>
+Workflow+1: Nathan Buckner <nathan.buckner@rackspace.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 20 Nov 2015 20:34:28 +0000
+Reviewed-on: https://review.openstack.org/241732
+Project: openstack/opencafe
+Branch: refs/heads/master
