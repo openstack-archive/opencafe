@@ -55,7 +55,7 @@ setup(
     author='CafeHub',
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://opencafe.readthedocs.org',
-    install_requires=['six'],
+    install_requires=['six', 'pysocks'],
     packages=find_packages(exclude=('tests*', 'docs')),
     package_data={'cafe': plugins},
     license=open('LICENSE').read(),
