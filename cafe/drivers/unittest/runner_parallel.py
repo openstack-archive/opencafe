@@ -68,6 +68,7 @@ class UnittestRunner(object):
         self.test_env.finalize()
         cclogging.init_root_log_handler()
         self.print_configuration(self.test_env, self.cl_args.testrepos)
+        self.start = time.time()
         self.cl_args.testrepos = import_repos(self.cl_args.testrepos)
 
         self.suites = SuiteBuilder(
@@ -95,8 +96,6 @@ class UnittestRunner(object):
         for _ in range(workers):
             to_worker.put(None)
 
-        start = time.time()
-
         # A second try catch is needed here because queues can cause locking
         # when they go out of scope, especially when termination signals used
         try:
@@ -109,7 +108,7 @@ class UnittestRunner(object):
                 results.append(self.log_result(from_worker.get()))
 
             tests_run, errors, failures = self.compile_results(
-                time.time() - start, results)
+                time.time() - self.start, results)
         except KeyboardInterrupt:
             print_exception("Runner", "run", "Keyboard Interrupt, exiting...")
             os.killpg(0, 9)
