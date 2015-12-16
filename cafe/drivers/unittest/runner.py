@@ -12,6 +12,7 @@
 # under the License.
 
 import argparse
+from operator import attrgetter
 import os
 import pkgutil
 import sys
@@ -666,6 +667,29 @@ class _UnittestRunnerCLI(object):
         return args
 
 
+class SlowTextTestRunner(unittest.TextTestRunner):
+    '''
+    SlowTextTestRunner displays a few of the slowest tests at the end of each test run.
+    '''
+    def run(self, test):
+        result = super(SlowTextTestRunner, self).run(test)
+        all_tests = result.failures + result.errors + result.expectedFailures
+        # Take only the actual test out of the test results, discard the traceback information
+        all_tests = [t[0] for t in all_tests]
+        all_tests += result.unexpectedSuccesses
+        if hasattr(result, 'successes'):
+            all_tests += result.successes
+        for test in all_tests:
+            if not hasattr(test, 'elapsedTime'):
+                test.elapsedTime = 0
+                print 'test %s is missing elapsedTime' % str(test)
+        all_tests = sorted(all_tests, key=attrgetter('elapsedTime'), reverse=True)
+        print 'Slowest tests:'
+        for test in all_tests[:10]:
+            print test, '%0.3fs' % test.elapsedTime
+        return result
+
+
 class UnittestRunner(object):
 
     def __init__(self):
@@ -722,7 +746,7 @@ class UnittestRunner(object):
             test_runner = OpenCafeParallelTextTestRunner(
                 verbosity=cl_args.verbose)
         else:
-            test_runner = unittest.TextTestRunner(verbosity=cl_args.verbose)
+            test_runner = SlowTextTestRunner(verbosity=cl_args.verbose)
 
         test_runner.failfast = cl_args.fail_fast
         return test_runner
