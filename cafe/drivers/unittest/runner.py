@@ -134,69 +134,6 @@ class SuiteBuilder(object):
 
         return tag_list, attrs, token
 
-    def _check_attrs(self, method, attrs, token=None):
-        """
-        checks to see if the method passed in has matching key=value
-        attributes. if a "+" token is passed only method that contain
-        foo and bar will be match
-        """
-        truth_values = []
-        method_attrs = {}
-
-        attr_keys = list(attrs.keys())
-        method_attrs = method.__dict__[TAGS_DECORATOR_ATTR_DICT_NAME]
-        method_attrs_keys = list(method_attrs.keys())
-
-        for attr_key in attr_keys:
-            if attr_key in method_attrs_keys:
-                method_val = method_attrs[attr_key]
-                attr_val = attrs[attr_key]
-                truth_values[len(truth_values):] = [method_val == attr_val]
-            else:
-                truth_values[len(truth_values):] = [False]
-
-        return (
-            False not in truth_values if token == "+"
-            else True in truth_values)
-
-    def _check_tags(self, method, tags, token):
-        """
-        checks to see if the method passed in has matching tags.
-        if the tags are (foo, bar) this method will match foo or
-        bar. if a "+" token is passed only method that contain
-        foo and bar will be match
-        """
-        method_tags = method.__dict__.get(TAGS_DECORATOR_TAG_LIST_NAME)
-        match = set(tags).intersection(method_tags)
-        return match == set(method_tags) if token == "+" else bool(match)
-
-    def _check_method(self, class_, method_name, tags, attrs, token):
-        """
-        checks tags on methods
-        """
-        load_test_flag = False
-        attr_flag = False
-        tag_flag = False
-
-        method = getattr(class_, method_name)
-
-        if (dict(method.__dict__) and
-                TAGS_DECORATOR_TAG_LIST_NAME in method.__dict__):
-            if tags and not attrs:
-                tag_flag = self._check_tags(method, tags, token)
-                load_test_flag = tag_flag
-
-            elif not tags and attrs:
-                attr_flag = self._check_attrs(method, attrs, token)
-                load_test_flag = attr_flag
-
-            elif tags and attrs:
-                tag_flag = self._check_tags(method, tags, token)
-                attr_flag = self._check_attrs(method, attrs, token)
-                load_test_flag = attr_flag and tag_flag
-
-        return load_test_flag
-
     def get_classes(self, loaded_module):
         """
         finds all the classes in a loaded module calculates full path to class
@@ -229,6 +166,7 @@ class SuiteBuilder(object):
             sys.stderr.write("{0}\n".format("-" * 70))
             return
 
+        tag_list, attrs, token = [], {}, None
         if self.tags:
             tag_list, attrs, token = self._parse_tags(self.tags)
 
@@ -242,12 +180,83 @@ class SuiteBuilder(object):
 
         for class_ in self.get_classes(loaded_module):
             for method_name in dir(class_):
-                if (method_name.startswith("test_") and
-                    search(self.method_regex, method_name) and
-                    (not self.tags or self._check_method(
-                        class_, method_name, tag_list, attrs, token))):
+                if self.include_method(method_name, class_, self.method_regex,
+                                       tag_list, attrs, token):
                     suite.addTest(class_(method_name))
         return suite
+
+    def _has_tag(self, method, tag):
+        method_tags = dict(method.__dict__).get(TAGS_DECORATOR_TAG_LIST_NAME, [])
+        return tag in method_tags
+
+    def _has_tag_tuple(self, method, tag_tuple):
+        method_tag_dict = dict(method.__dict__).get(TAGS_DECORATOR_ATTR_DICT_NAME, {})
+        return tag_tuple in method_tag_dict.items()
+
+    def build_statement(self, method, method_regex, token, tags, tag_dict):
+        """
+        Makes a python logic statement that reflects the parameters passed in as tags.
+        eg CLI input: -t + foo bar=baz, and method with tag 'foo'
+        eg output: True and False
+        eg2 CLI input: -t foo bar=baz, and method with tag 'bar=baz'
+        eg2 output: False or True
+        eg3: CLI input: -M test_fa.*, and method with name 'test_fast'
+        eg3: output: True
+        eg4: CLI input: -t _foo, (negation) and method with tag 'foo'
+        eg4: output: False
+        """
+        operands = []
+        for item in tags:
+            negate = False
+            if item.startswith('_'):
+                negate = True
+                item = item[1:]
+            val = self._has_tag(method, item)
+            if negate:
+                val = not val
+
+            operands.append(str(val))
+
+        for name, value in tag_dict.items():
+            negate = False
+            if name.startswith('_'):
+                negate = True
+                name = name[1:]
+            val = self._has_tag_tuple(method, (name, value))
+            if negate:
+                val = not val
+
+            operands.append(str(val))
+
+        if method_regex:
+            operands.append('bool(search("%s", "%s"))' % (method_regex, method))
+
+        if token == '+':
+            return ' and '.join(operands)
+        return ' or '.join(operands)
+
+    def include_method(self, method_name, class_, method_regex, tags, attrs, anded):
+        """
+        returns True if the method should be run, or false if the method is
+        not a test or is filtered out.
+        """
+        result = False
+
+        method = getattr(class_, method_name)
+        if hasattr(method, '__dict__'):
+            method_tags = dict(method.__dict__).get(TAGS_DECORATOR_TAG_LIST_NAME, None)
+            method_tag_dict = dict(method.__dict__).get(TAGS_DECORATOR_ATTR_DICT_NAME, None)
+            if method_name.startswith('test_'):
+                stmt = self.build_statement(method, method_regex, anded, tags, attrs)
+                if stmt:
+                    code = compile('from re import search; result = ' + stmt, '<string>', 'exec')
+                    ns = {}
+                    exec code in ns
+                    result = ns['result']
+                else:
+                    result = True
+
+        return result
 
     def get_modules(self):
         """

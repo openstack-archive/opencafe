@@ -73,8 +73,7 @@ class ReportingTests(unittest.TestCase):
             'failures': [(FakeTests('test_report_fail'), self.failure_trace)]}
 
         self.result_parser = SummarizeResults(
-            master_testsuite=test_suite, result_dict=result,
-            execution_time=1.23)
+            result_dict=result, tests=test_suite, execution_time=1.23)
         self.all_results = self.result_parser.gather_results()
         self.reporter = Reporter(
             result_parser=self.result_parser, all_results=self.all_results,)
