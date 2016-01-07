@@ -685,7 +685,7 @@ class SlowTextTestRunner(unittest.TextTestRunner):
                 print 'test %s is missing elapsedTime' % str(test)
         all_tests = sorted(all_tests, key=attrgetter('elapsedTime'), reverse=True)
         print 'Slowest tests:'
-        for test in all_tests[:10]:
+        for test in all_tests[:3]:
             print test, '%0.3fs' % test.elapsedTime
         return result
 
