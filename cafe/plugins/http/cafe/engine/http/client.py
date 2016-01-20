@@ -124,24 +124,6 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
     return _decorator
 
 
-def _inject_exception(exception_handlers):
-    """Paramaterized decorator takes a list of exception_handler objects"""
-    def _decorator(func):
-        """Accepts a function and returns wrapped version of that function."""
-        def _wrapper(*args, **kwargs):
-            """Wrapper for any function that returns a Requests response.
-            Allows exception handlers to raise custom exceptions based on
-            response object attributes such as status_code.
-            """
-            response = func(*args, **kwargs)
-            if exception_handlers:
-                for handler in exception_handlers:
-                    handler.check_for_errors(response)
-            return response
-        return _wrapper
-    return _decorator
-
-
 class BaseHTTPClient(BaseClient):
     """Re-implementation of Requests' api.py that removes many assumptions.
     Adds verbose logging.
@@ -150,13 +132,11 @@ class BaseHTTPClient(BaseClient):
 
     @see: http://docs.python-requests.org/en/latest/api/#configurations
     """
-    _exception_handlers = []
     _log = cclogging.getLogger(__name__)
 
     def __init__(self):
         super(BaseHTTPClient, self).__init__()
 
-    @_inject_exception(_exception_handlers)
     @_log_transaction(log=_log)
     def request(self, method, url, **kwargs):
         """ Performs <method> HTTP request to <url> using the requests lib"""
@@ -193,23 +173,6 @@ class BaseHTTPClient(BaseClient):
     def patch(self, url, **kwargs):
         """ HTTP PATCH request """
         return self.request('PATCH', url, **kwargs)
-
-    @classmethod
-    def add_exception_handler(cls, handler):
-        """Adds a specific L{ExceptionHandler} to the HTTP client
-        @warning: SHOULD ONLY BE CALLED FROM A PROVIDER THROUGH A TEST
-                  FIXTURE
-        """
-        cls._exception_handlers.append(handler)
-
-    @classmethod
-    def delete_exception_handler(cls, handler):
-        """Removes a L{ExceptionHandler} from the HTTP client
-        @warning: SHOULD ONLY BE CALLED FROM A PROVIDER THROUGH A TEST
-                  FIXTURE
-        """
-        if handler in cls._exception_handlers:
-            cls._exception_handlers.remove(handler)
 
 
 class HTTPClient(BaseHTTPClient):
