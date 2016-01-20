@@ -19,7 +19,7 @@ from cafe.common.reporting.base_report import BaseReport
 
 class XMLReport(BaseReport):
 
-    def generate_report(self, result_parser, all_results=None, path=None):
+    def generate_report(self, execution_time, all_results=None, path=None):
         """Generates an XML report in the specified directory."""
         num_tests = len(all_results)
         root = ET.Element("testsuite")
@@ -35,7 +35,7 @@ class XMLReport(BaseReport):
         root.attrib['skips'] = str(len(
             [result.skipped_msg for result in all_results
              if result.skipped_msg]))
-        root.attrib['time'] = str(result_parser.execution_time)
+        root.attrib['time'] = str(execution_time)
 
         for testcase in all_results:
             testcase_tag = ET.SubElement(root, 'testcase')

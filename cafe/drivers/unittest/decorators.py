@@ -10,14 +10,13 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-from importlib import import_module
 from unittest import TestCase
 from warnings import warn, simplefilter
 import inspect
 import re
 
 from cafe.common.reporting import cclogging
-from cafe.drivers.unittest.datasets import DatasetList
+from cafe.drivers.unittest.datasets import DatasetList, create_dd_class
 
 DATA_DRIVEN_TEST_ATTR = "__data_driven_test_data__"
 DATA_DRIVEN_TEST_PREFIX = "ddtest_"
@@ -91,17 +90,15 @@ def DataDrivenClass(*dataset_lists):
         """Creates classes with variables named after datasets.
         Names of classes are equal to (class_name with out fixture) + ds_name
         """
-        module = import_module(cls.__module__)
         cls = DataDrivenFixture(cls)
-        class_name = re.sub("fixture", "", cls.__name__, flags=re.IGNORECASE)
         if not re.match(".*fixture", cls.__name__, flags=re.IGNORECASE):
             cls.__name__ = "{0}Fixture".format(cls.__name__)
         for dataset_list in dataset_lists:
             for dataset in dataset_list:
-                class_name_new = "{0}_{1}".format(class_name, dataset.name)
-                new_class = type(class_name_new, (cls,), dataset.data)
-                new_class.__module__ = cls.__module__
-                setattr(module, class_name_new, new_class)
+                class_name = re.sub(
+                    "fixture", "", cls.__name__, flags=re.IGNORECASE)
+                dataset.name = "{0}_{1}".format(class_name, dataset.name)
+                create_dd_class(cls, dataset)
         return cls
     return decorator
 
