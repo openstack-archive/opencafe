@@ -27,11 +27,13 @@ import unittest
 from cafe.common.reporting import cclogging
 from cafe.common.reporting.reporter import Reporter
 from cafe.configurator.managers import ENGINE_CONFIG_PATH
-from cafe.engine.config import EngineConfig
-from cafe.drivers.unittest.arguments import ArgumentParser
 from cafe.drivers.base import print_exception, get_error
+from cafe.drivers.unittest.arguments import ArgumentParser
+from cafe.drivers.unittest.datasets import create_dd_class
 from cafe.drivers.unittest.parsers import SummarizeResults
+from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
 from cafe.drivers.unittest.suite_builder import SuiteBuilder
+from cafe.engine.config import EngineConfig
 
 
 def _make_result(verbose, failfast):
@@ -73,8 +75,14 @@ class UnittestRunner(object):
             all_tags=self.cl_args.all_tags,
             regex_list=self.cl_args.regex_list,
             file_=self.cl_args.file,
-            dry_run=self.cl_args.dry_run,
             exit_on_error=self.cl_args.exit_on_error).get_suites()
+        if self.cl_args.dry_run:
+            for tests, class_, dataset in self.suites:
+                name = dataset.name if dataset is not None else class_.__name__
+                for test in tests:
+                    print("{0} ({1}.{2})".format(
+                        test, class_.__module__, name))
+            exit(0)
 
     def run(self):
         """Starts the run of the tests"""
@@ -86,13 +94,15 @@ class UnittestRunner(object):
         failfast = self.cl_args.failfast
         workers = int(not self.cl_args.parallel) or self.cl_args.workers
 
-        for suite in self.suites:
-            to_worker.put(suite)
+        start = time.time()
+        count = 0
+        for tests, class_, dataset in self.suites:
+            create_dd_class(class_, dataset)
+            to_worker.put((tests, class_, dataset))
+            count += 1
 
         for _ in range(workers):
             to_worker.put(None)
-
-        start = time.time()
 
         # A second try catch is needed here because queues can cause locking
         # when they go out of scope, especially when termination signals used
@@ -102,7 +112,7 @@ class UnittestRunner(object):
                 worker_list.append(proc)
                 proc.start()
 
-            for _ in self.suites:
+            for _ in range(count):
                 results.append(self.log_result(from_worker.get()))
 
             tests_run, errors, failures = self.compile_results(
@@ -168,21 +178,16 @@ class UnittestRunner(object):
         result_dict = {"tests": 0, "errors": 0, "failures": 0}
         for dic in results:
             result = dic["result"]
-            tests = [suite for suite in self.suites
-                     if suite.cafe_uuid == dic["cafe_uuid"]][0]
-            result_parser = SummarizeResults(vars(result), tests, run_time)
-            all_results += result_parser.gather_results()
-            summary = result_parser.summary_result()
+            all_results += dic.get("all_results")
+            summary = dic.get("summary")
             for key in result_dict:
                 result_dict[key] += summary[key]
-
             if result.stream.buf.strip():
-                # this line can be replace to add an extensible stdout/err log
                 sys.stderr.write("{0}\n\n".format(
                     result.stream.buf.strip()))
 
         if self.cl_args.result is not None:
-            reporter = Reporter(result_parser, all_results)
+            reporter = Reporter(run_time, all_results)
             reporter.generate_report(
                 self.cl_args.result, self.cl_args.result_directory)
         return self.print_results(run_time=run_time, **result_dict)
@@ -228,9 +233,19 @@ class Consumer(Process):
         logger = logging.getLogger('')
         while True:
             result = _make_result(self.verbose, self.failfast)
-            suite = self.to_worker.get()
-            if suite is None:
+            suite = OpenCafeUnittestTestSuite()
+            try:
+                tests, class_, dataset = self.to_worker.get()
+            except TypeError:
                 return
+            class_ = create_dd_class(class_, dataset)
+            for test in tests:
+                try:
+                    test_obj = class_(test)
+                    suite.addTest(test_obj)
+                except ValueError as e:
+                    print_exception("Runner_Worker", "run", test, e)
+
             handler = ParallelRecordHandler()
             logger.handlers = [handler]
             suite(result)
@@ -240,11 +255,13 @@ class Consumer(Process):
                     record.msg = "{0}\n{1}".format(
                         record.msg, traceback.format_exc(record.exc_info))
                 record.exc_info = None
+            result._previousTestClass = None
+            result_parser = SummarizeResults(vars(result), suite)
             dic = {
+                "all_results": result_parser.gather_results(),
+                "summary": result_parser.summary_result(),
                 "result": result,
-                "logs": handler._records,
-                "cafe_uuid": suite.cafe_uuid}
-
+                "logs": handler._records}
             self.from_worker.put(dic)
 
 

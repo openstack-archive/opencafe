@@ -842,10 +842,10 @@ class UnittestRunner(object):
 
         if result_type is not None:
             result_parser = SummarizeResults(
-                vars(result), master_suite, total_execution_time)
+                vars(result), master_suite)
             all_results = result_parser.gather_results()
             reporter = Reporter(
-                result_parser=result_parser, all_results=all_results)
+                total_execution_time, all_results)
             reporter.generate_report(
                 result_type=result_type, path=results_path)
 
