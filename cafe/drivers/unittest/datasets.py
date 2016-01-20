@@ -11,12 +11,26 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from importlib import import_module
 from itertools import product
 from string import ascii_letters, digits
 import json
 
 ALLOWED_FIRST_CHAR = "_{0}".format(ascii_letters)
 ALLOWED_OTHER_CHARS = "{0}{1}".format(ALLOWED_FIRST_CHAR, digits)
+
+
+def create_dd_class(class_, dataset):
+    """Creates a class that inherits from the class passed in and contains
+    variables from the dataset.  The name is also from the dataset
+    """
+    if dataset is None:
+        return class_
+    new_class = type(dataset.name, (class_,), dataset.data)
+    new_class.__module__ = class_.__module__
+    module = import_module(class_.__module__)
+    setattr(module, new_class.__name__, new_class)
+    return new_class
 
 
 class _Dataset(object):
@@ -172,3 +186,11 @@ class DatasetFileLoader(DatasetList):
             data = dataset.get('data', dict())
             self.append_new_dataset(name, data)
             count += 1
+
+
+class DatasetStub(DatasetList):
+    """This is purely for documentation benifit for placing arg names that
+    should be in your datasets.
+    """
+    def __init__(self, *args):
+        super(DatasetStub, self).__init__()
