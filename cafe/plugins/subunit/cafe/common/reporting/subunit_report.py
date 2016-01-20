@@ -23,7 +23,7 @@ from cafe.common.reporting.base_report import BaseReport
 
 
 class SubunitReport(BaseReport):
-    def generate_report(self, result_parser, all_results=None, path=None):
+    def generate_report(self, execution_time, all_results=None, path=None):
         """ Generates a Subunit report in the specified directory. """
 
         result_path = path or os.getcwd()

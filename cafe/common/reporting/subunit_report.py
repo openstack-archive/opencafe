@@ -15,6 +15,6 @@ from cafe.common.reporting.base_report import BaseReport
 
 
 class SubunitReport(BaseReport):
-    def generate_report(self, result_parser, all_results=None, path=None):
+    def generate_report(self, execution_time, all_results=None, path=None):
         raise NotImplementedError(
             "SubunitReport is not available without the subunit plugin!")

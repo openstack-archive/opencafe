@@ -16,6 +16,7 @@ from __future__ import print_function
 import argparse
 import errno
 import importlib
+import json
 import os
 import re
 import sys
@@ -85,13 +86,32 @@ class InputFileAction(argparse.Action):
     """
         Custom action that reads in a file and uses the lines for a test order.
     """
+    @staticmethod
+    def parse_line(line):
+        """Parses line of file input """
+        test = test_class = test_module = dd_args = dd_class = dd_module = None
+        test, temp = [word.strip() for word in line.split("(")]
+        temp = temp.strip(")").split(":", 2)
+        test_module, test_class = [w.strip() for w in temp[0].rsplit(".", 1)]
+        if len(temp) > 1:
+            dd_module, dd_class = [w.strip() for w in temp[1].rsplit(".", 1)]
+        if len(temp) > 2:
+            json.loads(temp[2].strip() or None)
+            dd_args = temp[2].strip() or None
+        test = test or None
+        return (test_module, test_class, dd_module, dd_class, dd_args), test
+
     def __call__(self, parser, namespace, value, option_string=None):
         dic = {}
         try:
             lines = open(value).readlines()
-            for count, line in enumerate(lines):
-                temp = line.replace(")", "").strip().split(" (")
-                dic[temp[1]] = dic.get(temp[1], []) + [temp[0]]
+            for line in lines:
+                if not line.strip():
+                    continue
+                key, test = self.parse_line(line)
+                dic[key] = dic.get(key, [])
+                if test is not None:
+                    dic[key].append(test)
         except IndexError as exception:
             parser.error(
                 "InputFileAction: Parsing of {0} failed: {1}".format(
@@ -99,6 +119,11 @@ class InputFileAction(argparse.Action):
         except IOError as exception:
             parser.error(
                 "InputFileAction: File open failed: {0}".format(exception))
+            exit(get_error(exception))
+        except (TypeError, ValueError) as exception:
+            parser.error(
+                "InputFileAction: Failed to parse line: {0}: Line: {1}".format(
+                    exception, line.strip()))
             exit(get_error(exception))
         setattr(namespace, self.dest, dic)
 
@@ -111,7 +136,13 @@ class ListAction(argparse.Action):
         if namespace.testrepos:
             print("\n<[TEST REPO]>\n")
             for repo in namespace.testrepos:
-                path = importlib.import_module(repo.split(".")[0]).__path__[0]
+                try:
+                    path = importlib.import_module(
+                        repo.split(".")[0]).__path__[0]
+                except Exception as exception:
+                    print_exception(
+                        "Argument Parser", "ListAction", repo, exception)
+                    continue
                 path = os.path.join(path, *repo.split(".")[1:])
                 print(path)
                 if os.path.exists("{0}.py".format(path)):
@@ -241,7 +272,7 @@ class ArgumentParser(argparse.ArgumentParser):
             metavar="REGEX",
             help="Filter by regex against dotpath down to test level"
                  "Example: tests.repo.cafe_tests.NoDataGenerator.test_fail"
-                 "Example: 'NoDataGenerator\.*fail'"
+                 "Example: 'NoDataGenerator\\.*fail'"
                  "Takes in a list and matches on any")
 
         self.add_argument(

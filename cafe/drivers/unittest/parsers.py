@@ -17,8 +17,7 @@ import json
 
 class SummarizeResults(object):
     """Reads in vars dict from suite and builds a Summarized results obj"""
-    def __init__(self, result_dict, tests, execution_time):
-        self.execution_time = execution_time
+    def __init__(self, result_dict, tests):
         self.all_tests = tests
         self.failures = result_dict.get("failures", [])
         self.skipped = result_dict.get("skipped", [])
