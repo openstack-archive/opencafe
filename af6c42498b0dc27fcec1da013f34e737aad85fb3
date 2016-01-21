@@ -1,0 +1,9 @@
+Code-Review+2: jose-idar <jose.idar@rackspace.com>
+Code-Review+2: Sam Danes <sam.danes@rackspace.com>
+Workflow+1: Sam Danes <sam.danes@rackspace.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 21 Jan 2016 21:32:41 +0000
+Reviewed-on: https://review.openstack.org/249502
+Project: openstack/opencafe
+Branch: refs/heads/master
