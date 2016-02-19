@@ -63,19 +63,32 @@ class SummarizeResults(object):
     @staticmethod
     def _create_result(test, type_="passed"):
         """Creates a Result object from a test and type of test"""
+
+        test_time = 0
         msg_type = {"failures": "failure_trace", "skipped": "skipped_msg",
                     "errored": "error_trace"}
         if type_ == "passed":
+            test_method_name = getattr(test, '_testMethodName', "")
+            if test_method_name:
+                test_time = getattr(test._reporter.testcase_times,
+                                    test_method_name, 0)
             dic = {"test_method_name": getattr(test, '_testMethodName', ""),
-                   "test_class_name": test.__class__.__name__}
+                   "test_class_name": test.__class__.__name__,
+                   "test_time": test_time}
 
         elif (type_ in ["failures", "skipped", "errored"] and
               not isinstance(test[0], _ErrorHolder)):
-            dic = {"test_method_name": getattr(test[0], '_testMethodName', ""),
+            test_method_name = getattr(test[0], '_testMethodName', "")
+            if test_method_name:
+                test_time = getattr(test[0]._reporter.testcase_times,
+                                    test_method_name, 0)
+            dic = {"test_method_name": test_method_name,
                    "test_class_name": test[0].__class__.__name__,
-                   msg_type.get(type_, "error_trace"): test[1]}
+                   msg_type.get(type_, "error_trace"): test[1],
+                   "test_time": test_time}
         else:
-            dic = {"test_method_name": str(test[0]).split(" ")[0],
+            test_method_name = str(test[0]).split(" ")[0]
+            dic = {"test_method_name": test_method_name,
                    "test_class_name": str(test[0]).split(".")[-1].rstrip(')'),
                    msg_type.get(type_, "error_trace"): test[1]}
         return Result(**dic)
@@ -85,13 +98,14 @@ class Result(object):
     """Result object used to create the json and xml results"""
     def __init__(
             self, test_class_name, test_method_name, failure_trace=None,
-            skipped_msg=None, error_trace=None):
+            skipped_msg=None, error_trace=None, test_time=0):
 
         self.test_class_name = test_class_name
         self.test_method_name = test_method_name
         self.failure_trace = failure_trace
         self.skipped_msg = skipped_msg
         self.error_trace = error_trace
+        self.test_time = test_time
 
     def __repr__(self):
         return json.dumps(self.__dict__)

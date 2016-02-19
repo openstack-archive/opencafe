@@ -39,6 +39,8 @@ class XMLReport(BaseReport):
 
         for testcase in all_results:
             testcase_tag = ET.SubElement(root, 'testcase')
+
+            testcase_tag.attrib['time'] = str(testcase.test_time)
             testcase_tag.attrib['classname'] = testcase.test_class_name
             testcase_tag.attrib['name'] = testcase.test_method_name
             if testcase.failure_trace is not None:
