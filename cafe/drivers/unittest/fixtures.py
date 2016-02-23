@@ -96,6 +96,7 @@ class BaseTestFixture(unittest.TestCase):
         self._reporter.start_test_metrics(
             self.__class__.__name__, self._testMethodName,
             self.logDescription())
+        self._duration = 0.00
         super(BaseTestFixture, self).setUp()
 
     def tearDown(self):
@@ -122,6 +123,9 @@ class BaseTestFixture(unittest.TestCase):
             else:
                 self._reporter.stop_test_metrics(self._testMethodName,
                                                  'Passed')
+
+            self._duration = \
+                self._reporter.test_metrics.timer.get_elapsed_time()
         else:
             for method, _ in self._outcome.errors:
                 if self._test_name_matches_result(self._testMethodName,
@@ -131,6 +135,9 @@ class BaseTestFixture(unittest.TestCase):
                 else:
                     self._reporter.stop_test_metrics(self._testMethodName,
                                                      'Passed')
+                self._duration = \
+                    self._reporter.test_metrics.timer.get_elapsed_time()
+
         # Continue inherited tearDown()
         super(BaseTestFixture, self).tearDown()
 
