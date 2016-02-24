@@ -201,7 +201,7 @@ class SFTPShell(BaseSSHClass):
 
     def get_file(self, remote_path):
         ret_val = StringIO()
-        self.getfo(ret_val, remote_path)
+        self.getfo(remote_path, ret_val)
         return ret_val.getvalue()
 
     def write_file(self, data, remote_path):
