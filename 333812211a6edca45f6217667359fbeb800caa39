@@ -1,0 +1,9 @@
+Code-Review+2: Anna Eilering <anna.eilering@rackspace.com>
+Code-Review+2: Daryl Walleck <daryl.walleck@rackspace.com>
+Workflow+1: Daryl Walleck <daryl.walleck@rackspace.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 01 Mar 2016 16:12:39 +0000
+Reviewed-on: https://review.openstack.org/283813
+Project: openstack/opencafe
+Branch: refs/heads/master
