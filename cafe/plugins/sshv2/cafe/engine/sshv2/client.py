@@ -287,7 +287,7 @@ class SSHShell(BaseSSHClass):
                 "Command timed out\nSTDOUT:{0}\nSTDERR:{1}\n".format(
                     stdout, stderr))
         response = ExecResponse(
-            stdin=None, stdout=stdout.strip(), stderr=stderr,
+            stdin=None, stdout=stdout.strip(), stderr=stderr.strip(),
             exit_status=exit_status)
         return response
 

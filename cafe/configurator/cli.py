@@ -10,52 +10,50 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
 import argparse
 from cafe.configurator.managers import (
     EngineDirectoryManager, EngineConfigManager, EnginePluginManager)
 
 
-class EngineActions(object):
-
-    class Init(object):
-        def __init__(self, args):
-            print("=================================")
-            print("* Initializing Engine Install")
-            EngineDirectoryManager.build_engine_directories()
-            EngineConfigManager.build_engine_config()
-            print("=================================")
-
-    class InitInstall(argparse.Action):
-        def __call__(
-                self, parser, namespace, values,
-                option_string=None):
-            print("=================================")
-            print("* Initializing Engine Install")
-            EngineDirectoryManager.build_engine_directories()
-            EngineConfigManager.build_engine_config()
-            print("=================================")
+def engine_config_init(namespace):
+    print vars(namespace)
+    if hasattr(namespace, "init_install") and not namespace.init_install:
+        return
+    print("=================================")
+    print("* Initializing Engine Install")
+    EngineDirectoryManager.build_engine_directories()
+    EngineConfigManager.build_engine_config()
+    print("=================================")
 
 
-class PluginActions(object):
+def add_plugins_subparser(subparsers):
+    def install_plugin(namespace):
+        print("=================================")
+        print("* Installing Plugins")
+        EnginePluginManager.install_plugins(namespace.plugins)
+        print("=================================")
 
-    class InstallPlugin(argparse.Action):
-        def __call__(
-                self, parser, namespace, values,
-                option_string=None):
-            print("=================================")
-            print("* Installing Plugins")
-            EnginePluginManager.install_plugins(values)
-            print("=================================")
+    def list_plugins(namespace):
+        print("=================================")
+        print("* Available Plugins")
+        EnginePluginManager.list_plugins()
+        print("=================================")
 
-    class ListPlugins(argparse.Action):
-        def __call__(
-                self, parser, namespace, values,
-                option_string=None):
-            print("=================================")
-            print("* Available Plugins")
-            EnginePluginManager.list_plugins()
-            print("=================================")
+    subparser_plugins = subparsers.add_parser('plugins')
+    plugin_args = subparser_plugins.add_subparsers(dest='subcommand')
+
+    plugins_list_parser = plugin_args.add_parser('list')
+    plugins_list_parser.set_defaults(func=list_plugins)
+
+    plugins_install_parser = plugin_args.add_parser('install')
+    plugins_install_parser.set_defaults(func=install_plugin)
+    plugins_install_parser.add_argument("plugins", nargs="*", default=[])
+
+
+def add_engine_subparser(subparsers):
+    # Engine configuration subparser
+    subparsers.add_parser('engine')
+    # engine_subparsers = engine_parser.add_subparsers(dest='subcommand')
 
 
 class ConfiguratorCLI(object):
@@ -67,35 +65,15 @@ class ConfiguratorCLI(object):
         parser = argparse.ArgumentParser()
         subparsers = parser.add_subparsers(dest="subcommand")
 
-        # Engine configuration subparser
-        subparser_engine_config = subparsers.add_parser(
-            'engine')
-        subparser_engine_config.add_argument(
-            '--init-install',
-            action=EngineActions.InitInstall,
-            nargs=0,
-            help="Deprecated. Please use 'cafe-config init' instead.")
-
-        subparser_init = subparsers.add_parser('init')
-        subparser_init.set_defaults(func=EngineActions.Init)
-
         # Plugin argument subparser
-        subparser_plugins = subparsers.add_parser('plugins')
-        plugin_args = subparser_plugins.add_subparsers(
-            dest='plugin_args')
+        add_plugins_subparser(subparsers)
 
-        plugins_list_parser = plugin_args.add_parser('list')
-        plugins_list_parser.add_argument(
-            'list_plugins',
-            action=PluginActions.ListPlugins,
-            nargs=0)
+        # add engine subparser
+        add_engine_subparser(subparsers)
 
-        plugins_install_parser = plugin_args.add_parser('install')
-        plugins_install_parser.add_argument(
-            'plugin-name',
-            action=PluginActions.InstallPlugin,
-            type=str,
-            nargs='*')
+        # add init command
+        subparser_init = subparsers.add_parser('init')
+        subparser_init.set_defaults(func=engine_config_init)
 
         # parse args and trigger actions
         args = parser.parse_args()
