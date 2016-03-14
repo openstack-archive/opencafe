@@ -74,7 +74,7 @@ class SuiteBuilder(object):
         modules = []
         error = False
         for repo in self.testrepos:
-            if not repo.__file__.endswith("__init__.pyc"):
+            if repo.__package__:
                 modules.append(repo)
                 continue
             prefix = "{0}.".format(repo.__name__)
