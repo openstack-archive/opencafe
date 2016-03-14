@@ -141,12 +141,13 @@ class SSHClient(BaseSSHClass):
 
     @_SSHLogger
     def execute_command(
-        self, command, bufsize=-1, get_pty=False,
-            stdin_str="", stdin_file=None, **connect_kwargs):
+        self, command, bufsize=-1, stdin_str="", stdin_file=None,
+            **connect_kwargs):
         ssh_client = self._connect(**connect_kwargs)
         stdin, stdout, stderr, exit_status = ssh_client.execute_command(
             timeout=self._get_timeout(connect_kwargs.get("timeout")),
-            command=command, bufsize=bufsize)
+            command=command, bufsize=bufsize, stdin_str=stdin_str,
+            stdin_file=stdin_file)
         ssh_client.close()
         del ssh_client
         return ExecResponse(
