@@ -11,12 +11,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from cafe.common.reporting import cclogging
+from cafe.engine.base import BaseCafeClass
 
 
-class BaseClient(object):
-    _log = cclogging.getLogger(__name__)
-
-    def __init__(self):
-        self._log = cclogging.getLogger(
-            cclogging.get_object_namespace(self.__class__))
+class BaseClient(BaseCafeClass):
+    pass

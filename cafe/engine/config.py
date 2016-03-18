@@ -18,10 +18,10 @@ from cafe.configurator.managers import OPENCAFE_SUB_DIRS, ENGINE_CONFIG_PATH
 
 
 class EngineDataSource(object):
-    def __init__(self, config_file_path, section_name):
+    def __init__(self, section_name):
         self._data_source = configparser.SafeConfigParser()
         self._section_name = section_name
-        self._data_source.read(config_file_path)
+        self._data_source.read(ENGINE_CONFIG_PATH)
 
     def get(self, item_name, default=None):
         match = 'CAFE_{0}_'.format(self._section_name)
@@ -39,8 +39,7 @@ class EngineConfig(object):
     TIME = datetime.now()
 
     def __init__(self):
-        self._data_source = EngineDataSource(
-            ENGINE_CONFIG_PATH, self.SECTION_NAME)
+        self._data_source = EngineDataSource(self.SECTION_NAME)
         self._format_vars = {
             "test_config": self._get("test_config"),
             "timestamp": self.TIME.strftime("%Y-%m-%d_%H_%M_%S.%f"),

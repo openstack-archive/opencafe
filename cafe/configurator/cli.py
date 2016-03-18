@@ -15,14 +15,12 @@ from cafe.configurator.managers import (
     EngineDirectoryManager, EngineConfigManager, EnginePluginManager)
 
 
-class EngineActions(object):
-    @staticmethod
-    def init(namespace):
-        print("=================================")
-        print("* Initializing Engine Install")
-        EngineDirectoryManager.build_engine_directories()
-        EngineConfigManager.build_engine_config()
-        print("=================================")
+def init(namespace):
+    print("=================================")
+    print("* Initializing Engine Install")
+    EngineDirectoryManager.build_engine_directories()
+    EngineConfigManager.build_engine_config()
+    print("=================================")
 
 def add_plugins_subparser(subparsers):
     def install_plugin(namespace):
@@ -68,7 +66,7 @@ class ConfiguratorCLI(object):
 
         # add init command
         subparser_init = subparsers.add_parser('init')
-        subparser_init.set_defaults(func=EngineActions.init)
+        subparser_init.set_defaults(func=init)
 
         namespace = parser.parse_args()
         namespace.func(namespace)

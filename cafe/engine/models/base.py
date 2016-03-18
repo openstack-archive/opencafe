@@ -10,9 +10,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
-from cafe.common.reporting import cclogging
+import logging
 import six
+
+from cafe.engine.base import BaseCafeClass
 
 
 class CommonToolsMixin(object):
@@ -124,12 +125,8 @@ class XML_ToolsMixin(object):
         return doc
 
 
-class BaseModel(object):
+class BaseModel(BaseCafeClass):
     __REPR_SEPARATOR__ = '\n'
-
-    def __init__(self):
-        self._log = cclogging.getLogger(
-            cclogging.get_object_namespace(self.__class__))
 
     def __eq__(self, obj):
         try:
@@ -154,7 +151,7 @@ class BaseModel(object):
             type(self).__name__, self.__REPR_SEPARATOR__)
         for key in list(vars(self).keys()):
             val = getattr(self, key)
-            if isinstance(val, cclogging.logging.Logger):
+            if isinstance(val, logging.Logger):
                 continue
             elif isinstance(val, six.text_type):
                 strng = '{0}{1} = {2}{3}'.format(
@@ -179,13 +176,6 @@ class AutoMarshallingModel(
              to automatically create serialized requests and automatically
              deserialize responses in a format-agnostic way.
     """
-
-    _log = cclogging.getLogger(__name__)
-
-    def __init__(self):
-        super(AutoMarshallingModel, self).__init__()
-        self._log = cclogging.getLogger(
-            cclogging.get_object_namespace(self.__class__))
 
     def serialize(self, format_type):
         serialization_exception = None
@@ -212,9 +202,6 @@ class AutoMarshallingModel(
 
     @classmethod
     def deserialize(cls, serialized_str, format_type):
-        cls._log = cclogging.getLogger(
-            cclogging.get_object_namespace(cls))
-
         model_object = None
         deserialization_exception = None
         if serialized_str and len(serialized_str) > 0:
