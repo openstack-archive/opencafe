@@ -22,6 +22,7 @@ from subprocess import Popen, PIPE
 from six.moves.configparser import SafeConfigParser
 
 import cafe
+from cafe.engine.clients.pypi import PyPIClient
 
 if not platform.system().lower() == 'windows':
     import pwd
@@ -329,14 +330,16 @@ class EnginePluginManager(object):
     @classmethod
     def list_plugins(cls):
         """ Lists all plugins currently available in user's .opencafe cache"""
-
-        plugin_folders = os.walk(cls._PLUGIN_DIR).next()[1]
+        print("=================================")
+        print("* Available Plugins")
+        plugins = PyPIClient().list_plugins()
         wrap = textwrap.TextWrapper(initial_indent="  ",
                                     subsequent_indent="  ",
                                     break_long_words=False).fill
 
-        for plugin_folder in plugin_folders:
-            print(wrap('... {name}'.format(name=plugin_folder)))
+        for plugin in plugins:
+            print(wrap('... {name}'.format(name=plugin)))
+        print("=================================")
 
     @classmethod
     def install_plugins(cls, plugin_names):
@@ -350,8 +353,6 @@ class EnginePluginManager(object):
     @classmethod
     def install_plugin(cls, plugin_name):
         """ Install a single plugin by name into the current environment"""
-
-        plugin_dir = os.path.join(cls._PLUGIN_DIR, plugin_name)
         wrap = textwrap.TextWrapper(initial_indent="  ",
                                     subsequent_indent="  ",
                                     break_long_words=False).fill
@@ -359,14 +360,10 @@ class EnginePluginManager(object):
         # Pretty output of plugin name
         print(wrap('... {name}'.format(name=plugin_name)))
 
-        # Verify that the plugin exists
-        if not os.path.exists(plugin_dir):
-            print(wrap('* Failed to install plugin: {0}'.format(plugin_name)))
-            return
-
         # Install Plugin
         process, standard_out, standard_error = None, None, None
-        cmd = 'pip install {name} --upgrade'.format(name=plugin_dir)
+        cmd = 'pip install {name} --upgrade'.format(
+            name=PyPIClient.get_package_name(plugin_name))
 
         try:
             process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)

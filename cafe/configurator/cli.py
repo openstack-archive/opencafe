@@ -15,16 +15,14 @@ from cafe.configurator.managers import (
     EngineDirectoryManager, EngineConfigManager, EnginePluginManager)
 
 
-def engine_config_init(namespace):
-    print vars(namespace)
-    if hasattr(namespace, "init_install") and not namespace.init_install:
-        return
-    print("=================================")
-    print("* Initializing Engine Install")
-    EngineDirectoryManager.build_engine_directories()
-    EngineConfigManager.build_engine_config()
-    print("=================================")
-
+class EngineActions(object):
+    @staticmethod
+    def init(namespace):
+        print("=================================")
+        print("* Initializing Engine Install")
+        EngineDirectoryManager.build_engine_directories()
+        EngineConfigManager.build_engine_config()
+        print("=================================")
 
 def add_plugins_subparser(subparsers):
     def install_plugin(namespace):
@@ -34,10 +32,7 @@ def add_plugins_subparser(subparsers):
         print("=================================")
 
     def list_plugins(namespace):
-        print("=================================")
-        print("* Available Plugins")
         EnginePluginManager.list_plugins()
-        print("=================================")
 
     subparser_plugins = subparsers.add_parser('plugins')
     plugin_args = subparser_plugins.add_subparsers(dest='subcommand')
@@ -47,7 +42,7 @@ def add_plugins_subparser(subparsers):
 
     plugins_install_parser = plugin_args.add_parser('install')
     plugins_install_parser.set_defaults(func=install_plugin)
-    plugins_install_parser.add_argument("plugins", nargs="*", default=[])
+    plugins_install_parser.add_argument("plugins", nargs="+", default=[])
 
 
 def add_engine_subparser(subparsers):
@@ -69,19 +64,15 @@ class ConfiguratorCLI(object):
         add_plugins_subparser(subparsers)
 
         # add engine subparser
-        add_engine_subparser(subparsers)
+        # add_engine_subparser(subparsers)
 
         # add init command
         subparser_init = subparsers.add_parser('init')
-        subparser_init.set_defaults(func=engine_config_init)
+        subparser_init.set_defaults(func=EngineActions.init)
 
-        # parse args and trigger actions
-        args = parser.parse_args()
-
-        try:
-            args.func(args)
-        except AttributeError:
-            return args
+        namespace = parser.parse_args()
+        namespace.func(namespace)
+        return namespace
 
 
 def entry_point():
