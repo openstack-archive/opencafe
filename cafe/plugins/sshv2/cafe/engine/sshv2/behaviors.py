@@ -25,6 +25,16 @@ class SSHBehavior(BaseSSHClass):
 
     @classmethod
     def generate_rsa_ssh_keys(cls, key_size=None, pass_phrase=None):
+        """Generates a public and private rsa ssh key
+
+        Returns an SSHKeyResponse objects which has both the public and private
+        key as attributes
+
+        :param int key_size: RSA modulus length (must be a multiple of 256)
+                             and >= 1024
+        :param str pass_phrase: The pass phrase to derive the encryption key
+                                from
+        """
         key_size = key_size or 2048
         pass_phrase = pass_phrase or ""
 
@@ -42,6 +52,13 @@ class SSHBehavior(BaseSSHClass):
     @classmethod
     def write_secure_keys_local(
             cls, private_key, public_key=None, path=None, file_name=None):
+        """Writes secure keys to a local file
+
+        :param str private_key: Private rsa ssh key string
+        :param str public_key: Public rsa ssh key string
+        :param str path: Path to put the file(s)
+        :param str file_name: Name of the private_key file, 'id_rsa' by default
+        """
         if path is None:
             path = ENGINE_CONFIG.temp_directory
         if file_name is None:
@@ -59,6 +76,12 @@ class SSHBehavior(BaseSSHClass):
 
     @staticmethod
     def write_file_with_permissions(file_path, string=None, permissions=0o600):
+        """Writes files with parameterized permissions
+
+        :param str file_path: Path to write the file to
+        :param str string: String to write into the file
+        :param int permissions: Permissions to give the file
+        """
         if string is None:
             return
         with open(file_path, "w") as file_:
@@ -68,6 +91,15 @@ class SSHBehavior(BaseSSHClass):
     @classmethod
     def generate_and_write_files(
             cls, path=None, file_name=None, key_size=None, passphrase=None):
+        """Generate and write public and private rsa keys to local files
+
+        :param str path: Path to put the file(s)
+        :param str file_name: Name of the private_key file, 'id_rsa' by default
+        :param int key_size: RSA modulus length (must be a multiple of 256)
+                             and >= 1024
+        :param str pass_phrase: The pass phrase to derive the encryption key
+                                from
+        """
         keys = cls.generate_rsa_ssh_keys(key_size, passphrase)
         cls.write_secure_keys_local(
             private_key=keys.private_key, public_key=keys.public_key,
