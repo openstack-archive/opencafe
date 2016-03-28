@@ -1,5 +1,6 @@
+pip
+virtualenv
 tox
 mock
 flake8
 nose
-virtualenv
