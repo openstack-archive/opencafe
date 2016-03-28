@@ -73,7 +73,7 @@ class ReportingTests(unittest.TestCase):
             'failures': [(FakeTests('test_report_fail'), self.failure_trace)]}
 
         self.result_parser = SummarizeResults(
-            master_testsuite=test_suite, result_dict=result,
+            tests=test_suite, result_dict=result,
             execution_time=1.23)
         self.all_results = self.result_parser.gather_results()
         self.reporter = Reporter(
@@ -97,10 +97,13 @@ class ReportingTests(unittest.TestCase):
         """ Checks that the specified file contains all strings in the
         target_strings list.
         """
+        fh = open(file_path)
+        found = False
         for target_string in target_strings:
-            if target_string in open(file_path).read():
-                return True
-        return False
+            if target_string in fh.read():
+                found = True
+        fh.close()
+        return found
 
     @tags('smoke', 'cli', execution='slow, fast', suite="test, integration")
     def test_create_json_report(self):
