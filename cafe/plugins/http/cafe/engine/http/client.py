@@ -90,7 +90,9 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             if 'params' in dir(response.request):
                 request_params = response.request.params
             elif '?' in request_url:
-                request_url, request_params = request_url.split('?')
+                request_list = request_url.split('?')
+                request_url = request_list[0]
+                request_params = "?".join(request_list[1:])
 
             logline = ''.join([
                 '\n{0}\nREQUEST SENT\n{0}\n'.format('-' * 12),
