@@ -18,6 +18,8 @@ import re
 
 from cafe.common.reporting import cclogging
 from cafe.drivers.unittest.datasets import DatasetList
+from cafe.drivers.unittest.fixtures import BaseTestFixture
+
 
 DATA_DRIVEN_TEST_ATTR = "__data_driven_test_data__"
 DATA_DRIVEN_TEST_PREFIX = "ddtest_"
@@ -85,8 +87,54 @@ def data_driven_test(*dataset_sources, **kwargs):
     return decorator
 
 
+class EmptyDSLError(Exception):
+    """Custom exception to allow errors in Datadriven classes with no data."""
+    def __init__(self, dsl_namespace, original_test_list):
+        general_message = (
+            "The Dataset list used to generate this Data Driven Class was "
+            "empty. No Fixtures or Tests were generated. Review the Dataset "
+            "used to run this test.")
+        DSL_information = "DatasetlList location: {dsl_namespace}".format(
+            dsl_namespace=dsl_namespace)
+        pretty_test_list_header = (
+            "The following {n} tests were not run".format(
+                n=len(original_test_list)))
+        pretty_test_list = "\t" + "\n\t".join(original_test_list)
+        self.message = (
+            "{general_message}\n{DSL_information}\n\n"
+            "{pretty_test_list_header}\n{pretty_test_list}").format(
+                general_message=general_message,
+                DSL_information=DSL_information,
+                pretty_test_list_header=pretty_test_list_header,
+                pretty_test_list=pretty_test_list)
+        super(EmptyDSLError, self).__init__(self.message)
+
+
+class FauxDSLFixture(BaseTestFixture):
+    """Faux Test Fixture and Test class to inject into DDC that lack data."""
+
+    dsl_namespace = None
+    original_test_list = []
+
+    # This is so we don't have to call super as there will never be anything
+    # here.
+    _class_cleanup_tasks = []
+
+    @classmethod
+    def setUpClass(cls):
+        """setUpClass to force a fixture error for DDCs which lack data."""
+        raise EmptyDSLError(
+            dsl_namespace=cls.dsl_namespace,
+            original_test_list=cls.original_test_list)
+
+    # A test method is required in order to allow this to be injected without
+    # making changes to Unittest itself.
+    def test_data_failed_to_generate(self):
+        """Faux test method to allow injection."""
+        pass
+
 def DataDrivenClass(*dataset_lists):
-    """Use data driven class decorator. designed to be used on a fixture"""
+    """Use data driven class decorator. designed to be used on a fixture."""
     def decorator(cls):
         """Creates classes with variables named after datasets.
         Names of classes are equal to (class_name with out fixture) + ds_name
@@ -96,7 +144,29 @@ def DataDrivenClass(*dataset_lists):
         class_name = re.sub("fixture", "", cls.__name__, flags=re.IGNORECASE)
         if not re.match(".*fixture", cls.__name__, flags=re.IGNORECASE):
             cls.__name__ = "{0}Fixture".format(cls.__name__)
+
         for dataset_list in dataset_lists:
+            if not dataset_list:
+                # The DSL did not generate anything
+                class_name_new = "{0}_{1}".format(class_name, "DSL_EXCEPTION")
+                # We are creating a new, special class here that willd allow us
+                # to force an error during test set up that contains
+                # information useful for triaging the DSL failure.
+                # Additionally this should surface any tests that did not run
+                # due to the DSL issue.
+                new_cls = DataDrivenFixture(FauxDSLFixture)
+                new_class = type(
+                    class_name_new,
+                    (new_cls,),
+                    {})
+                dsl_namespace = cclogging.get_object_namespace(
+                    dataset_list.__class__)
+                test_ls = [test for test in dir(cls) if test.startswith(
+                    'test_') or test.startswith(DATA_DRIVEN_TEST_PREFIX)]
+                new_class.dsl_namespace = dsl_namespace
+                new_class.original_test_list = test_ls
+                new_class.__module__ = cls.__module__
+                setattr(module, class_name_new, new_class)
             for dataset in dataset_list:
                 class_name_new = "{0}_{1}".format(class_name, dataset.name)
                 new_class = type(class_name_new, (cls,), dataset.data)
