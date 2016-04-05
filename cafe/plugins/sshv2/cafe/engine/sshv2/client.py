@@ -18,11 +18,16 @@ import io
 import time
 
 from paramiko import AutoAddPolicy, RSAKey
+from paramiko import py3compat
 from paramiko.client import SSHClient as ParamikoSSHClient
 
 from cafe.engine.sshv2.common import (
     BaseSSHClass, _SSHLogger, DEFAULT_TIMEOUT, POLLING_RATE, CHANNEL_KEEPALIVE)
 from cafe.engine.sshv2.models import ExecResponse
+
+# this is a hack to preimport dependencies imported in a thread during connect
+# which causes a deadlock. https://github.com/paramiko/paramiko/issues/104
+py3compat.u("")
 
 
 class ProxyTypes(object):
