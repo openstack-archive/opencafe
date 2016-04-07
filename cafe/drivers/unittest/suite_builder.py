@@ -74,9 +74,16 @@ class SuiteBuilder(object):
         modules = []
         error = False
         for repo in self.testrepos:
-            if not repo.__file__.endswith("__init__.pyc"):
+
+            # We're assuming only packages have __file__ attribute strings
+            # that end with __init__.py (or .pyc).  If this doesn't match
+            # that pattern, assume it's a module.
+            if "__init__.py" not in getattr(repo, "__file__", ""):
                 modules.append(repo)
                 continue
+
+            # We're still in a package, so walk it and find the rest of the
+            # modules.
             prefix = "{0}.".format(repo.__name__)
             for _, modname, is_pkg in pkgutil.walk_packages(
                     path=repo.__path__, prefix=prefix, onerror=lambda x: None):
@@ -90,6 +97,7 @@ class SuiteBuilder(object):
                         error = True
         if self.exit_on_error and error:
             exit(get_error(exception))
+
         return modules
 
     @staticmethod
