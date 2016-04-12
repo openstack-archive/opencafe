@@ -1,0 +1,9 @@
+Code-Review+2: jose-idar <jose.idar@rackspace.com>
+Code-Review+2: Carlos Martinez <carlos.martinez@rackspace.com>
+Workflow+1: Carlos Martinez <carlos.martinez@rackspace.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 12 Apr 2016 20:49:29 +0000
+Reviewed-on: https://review.openstack.org/300183
+Project: openstack/opencafe
+Branch: refs/heads/master
