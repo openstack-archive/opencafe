@@ -141,13 +141,7 @@ class BaseModel(object):
         return False
 
     def __ne__(self, obj):
-        if obj is None:
-            return True
-
-        if vars(obj) == vars(self):
-            return False
-        else:
-            return True
+        return not self.__eq__(obj)
 
     def __str__(self):
         strng = '<{0} object> {1}'.format(
