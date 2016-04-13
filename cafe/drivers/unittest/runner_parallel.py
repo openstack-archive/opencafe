@@ -177,7 +177,8 @@ class UnittestRunner(object):
             result = dic["result"]
             tests = [suite for suite in self.suites
                      if suite.cafe_uuid == dic["cafe_uuid"]][0]
-            result_parser = SummarizeResults(vars(result), tests, run_time)
+            result_parser = SummarizeResults(
+                vars(result), tests, run_time, datagen_time)
             all_results += result_parser.gather_results()
             summary = result_parser.summary_result()
             for key in result_dict:
