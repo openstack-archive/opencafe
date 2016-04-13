@@ -68,6 +68,7 @@ class UnittestRunner(object):
         self.test_env.finalize()
         cclogging.init_root_log_handler()
         self.print_configuration(self.test_env, self.cl_args.testrepos)
+        self.datagen_start = time.time()
         self.cl_args.testrepos = import_repos(self.cl_args.testrepos)
 
         self.suites = SuiteBuilder(
@@ -96,7 +97,6 @@ class UnittestRunner(object):
             to_worker.put(None)
 
         start = time.time()
-
         # A second try catch is needed here because queues can cause locking
         # when they go out of scope, especially when termination signals used
         try:
@@ -108,8 +108,10 @@ class UnittestRunner(object):
             for _ in self.suites:
                 results.append(self.log_result(from_worker.get()))
 
+            end = time.time()
             tests_run, errors, failures = self.compile_results(
-                time.time() - start, results)
+                end - start, end - self.datagen_start, results)
+
         except KeyboardInterrupt:
             print_exception("Runner", "run", "Keyboard Interrupt, exiting...")
             os.killpg(0, 9)
@@ -166,7 +168,7 @@ class UnittestRunner(object):
         dic["result"].stream.seek(0)
         return dic
 
-    def compile_results(self, run_time, results):
+    def compile_results(self, run_time, datagen_time, results):
         """Summarizes results and writes results to file if --result used"""
         all_results = []
         result_dict = {"tests": 0, "errors": 0, "failures": 0}
@@ -189,13 +191,16 @@ class UnittestRunner(object):
             reporter = Reporter(result_parser, all_results)
             reporter.generate_report(
                 self.cl_args.result, self.cl_args.result_directory)
-        return self.print_results(run_time=run_time, **result_dict)
+        return self.print_results(
+            run_time=run_time, datagen_time=datagen_time, **result_dict)
 
-    def print_results(self, tests, errors, failures, run_time):
+    def print_results(self, tests, errors, failures, run_time, datagen_time):
         """Prints results summerized in compile_results messages"""
         print("{0}".format("-" * 70))
         print("Ran {0} test{1} in {2:.3f}s".format(
             tests, "s" * bool(tests - 1), run_time))
+        print("Generated datasets in {0:.3f}s".format(datagen_time))
+        print("Total runtime {0:.3f}s".format(run_time + datagen_time))
 
         if failures or errors:
             print("\nFAILED ({0}{1}{2})".format(
