@@ -49,7 +49,7 @@ for dirpath, directories, filenames in os.walk(dir_path):
 
 setup(
     name='opencafe',
-    version='0.2.5',
+    version='0.2.6',
     description='The Common Automation Framework Engine',
     long_description='{0}'.format(open('README.rst').read()),
     author='CafeHub',
