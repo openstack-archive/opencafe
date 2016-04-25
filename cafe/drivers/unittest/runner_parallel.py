@@ -12,18 +12,26 @@
 # under the License.
 
 from __future__ import print_function
+import sys
 
-from multiprocessing import Process, Queue
+# Support for the alternate dill-based multiprocessing library 'multiprocess'
+# as an experimental workaround if you're having pickling errors.
+try:
+    from multiprocess import Process, Queue
+    sys.stdout.write(
+        "\n\nUtilizing the pathos multiprocess library. "
+        "This feature is experimental\n\n")
+except:
+    from multiprocessing import Process, Queue
+
 from StringIO import StringIO
 from unittest.runner import _WritelnDecorator
 import importlib
 import logging
 import os
-import sys
 import time
 import traceback
 import unittest
-
 from cafe.common.reporting import cclogging
 from cafe.common.reporting.reporter import Reporter
 from cafe.configurator.managers import TestEnvManager
