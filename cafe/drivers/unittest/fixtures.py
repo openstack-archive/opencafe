@@ -123,9 +123,16 @@ class BaseTestFixture(unittest.TestCase):
             else:
                 self._reporter.stop_test_metrics(self._testMethodName,
                                                  'Passed')
-
-            self._duration = \
-                self._reporter.test_metrics.timer.get_elapsed_time()
+            try:
+                self._duration = \
+                    self._reporter.test_metrics.timer.get_elapsed_time()
+            except AttributeError:
+                # If the reporter was not appropriately called at test start
+                # or end tests will fail unless we catch this. This is common
+                # in the case where test writers did not appropriately call
+                # 'super' in the setUp or setUpClass of their fixture or
+                # test class. 
+                self._duration = float('nan')
         else:
             for method, _ in self._outcome.errors:
                 if self._test_name_matches_result(self._testMethodName,
