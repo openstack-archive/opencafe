@@ -115,9 +115,9 @@ class FixtureReporter(object):
             self.test_metrics.timer.stop()
         except AttributeError:
             warn(
-                "Test metrics not being logged!"
+                "\nTest metrics not being logged!"
                 "stop_test_metrics is being called without "
-                "start_test_metrics having been previously called.")
+                "start_test_metrics having been previously called.\n\n")
             log_info_block(
                 self.logger.log,
                 [('Test Case', test_name),

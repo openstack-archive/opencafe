@@ -123,9 +123,11 @@ class BaseTestFixture(unittest.TestCase):
             else:
                 self._reporter.stop_test_metrics(self._testMethodName,
                                                  'Passed')
-
-            self._duration = \
-                self._reporter.test_metrics.timer.get_elapsed_time()
+            try:
+                self._duration = \
+                    self._reporter.test_metrics.timer.get_elapsed_time()
+            except AttributeError:
+                self._duration = 'NaN'
         else:
             for method, _ in self._outcome.errors:
                 if self._test_name_matches_result(self._testMethodName,
