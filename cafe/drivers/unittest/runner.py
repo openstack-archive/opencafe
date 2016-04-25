@@ -20,7 +20,14 @@ import unittest
 import uuid
 from importlib import import_module
 from inspect import isclass
-from multiprocessing import Process, Manager
+
+# Support for the alternate dill-based multiprocessing library 'multiprocess'
+# as an experimental workaround if you're having pickling errors.
+try:
+    from multiprocess import Process, Queue
+except:
+    from multiprocessing import Process, Queue
+
 from re import search
 from traceback import print_exc
 from cafe.common.reporting import cclogging
