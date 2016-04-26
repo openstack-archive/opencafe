@@ -110,7 +110,8 @@ class UnittestRunner(object):
 
             end = time.time()
             tests_run, errors, failures = self.compile_results(
-                end - start, end - self.datagen_start, results)
+                run_time=end - start, datagen_time=start - self.datagen_start,
+                results=results)
 
         except KeyboardInterrupt:
             print_exception("Runner", "run", "Keyboard Interrupt, exiting...")
