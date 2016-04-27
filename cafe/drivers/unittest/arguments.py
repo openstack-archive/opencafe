@@ -25,9 +25,16 @@ from cafe.drivers.base import print_exception, get_error
 from cafe.engine.config import EngineConfig
 
 
-ENGINE_CONFIG = EngineConfig(
-    os.environ.get("CAFE_ENGINE_CONFIG_FILE_PATH") or
-    EngineConfigManager.ENGINE_CONFIG_PATH)
+def get_engine_config():
+    """
+    Get the engine config.
+
+    :return: Instantiated EngineConfig object
+    :rtype: EngineConfig
+    """
+    return EngineConfig(
+        os.environ.get("CAFE_ENGINE_CONFIG_FILE_PATH") or
+        EngineConfigManager.ENGINE_CONFIG_PATH)
 
 
 def tree(start):
@@ -61,7 +68,7 @@ class ConfigAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
         value = value if value.endswith('.config') else "{0}.config".format(
             value)
-        path = "{0}/{1}".format(ENGINE_CONFIG.config_directory, value)
+        path = "{0}/{1}".format(get_engine_config().config_directory, value)
         if not os.path.exists(path):
             parser.error(
                 "ConfigAction: Config does not exist: {0}".format(path))
@@ -122,7 +129,7 @@ class ListAction(argparse.Action):
                 print()
         else:
             print("\n<[CONFIGS]>\n")
-            tree(ENGINE_CONFIG.config_directory)
+            tree(get_engine_config().config_directory)
         exit(0)
 
 
