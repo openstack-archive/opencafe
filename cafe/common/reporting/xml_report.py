@@ -67,7 +67,10 @@ class XMLReport(BaseReport):
 
         result_path = path or os.getcwd()
         if os.path.isdir(result_path):
-            result_path += "/results.xml"
+            xml_file = os.getenv('CAFE_TEST_RESULTS_XML_FILENAME')
+            if None is xml_file:
+                xml_file = 'results.xml'
+            result_path += '/{0}'.format(xml_file)
 
         file = open(result_path, 'wb')
         ET.ElementTree(root).write(file)
