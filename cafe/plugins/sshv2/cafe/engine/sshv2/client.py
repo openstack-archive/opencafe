@@ -29,6 +29,9 @@ from cafe.engine.sshv2.models import ExecResponse
 # which causes a deadlock. https://github.com/paramiko/paramiko/issues/104
 py3compat.u("")
 
+# dirty hack 2.0 also issue 104
+from cryptography.hazmat.backends import default_backend
+default_backend()
 
 class ProxyTypes(object):
     SOCKS5 = 2
