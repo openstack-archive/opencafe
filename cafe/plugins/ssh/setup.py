@@ -22,5 +22,5 @@ setup(
     url='http://rackspace.com',
     packages=find_packages(),
     namespace_packages=['cafe'],
-    install_requires=['paramiko'],
+    install_requires=['paramiko >= 1.17.0, <2'],
     zip_safe=False)
