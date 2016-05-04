@@ -30,8 +30,12 @@ from cafe.engine.sshv2.models import ExecResponse
 py3compat.u("")
 
 # dirty hack 2.0 also issue 104
-from cryptography.hazmat.backends import default_backend
-default_backend()
+# Try / Catch to prevent users using paramiko<2.0.0 from raising an ImportError
+try:
+    from cryptography.hazmat.backends import default_backend
+    default_backend()
+except ImportError:
+    pass
 
 
 class ProxyTypes(object):
