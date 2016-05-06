@@ -23,15 +23,6 @@ from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.decorators import tags
 
 
-def load_tests(*args, **kwargs):
-    suite = unittest.suite.TestSuite()
-    suite.addTest(ReportingTests('test_create_json_report'))
-    suite.addTest(ReportingTests('test_create_xml_report'))
-    suite.addTest(ReportingTests('test_create_json_report_w_file_name'))
-    suite.addTest(ReportingTests('test_create_xml_report_w_file_name'))
-    return suite
-
-
 class FakeTests(unittest.TestCase):
 
     """ These tests are only used only to create a SummarizeResults object
@@ -73,8 +64,8 @@ class ReportingTests(unittest.TestCase):
             'failures': [(FakeTests('test_report_fail'), self.failure_trace)]}
 
         self.result_parser = SummarizeResults(
-            master_testsuite=test_suite, result_dict=result,
-            execution_time=1.23)
+            tests=test_suite, result_dict=result,
+            execution_time=1.23, datagen_time=4.56)
         self.all_results = self.result_parser.gather_results()
         self.reporter = Reporter(
             result_parser=self.result_parser, all_results=self.all_results,)
@@ -97,10 +88,15 @@ class ReportingTests(unittest.TestCase):
         """ Checks that the specified file contains all strings in the
         target_strings list.
         """
+        not_found = []
+        with open(file_path) as in_file:
+            contents = in_file.read()
         for target_string in target_strings:
-            if target_string in open(file_path).read():
-                return True
-        return False
+            if target_string not in contents:
+                not_found.append(target_string)
+        if len(not_found) > 0:
+            return (False, not_found)
+        return (True, not_found)
 
     @tags('smoke', 'cli', execution='slow, fast', suite="test, integration")
     def test_create_json_report(self):
@@ -111,7 +107,13 @@ class ReportingTests(unittest.TestCase):
             result_type='json', path=self.results_dir)
         results_file = self.results_dir + os.path.sep + 'results.json'
         self.assertTrue(os.path.exists(results_file))
-        self.assertTrue(self._file_contains_test_info(file_path=results_file))
+        results = self._file_contains_test_info(file_path=results_file)
+        if results[0] is False:
+            self.assertTrue(
+                results[0], '{0} not found in report results file'.format(
+                    ', '.join(results[1])))
+        else:
+            self.assertTrue(results[0])
 
     @tags("cli", execution='slow')
     def test_create_xml_report(self):
@@ -121,7 +123,13 @@ class ReportingTests(unittest.TestCase):
         self.reporter.generate_report(result_type='xml', path=self.results_dir)
         results_file = self.results_dir + os.path.sep + 'results.xml'
         self.assertTrue(os.path.exists(results_file))
-        self.assertTrue(self._file_contains_test_info(file_path=results_file))
+        results = self._file_contains_test_info(file_path=results_file)
+        if results[0] is False:
+            self.assertTrue(
+                results[0], '{0} not found in report results file'.format(
+                    ', '.join(results[1])))
+        else:
+            self.assertTrue(results[0])
 
     @tags('smoke', 'cli', 'functional', execution='fast')
     def test_create_json_report_w_file_name(self):
@@ -131,7 +139,13 @@ class ReportingTests(unittest.TestCase):
         results_file = self.results_dir + os.path.sep + str(uuid4()) + '.json'
         self.reporter.generate_report(result_type='json', path=results_file)
         self.assertTrue(os.path.exists(results_file))
-        self.assertTrue(self._file_contains_test_info(file_path=results_file))
+        results = self._file_contains_test_info(file_path=results_file)
+        if results[0] is False:
+            self.assertTrue(
+                results[0], '{0} not found in report results file'.format(
+                    ', '.join(results[1])))
+        else:
+            self.assertTrue(results[0])
 
     @tags('cli', 'functional')
     def test_create_xml_report_w_file_name(self):
@@ -141,7 +155,53 @@ class ReportingTests(unittest.TestCase):
         results_file = self.results_dir + os.path.sep + str(uuid4()) + '.xml'
         self.reporter.generate_report(result_type='xml', path=results_file)
         self.assertTrue(os.path.exists(results_file))
-        self.assertTrue(self._file_contains_test_info(file_path=results_file))
+        results = self._file_contains_test_info(file_path=results_file)
+        if results[0] is False:
+            self.assertTrue(
+                results[0], '{0} not found in report results file'.format(
+                    ', '.join(results[1])))
+        else:
+            self.assertTrue(results[0])
+
+    def test_timing_metrics_in_json_report(self):
+        """
+        Creates a json report and verifies that the created
+        report contains timing metrics.
+        """
+        self.reporter.generate_report(
+            result_type='json', path=self.results_dir)
+        results_file = self.results_dir + os.path.sep + 'results.json'
+        self.assertTrue(os.path.exists(results_file))
+        results = self._file_contains(
+            file_path=results_file,
+            target_strings=['datagen_time', 'total_time'])
+        if results[0] is False:
+            self.assertTrue(
+                results[0],
+                '{0} not found in report results file'.format(
+                    ', '.join(results[1])))
+        else:
+            self.assertTrue(results[0])
+
+    def test_timing_metrics_in_xml_report(self):
+        """
+        Creates an xml report and verifies that the created
+        report contains timing metrics.
+        """
+        self.reporter.generate_report(
+            result_type='xml', path=self.results_dir)
+        results_file = self.results_dir + os.path.sep + 'results.xml'
+        self.assertTrue(os.path.exists(results_file))
+        results = self._file_contains(
+            file_path=results_file,
+            target_strings=['datagen_time', 'total_time'])
+        if results[0] is False:
+            self.assertTrue(
+                results[0],
+                '{0} not found in report results file'.format(
+                    ', '.join(results[1])))
+        else:
+            self.assertTrue(results[0])
 
     def tearDown(self):
         """ Deletes created reports and directories. """

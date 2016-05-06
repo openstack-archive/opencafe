@@ -30,6 +30,8 @@ class JSONReport(BaseReport):
         skips = len([result.skipped_msg for result in all_results
                      if result.skipped_msg])
         time = str(result_parser.execution_time)
+        if result_parser.datagen_time is not None:
+            datagen_time = str(result_parser.datagen_time)
 
         # Convert Result objects to dicts for processing
         individual_results = []
@@ -54,6 +56,10 @@ class JSONReport(BaseReport):
             'time': time,
             'results': individual_results
         }
+        # Add new metrics to result summary if available
+        if datagen_time is not None:
+            test_results['datagen_time'] = datagen_time
+            test_results['total_time'] = str(float(time) + float(datagen_time))
 
         result_path = path or os.getcwd()
         if os.path.isdir(result_path):

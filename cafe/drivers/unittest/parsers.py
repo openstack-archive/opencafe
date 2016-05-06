@@ -17,7 +17,8 @@ import json
 
 class SummarizeResults(object):
     """Reads in vars dict from suite and builds a Summarized results obj"""
-    def __init__(self, result_dict, tests, execution_time):
+    def __init__(self, result_dict, tests, execution_time, datagen_time=None):
+        self.datagen_time = datagen_time
         self.execution_time = execution_time
         self.all_tests = tests
         self.failures = result_dict.get("failures", [])
