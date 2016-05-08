@@ -180,7 +180,7 @@ class UnittestRunner(object):
     def compile_results(self, run_time, datagen_time, results):
         """Summarizes results and writes results to file if --result used"""
         all_results = []
-        result_dict = {"tests": 0, "errors": 0, "failures": 0}
+        result_dict = {"tests": 0, "errors": 0, "failures": 0, "skipped": 0}
         for dic in results:
             result = dic["result"]
             tests = [suite for suite in self.suites
@@ -205,7 +205,8 @@ class UnittestRunner(object):
         return self.print_results(
             run_time=run_time, datagen_time=datagen_time, **result_dict)
 
-    def print_results(self, tests, errors, failures, run_time, datagen_time):
+    def print_results(self, tests, errors, failures, skipped,
+                      run_time, datagen_time):
         """Prints results summerized in compile_results messages"""
         print("{0}".format("-" * 70))
         print("Ran {0} test{1} in {2:.3f}s".format(
@@ -213,11 +214,15 @@ class UnittestRunner(object):
         print("Generated datasets in {0:.3f}s".format(datagen_time))
         print("Total runtime {0:.3f}s".format(run_time + datagen_time))
 
-        if failures or errors:
-            print("\nFAILED ({0}{1}{2})".format(
-                "failures={0}".format(failures) if failures else "",
-                ", " if failures and errors else "",
-                "errors={0}".format(errors) if errors else ""))
+        results = []
+        if failures:
+            results.append("failures={0}".format(failures))
+        if skipped:
+            results.append("skipped={0}".format(skipped))
+        if errors:
+            results.append("errors={0}".format(errors))
+        if results:
+            print("\nFAILED ({})".format(", ".join(results)))
         print("{0}\nDetailed logs: {1}\n{2}".format(
             "=" * 150, self.test_env.test_log_dir, "-" * 150))
         return tests, errors, failures
