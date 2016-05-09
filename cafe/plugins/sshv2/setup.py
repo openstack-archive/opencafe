@@ -25,5 +25,5 @@ setup(
     url='http://rackspace.com',
     packages=find_packages(),
     namespace_packages=['cafe'],
-    install_requires=['paramiko', 'pysocks'],
+    install_requires=['paramiko<2', 'pysocks'],
     zip_safe=False)
