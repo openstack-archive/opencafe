@@ -1,0 +1,7 @@
+[DoStuff_WithData]
+fixture_class=testrepo.fixtures.SomeTestFixtureA
+dsl=testrepo.dsl.SomeDatasetList
+mixin_test_classes=
+    testrepo.test_mixins.TestMixinClass1
+    testrepo.test_mixins.TestMixinClass2
+    testrepo.test_mixins.TestMixinClass3
