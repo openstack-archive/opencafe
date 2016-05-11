@@ -27,6 +27,9 @@ class BrewRunner(UnittestRunner):
         self.datagen_start = time.time()
         self.run_file = BrewFile(self.cl_args.runfiles)
 
+        # Log the runfile here so that it appears in the logs before any tests
+        self._log.debug("\n" + str(self.run_file))
+
         # TODO: Once the parallel_runner is changed to a yielding model,
         #       change this to yielding brews instead of generating a list
         self.suites = SuiteBuilder(
@@ -34,24 +37,23 @@ class BrewRunner(UnittestRunner):
             dry_run=self.cl_args.dry_run,
             exit_on_error=True).get_suites()
 
-        self.print_configuration(self.test_env, runfile=self.run_file)
+        self.print_configuration(self.test_env, brewfile=self.run_file)
 
-    def print_configuration(self, test_env, repos=None, runfile=None):
-        """Prints the config/logs/repo/data_directory"""
+    def print_configuration(self, test_env, repos=None, brewfile=None):
+        """Prints the config/logs/repo/data_directory/brewfiles"""
         print("=" * 150)
         print("Percolated Configuration")
         print("-" * 150)
-        if runfile:
+        if brewfile:
             print("BREW FILES........:")
-            print("\t\t    " + "\n\t\t    ".join(runfile.files))
-            if self.cl_args.verbose == 3:
+            print("\t\t" + "\n\t\t    ".join(brewfile.files))
+            if self.cl_args.verbose >= 2:
                 print("BREWS............:")
-                print "\t" + "\n\t".join(runfile.brews_to_strings())
+                print "\t" + "\n\t".join(brewfile.brews_to_strings())
         if repos:
             print("BREWING FROM: ....: {0}".format(repos[0]))
             for repo in repos[1:]:
                 print("{0}{1}".format(" " * 20, repo))
-        self._log.debug(str(runfile))
         print("ENGINE CONFIG FILE: {0}".format(test_env.engine_config_path))
         print("TEST CONFIG FILE..: {0}".format(test_env.test_config_file_path))
         print("DATA DIRECTORY....: {0}".format(test_env.test_data_directory))
@@ -60,7 +62,7 @@ class BrewRunner(UnittestRunner):
 
     @staticmethod
     def print_mug():
-        """Prints the cafe mug"""
+        """Prints the cafe 'mug'"""
         print("""
         /~~~~~~~~~~~~~~~~~~~~~~~/|
        /              /######/ / |

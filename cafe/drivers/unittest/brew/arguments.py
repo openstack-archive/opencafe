@@ -58,7 +58,7 @@ class ArgumentParser(argparse.ArgumentParser):
             choices=[1, 2, 3],
             default=2,
             type=int,
-            help="Set unittest output verbosity")
+            help="Set unittest output verbosity.")
 
         self.add_argument(
             "--parallel",
