@@ -8,8 +8,8 @@ import unittest
 from collections import OrderedDict
 from six import string_types
 from six.moves import configparser
-from types import ModuleType
 import types
+
 from cafe.drivers.unittest.decorators import DataDrivenClass
 from cafe.common.reporting import cclogging
 
@@ -107,7 +107,7 @@ class _ImportablePathWrapper(object):
 
 class _Brew(object):
     """
-    Returns a module object containing all generated classes
+    Returns a module object containing all generated classes, named 'name'
     """
 
     def __init__(
@@ -133,20 +133,16 @@ class _Brew(object):
             self.mixin_test_classes = [
                 _ImportablePathWrapper(tc) for tc in mixin_test_classes]
 
-        self.automodule_name = "{name}_automodule".format(name=self.name)
-
     def __repr__(self):
         return (
-            "\n{name}:\n\t"
-            "automodule:  {automodule_name}\n\t"
-            "{fixture_attr}:     {fixture}\n\t"
-            "{dsl_attr}:         {dsl}\n\t"
+            "\nmodule name:         {name}\n"
+            "{fixture_attr}:       {fixture}\n"
+            "{dsl_attr}:                 {dsl}\n"
             "{testclasses_attr}:\n{tcs}\n".format(
                 fixture_attr=FIXTURE_ATTR,
                 dsl_attr=DATASETLIST_ATTR,
                 testclasses_attr=TESTCLASSES_ATTR,
                 name=self.name,
-                automodule_name=self.automodule_name,
                 fixture=self.fixture_class,
                 dsl=self.dsl,
                 tcs='\n'.join(["\t\t{s}{t}".format(
@@ -182,7 +178,7 @@ class _Brew(object):
             bases.append(tc.import_class())
 
         # Create the new test class from the bases list and register it as a
-        # member of the automodule so that it can be properly imported later
+        # member of the module so that it can be properly imported later
         # (type requires that bases be a tuple)
 
         class_dict = {}
@@ -197,15 +193,15 @@ class _Brew(object):
         all data generated test classes.
         Returns the module object"""
 
-        # Generate the automodule
-        automodule = self._generate_module(self.automodule_name)
+        # Generate the module
+        automodule = self._generate_module(self.name)
 
         # add it to sys.modules
         self._register_module(automodule)
 
         # Generate the aggregate test class
         test_class = self._generate_test_class(
-            module_name=self.automodule_name)
+            module_name=self.name)
 
         if self.dsl is not None:
             # Instantiate the DataDrivenClass decorator with an instance of the
@@ -272,20 +268,23 @@ class BrewFile(object):
             files='\n'.join(["{space}{file}".format(
                 space="\t", file=f)for f in self.files]))
 
-    def brew_list(self):
+    def brew_names(self):
+        """Return a list of non-reserved section names"""
         return [
-            s for s in self._data.sections()
-            if s.lower() not in RESERVED_SECTION_NAMES]
+            section for section in self._data.sections()
+            if section.lower() not in RESERVED_SECTION_NAMES]
 
-    def iterbrews(self):
+    def iterbrews(self, brew_name_postfix='_automodule'):
         """ Iterates through runfile sections and yields each individual
         section as a Brew object. You have to call .brew() on the individual
         Brews to get them to generate a module that contains the aggregate
         test class, so these should be safe to store in a list regardless of
         dataset size.
         """
-        for s in self.brew_list():
-            attr_dict = dict(name=s)
+        for s in self.brew_names():
+            brew_name = "{name}{postfix}".format(
+                name=s, postfix=brew_name_postfix)
+            attr_dict = dict(name=brew_name)
             for attr in BREW_SECTION_ATTR_LIST:
                 try:
                     attr_dict[attr] = self._data.get(s, attr)

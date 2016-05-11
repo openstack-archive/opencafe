@@ -48,8 +48,7 @@ class Brew_Tests(unittest.TestCase):
     def test_call_brew_initialized_with_only_a_name(self):
         b = _Brew(self.module_name)
         module_ = b()
-        new_name = "FakeBrew_automodule"
-        self.assertEquals(module_.__name__, new_name)
+        self.assertEqual(module_.__name__, self.module_name)
 
     def test_init_raises_BrewMissingTestClassesError_non_iterable(self):
         self.assertRaises(
