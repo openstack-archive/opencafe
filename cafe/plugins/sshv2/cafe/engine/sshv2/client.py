@@ -11,8 +11,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from six import StringIO
 from socks import socket, create_connection
-from StringIO import StringIO
 from uuid import uuid4
 import io
 import time

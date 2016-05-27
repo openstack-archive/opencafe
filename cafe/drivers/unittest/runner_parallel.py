@@ -24,7 +24,7 @@ try:
 except:
     from multiprocessing import Process, Queue
 
-from StringIO import StringIO
+from six import StringIO
 from unittest.runner import _WritelnDecorator
 import importlib
 import logging
