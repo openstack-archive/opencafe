@@ -14,6 +14,8 @@
 import unittest
 
 from cafe.drivers.unittest import decorators
+from cafe.drivers.unittest.datasets import DatasetList
+from cafe.drivers.unittest.fixtures import BaseTestFixture
 
 
 class DSLSuiteBuilderTests(unittest.TestCase):
@@ -41,3 +43,25 @@ class DSLSuiteBuilderTests(unittest.TestCase):
             "The following 0 tests were not run\n\t")
 
         self.assertEqual(msg, e.exception.message)
+
+
+class TestDataGenerator(DatasetList):
+    def __init__(self):
+        super(TestDataGenerator, self).__init__()
+        self.append_new_dataset('test', {'test': 'test'})
+
+
+@decorators.DataDrivenClass(TestDataGenerator(), skip=True)
+class TestClassWithDecoratorSkip(BaseTestFixture):
+    """Test that data generator does not run when skip is passed"""
+
+    def test_skipped_data_generation(self):
+        self.assertFalse(hasattr(self, 'test'))
+
+
+@decorators.DataDrivenClass(TestDataGenerator())
+class TestClassWithDecoratorNoSkip(BaseTestFixture):
+    """Test that data generator still runs when skip is not passed"""
+
+    def test_not_skipped_data_generation(self):
+        self.assertEqual(self.test, 'test')

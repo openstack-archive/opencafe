@@ -135,7 +135,7 @@ class _FauxDSLFixture(BaseTestFixture):
         pass
 
 
-def DataDrivenClass(*dataset_lists):
+def DataDrivenClass(*dataset_lists, **kwargs):
     """Use data driven class decorator. designed to be used on a fixture."""
     def decorator(cls):
         """Creates classes with variables named after datasets.
@@ -147,6 +147,9 @@ def DataDrivenClass(*dataset_lists):
         if not re.match(".*fixture", cls.__name__, flags=re.IGNORECASE):
             cls.__name__ = "{0}Fixture".format(cls.__name__)
 
+        if kwargs.get('skip'):
+            return cls
+
         unittest_driver_config = DriverConfig()
 
         for i, dataset_list in enumerate(dataset_lists):
@@ -157,7 +160,7 @@ def DataDrivenClass(*dataset_lists):
                     class_name=class_name,
                     exception="DSL_EXCEPTION",
                     index=i)
-                # We are creating a new, special class here that willd allow us
+                # We are creating a new, special class here that will allow us
                 # to force an error during test set up that contains
                 # information useful for triaging the DSL failure.
                 # Additionally this should surface any tests that did not run
