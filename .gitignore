@@ -31,3 +31,6 @@ test-reporting-results*
 *.project
 *.pydev*
 *.idea
+
+# pyenv versions
+.python-version
