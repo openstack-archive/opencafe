@@ -14,11 +14,15 @@
 import requests
 import six
 from time import time
+from warnings import warn
 
 from cafe.common.reporting import cclogging
 from cafe.engine.clients.base import BaseClient
+from cafe.engine.http.config import HTTPPluginConfig
 
 from requests.packages import urllib3
+from requests.exceptions import (
+    ConnectionError, HTTPError, Timeout, TooManyRedirects)
 urllib3.disable_warnings()
 
 
@@ -154,13 +158,33 @@ class BaseHTTPClient(BaseClient):
     _log = cclogging.getLogger(__name__)
 
     def __init__(self):
+        self.__config = HTTPPluginConfig()
         super(BaseHTTPClient, self).__init__()
 
     @_inject_exception(_exception_handlers)
     @_log_transaction(log=_log)
     def request(self, method, url, **kwargs):
         """ Performs <method> HTTP request to <url> using the requests lib"""
-        return requests.request(method, url, **kwargs)
+        retries = self.__config.retries_on_requests_exceptions
+
+        # We always allow one attempt, retries are configured via EngineConfig
+        attempts = 1
+        allowed_attempts = 1 + retries
+        while attempts <= allowed_attempts:
+            try:
+                return requests.request(method, url, **kwargs)
+            except(ConnectionError, HTTPError, Timeout, TooManyRedirects) as e:
+                if retries:
+                    warn(
+                        'Request Lib Error: Attempt {attempt} of '
+                        '{allowed_attempts}\n'.format(
+                            attempt=attempts,
+                            allowed_attempts=allowed_attempts))
+                    warn(e)
+                    attempts += 1
+                    pass
+                else:
+                    raise e
 
     def put(self, url, **kwargs):
         """ HTTP PUT request """
