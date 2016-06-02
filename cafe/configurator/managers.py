@@ -647,7 +647,7 @@ class EnginePluginManager(object):
 
         # Verify that the plugin exists
         if not os.path.exists(plugin_dir):
-            print(wrap('* Failed to install plugin: {0}'.format(plugin_name)))
+            print(wrap('* Plugin not found: {0}'.format(plugin_name)))
             return
 
         # Install Plugin
