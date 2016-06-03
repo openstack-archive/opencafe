@@ -10,17 +10,21 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+"""
+This plugin installs the pathos multiprocess package.
+Since pathos multiprocess is still in Beta, this plugin is considered
+experimental.
 
-from setuptools import setup, find_packages
+If installed, the cafe unittest runners will use multiprocess instead of
+python's default multiprocessing library.
+"""
+from setuptools import setup
 
 setup(
-    name='cafe_ssh_plugin',
+    name='cafe_pathos_multiprocess_plugin',
     version='0.0.1',
-    description='Paramiko based plugin for OpenCAFE',
+    description='The Common Automation Framework Engine',
     author='Rackspace Cloud QE',
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://rackspace.com',
-    packages=find_packages(),
-    namespace_packages=['cafe'],
-    install_requires=['paramiko >= 1.17.0, <2'],
-    zip_safe=False)
+    install_requires=['multiprocess'])

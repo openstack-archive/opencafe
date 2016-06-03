@@ -20,7 +20,6 @@ import unittest
 import uuid
 from importlib import import_module
 from inspect import isclass
-from multiprocessing import Process, Manager
 from re import search
 from traceback import print_exc
 from cafe.common.reporting import cclogging
@@ -30,6 +29,16 @@ from cafe.drivers.unittest.decorators import (
     TAGS_DECORATOR_TAG_LIST_NAME, TAGS_DECORATOR_ATTR_DICT_NAME)
 from cafe.drivers.unittest.parsers import SummarizeResults
 from cafe.drivers.unittest.suite import OpenCafeUnittestTestSuite
+
+# Support for the alternate dill-based multiprocessing library 'multiprocess'
+# as an experimental workaround if you're having pickling errors.
+try:
+    from multiprocess import Process, Manager
+    sys.stdout.write(
+        "\n\nUtilizing the pathos multiprocess library. "
+        "This feature is experimental\n\n")
+except:
+    from multiprocessing import Process, Manager
 
 
 def tree(directory, padding, print_files=False):

@@ -36,6 +36,11 @@ class XMLReport(BaseReport):
             [result.skipped_msg for result in all_results
              if result.skipped_msg]))
         root.attrib['time'] = str(result_parser.execution_time)
+        if result_parser.datagen_time is not None:
+            root.attrib['datagen_time'] = str(result_parser.datagen_time)
+            root.attrib['total_time'] = str(
+                float(root.attrib['time']) +
+                float(root.attrib['datagen_time']))
 
         for testcase in all_results:
             testcase_tag = ET.SubElement(root, 'testcase')

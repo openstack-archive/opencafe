@@ -49,7 +49,7 @@ for dirpath, directories, filenames in os.walk(dir_path):
 
 setup(
     name='opencafe',
-    version='0.2.6',
+    version='0.3.0',
     description='The Common Automation Framework Engine',
     long_description='{0}'.format(open('README.rst').read()),
     author='CafeHub',
@@ -72,6 +72,7 @@ setup(
         'console_scripts':
         ['cafe-runner = cafe.drivers.unittest.runner:entry_point',
          'cafe-parallel = cafe.drivers.unittest.runner_parallel:entry_point',
+         'cafe-brew = cafe.drivers.unittest.brew.runner:entry_point',
          'behave-runner = cafe.drivers.behave.runner:entry_point',
          'vows-runner = cafe.drivers.pyvows.runner:entry_point',
          'specter-runner = cafe.drivers.specter.runner:entry_point',

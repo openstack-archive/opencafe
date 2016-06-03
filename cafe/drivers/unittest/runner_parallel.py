@@ -12,18 +12,26 @@
 # under the License.
 
 from __future__ import print_function
+import sys
 
-from multiprocessing import Process, Queue
-from StringIO import StringIO
+# Support for the alternate dill-based multiprocessing library 'multiprocess'
+# as an experimental workaround if you're having pickling errors.
+try:
+    from multiprocess import Process, Queue
+    sys.stdout.write(
+        "\n\nUtilizing the pathos multiprocess library. "
+        "This feature is experimental\n\n")
+except:
+    from multiprocessing import Process, Queue
+
+from six import StringIO
 from unittest.runner import _WritelnDecorator
 import importlib
 import logging
 import os
-import sys
 import time
 import traceback
 import unittest
-
 from cafe.common.reporting import cclogging
 from cafe.common.reporting.reporter import Reporter
 from cafe.configurator.managers import TestEnvManager
@@ -110,7 +118,8 @@ class UnittestRunner(object):
 
             end = time.time()
             tests_run, errors, failures = self.compile_results(
-                end - start, end - self.datagen_start, results)
+                run_time=end - start, datagen_time=start - self.datagen_start,
+                results=results)
 
         except KeyboardInterrupt:
             print_exception("Runner", "run", "Keyboard Interrupt, exiting...")
@@ -171,12 +180,14 @@ class UnittestRunner(object):
     def compile_results(self, run_time, datagen_time, results):
         """Summarizes results and writes results to file if --result used"""
         all_results = []
-        result_dict = {"tests": 0, "errors": 0, "failures": 0}
+        result_dict = {"tests": 0, "errors": 0, "failures": 0, "skipped": 0}
         for dic in results:
             result = dic["result"]
             tests = [suite for suite in self.suites
                      if suite.cafe_uuid == dic["cafe_uuid"]][0]
-            result_parser = SummarizeResults(vars(result), tests, run_time)
+            result_parser = SummarizeResults(
+                result_dict=vars(result), tests=tests, execution_time=run_time,
+                datagen_time=datagen_time)
             all_results += result_parser.gather_results()
             summary = result_parser.summary_result()
             for key in result_dict:
@@ -194,7 +205,8 @@ class UnittestRunner(object):
         return self.print_results(
             run_time=run_time, datagen_time=datagen_time, **result_dict)
 
-    def print_results(self, tests, errors, failures, run_time, datagen_time):
+    def print_results(self, tests, errors, failures, skipped,
+                      run_time, datagen_time):
         """Prints results summerized in compile_results messages"""
         print("{0}".format("-" * 70))
         print("Ran {0} test{1} in {2:.3f}s".format(
@@ -202,11 +214,18 @@ class UnittestRunner(object):
         print("Generated datasets in {0:.3f}s".format(datagen_time))
         print("Total runtime {0:.3f}s".format(run_time + datagen_time))
 
-        if failures or errors:
-            print("\nFAILED ({0}{1}{2})".format(
-                "failures={0}".format(failures) if failures else "",
-                ", " if failures and errors else "",
-                "errors={0}".format(errors) if errors else ""))
+        results = []
+        if failures:
+            results.append("failures={0}".format(failures))
+        if skipped:
+            results.append("skipped={0}".format(skipped))
+        if errors:
+            results.append("errors={0}".format(errors))
+
+        status = "FAILED" if failures or errors else "PASSED"
+        print("\n{} ".format(status), end="")
+        if results:
+            print("({})".format(", ".join(results)))
         print("{0}\nDetailed logs: {1}\n{2}".format(
             "=" * 150, self.test_env.test_log_dir, "-" * 150))
         return tests, errors, failures

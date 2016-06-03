@@ -40,4 +40,4 @@ class DSLSuiteBuilderTests(unittest.TestCase):
             "Dataset List location: None\n\n"
             "The following 0 tests were not run\n\t")
 
-        self.assertEquals(msg, e.exception.message)
+        self.assertEqual(msg, e.exception.message)
