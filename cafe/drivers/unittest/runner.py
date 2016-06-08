@@ -727,9 +727,7 @@ class UnittestRunner(object):
             results.update({test_id: result})
         except Exception as exc:
             print('Unhandled exception inside UnittestRunner.execute_test: {0}'.format(exc.message))
-            results.update({test_id: "<unittest.runner.TextTestResult run=1 errors=1 failures=0>"}
-
-
+            results.update({test_id: {'run':1, 'errors':1, 'failures':1}})
 
     @staticmethod
     def get_runner(cl_args):
