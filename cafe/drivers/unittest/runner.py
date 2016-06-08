@@ -720,7 +720,15 @@ class UnittestRunner(object):
     @staticmethod
     def execute_test(runner, test_id, test, results):
         result = runner.run(test)
-        results.update({test_id: result})
+        try:
+            print '******'
+            print result
+            print '******'
+            results.update({test_id: result})
+        except Exception as exc:
+            print('Unhandled exception inside UnittestRunner.execute_test: {0}'.format(exc.message))
+            sys.exit(1)
+
 
     @staticmethod
     def get_runner(cl_args):
