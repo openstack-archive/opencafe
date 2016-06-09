@@ -732,28 +732,29 @@ class UnittestRunner(object):
             print result
             print '******'
             testsRun = result.testsRun
-
             errors = result.errors
             clean_errors = []
+            skipped = result.skipped
             for error in errors:
+                print 'ERROR'
                 print error
-                clean_errors.append((error[0], None))
-                #clean_errors.append((None, error[1])) # kind of worked, sys exit is good
+                #clean_errors.append((error[0], None)) # no good
+                clean_errors.append((None, error[1])) # sys exit is good, details not
             failures = result.failures
             clean_failures = []
             for failure in failures:
+                print 'FAILURE'
                 print failure
-                clean_failures.append((failure[0], None))
-                #clean_failures.append((None, failure[1])) # kind of worked, sys exit is good
+                #clean_failures.append((failure[0], None)) # no good
+                clean_failures.append((None, failure[1]))
 
-            print testsRun
-            print errors
-            print failures
+            # try unmassaged data
             results.update({test_id: result})
         except Exception as exc:
+
             print('Unhandled exception inside UnittestRunner.execute_test: {0}'.format(exc.message))
             #results.update({test_id: {'run':1, 'errors':1, 'failures':1}})
-            partial_results = {'testsRun': testsRun, 'errors': clean_errors, 'failures': clean_failures}
+            partial_results = {'testsRun': testsRun, 'errors': clean_errors, 'failures': clean_failures, 'skipped':skipped}
             partial_results_obj = Struct(**partial_results)
             results.update({test_id: partial_results_obj})
 
