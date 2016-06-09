@@ -738,12 +738,13 @@ class UnittestRunner(object):
             for error in errors:
                 print error
                 clean_errors.append((error[0], None))
-
+                #clean_errors.append((None, error[1])) # kind of worked, sys exit is good
             failures = result.failures
             clean_failures = []
             for failure in failures:
                 print failure
                 clean_failures.append((failure[0], None))
+                #clean_failures.append((None, failure[1])) # kind of worked, sys exit is good
 
             print testsRun
             print errors
