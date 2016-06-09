@@ -737,13 +737,13 @@ class UnittestRunner(object):
             clean_errors = []
             for error in errors:
                 print error
-                clean_errors.append((None,error[1]))
+                clean_errors.append((error[0], None))
 
             failures = result.failures
             clean_failures = []
             for failure in failures:
                 print failure
-                clean_failures.append((None, failure[1]))
+                clean_failures.append((failure[0], None))
 
             print testsRun
             print errors
