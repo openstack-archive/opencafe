@@ -732,8 +732,15 @@ class UnittestRunner(object):
             print result
             print '******'
             testsRun = result.testsRun
+            
             errors = result.errors
+            for error in errors:
+                print error
+
             failures = result.failures
+            for failure in failures:
+                print failure
+
             print testsRun
             print errors
             print failures
