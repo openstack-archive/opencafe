@@ -732,14 +732,18 @@ class UnittestRunner(object):
             print result
             print '******'
             testsRun = result.testsRun
-            
+
             errors = result.errors
+            clean_errors = []
             for error in errors:
                 print error
+                clean_errors.append((None,error[1]))
 
             failures = result.failures
+            clean_failures = []
             for failure in failures:
                 print failure
+                clean_failures.append((None, error[1]))
 
             print testsRun
             print errors
@@ -748,7 +752,7 @@ class UnittestRunner(object):
         except Exception as exc:
             print('Unhandled exception inside UnittestRunner.execute_test: {0}'.format(exc.message))
             #results.update({test_id: {'run':1, 'errors':1, 'failures':1}})
-            partial_results = {'testsRun': testsRun, 'errors': errors, 'failures': failures}
+            partial_results = {'testsRun': testsRun, 'errors': clean_errors, 'failures': clean_failures}
             partial_results_obj = Struct(**partial_results)
             results.update({test_id: partial_results_obj})
 
