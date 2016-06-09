@@ -743,7 +743,7 @@ class UnittestRunner(object):
             clean_failures = []
             for failure in failures:
                 print failure
-                clean_failures.append((None, error[1]))
+                clean_failures.append((None, failure[1]))
 
             print testsRun
             print errors
