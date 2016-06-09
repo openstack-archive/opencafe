@@ -734,6 +734,9 @@ class UnittestRunner(object):
             testsRun = result.run
             errors = result.errors
             failures = result.failures
+            print testsRun
+            print errors
+            print failures
             results.update({test_id: result})
         except Exception as exc:
             print('Unhandled exception inside UnittestRunner.execute_test: {0}'.format(exc.message))
