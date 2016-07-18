@@ -19,3 +19,6 @@ Leonardo Maycotte
 Franklin Naval
 Ivo Vasev
 John Vrbanac
+Eli Uriegas
+Marcus Medley
+Jason Meridth

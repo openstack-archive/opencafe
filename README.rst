@@ -80,14 +80,17 @@ Example:
     $ cafe-config plugins list
     =================================
     * Available Plugins
+      ... elasticsearch
       ... http
       ... mongo
-      ... winrm
-      ... elasticsearch
-      ... soap
-      ... skip_on_issue
+      ... pathos_multiprocess
       ... rsyslog
+      ... skip_on_issue
+      ... soap
       ... ssh
+      ... sshv2
+      ... subunit
+      ... winrm
     =================================
 
     $ cafe-config plugins install http
