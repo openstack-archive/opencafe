@@ -223,7 +223,7 @@ class UnittestRunner(object):
             results.append("errors={0}".format(errors))
 
         status = "FAILED" if failures or errors else "PASSED"
-        print("\n{} ".format(status), end="")
+        print("\n{} ".format(status), end="\n" * (not bool(results)))
         if results:
             print("({})".format(", ".join(results)))
         print("{0}\nDetailed logs: {1}\n{2}".format(
