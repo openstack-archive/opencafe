@@ -266,7 +266,8 @@ class Consumer(Process):
             for record in handler._records:
                 if record.exc_info:
                     record.msg = "{0}\n{1}".format(
-                        record.msg, traceback.format_exc(record.exc_info))
+                        record.msg, traceback.format_exception(
+                            *record.exc_info))
                 record.exc_info = None
             dic = {
                 "result": result,
