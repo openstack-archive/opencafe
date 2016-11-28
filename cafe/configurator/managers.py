@@ -21,7 +21,7 @@ import textwrap
 import getpass
 import shutil
 from subprocess import Popen, PIPE
-from six.moves.configparser import SafeConfigParser
+from six.moves import configparser
 
 import cafe
 from cafe.engine.config import EngineConfig
@@ -479,7 +479,7 @@ class EngineConfigManager(object):
 
     @staticmethod
     def read_config_file(path):
-        config = SafeConfigParser()
+        config = configparser.ConfigParser()
         cfp = open(path, 'r')
         config.readfp(cfp)
         cfp.close()
@@ -530,7 +530,7 @@ class EngineConfigManager(object):
 
     @classmethod
     def generate_default_engine_config(cls):
-        config = SafeConfigParser()
+        config = configparser.ConfigParser()
         config.add_section('OPENCAFE_ENGINE')
         config.set(
             'OPENCAFE_ENGINE', 'config_directory',

@@ -68,6 +68,7 @@ def _get_path_from_env(os_env_var):
             " environment variable.".format(os_env_var))
         raise exception
 
+
 # Standard format to for flat key/value data sources
 CONFIG_KEY = 'CAFE_{section_name}_{key}'
 
@@ -142,7 +143,7 @@ class ConfigParserDataSource(DataSource):
         cafe_env_var = {key: value for key, value in os.environ.iteritems()
                         if key.startswith('CAFE_')}
 
-        self._data_source = configparser.SafeConfigParser(
+        self._data_source = configparser.ConfigParser(
             defaults=cafe_env_var)
         self._section_name = section_name
 
