@@ -323,7 +323,7 @@ class BrewFile(object):
                 raise RunFileNotFoundError(msg)
 
             # TODO: Add checks for duplicate sections among multiple files
-            cfg = configparser.SafeConfigParser()
+            cfg = configparser.ConfigParser()
             cfg.read(f)
 
             # Check for incomplete sections, excluding reserved
@@ -342,6 +342,6 @@ class BrewFile(object):
                         raise RunFileIncompleteBrewError(msg)
 
         # config files are valid, return aggregate config parser object
-        cfg = configparser.SafeConfigParser()
+        cfg = configparser.ConfigParser()
         cfg.read(files)
         return cfg
