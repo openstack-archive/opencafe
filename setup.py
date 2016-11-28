@@ -36,6 +36,7 @@ class Tox(TestCommand):
         errno = tox.cmdline(self.test_args)
         sys.exit(errno)
 
+
 # Package the plugin cache as package data
 plugins = []
 dir_path = os.path.join('cafe', 'plugins')

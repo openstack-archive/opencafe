@@ -205,6 +205,7 @@ class BLOCK_NAMES(object):
     supplementary_private_use_area_a = "Supplementary Private Use Area-A"
     supplementary_private_use_area_b = "Supplementary Private Use Area-B"
 
+
 _unicode_planes = (
     (0x0, 0xffff, PLANE_NAMES.basic_multilingual_plane),
     (0x10000, 0x1ffff, PLANE_NAMES.supplementary_multilingual_plane),
