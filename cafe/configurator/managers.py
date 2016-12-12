@@ -610,13 +610,30 @@ class EngineConfigManager(object):
 
 
 class EnginePluginManager(object):
-    _PLUGIN_DIR = os.path.join(os.path.dirname(cafe.__file__), 'plugins')
+
+    @classmethod
+    def _plugin_dir(cls):
+        """
+        TODO: setuptools 31.0.0 introduced a bug that results in __file__
+              not existing for a namespace packages, in our case,
+              after installing a namespace package in it.
+              This is a workaround/hack to get around the issue for now.
+              Ideally, we should move all the plugins into pypi so that we
+              don't have to install them from a local directory like this.
+        """
+        cafe_path = None
+        try:
+            cafe_path = os.path.join(os.path.dirname(cafe.__file__), 'plugins')
+        except AttributeError:
+            cafe_path = os.path.join(cafe.__path__[0], 'plugins')
+
+        return cafe_path
 
     @classmethod
     def list_plugins(cls):
         """ Lists all plugins currently available in user's .opencafe cache"""
 
-        plugin_folders = os.walk(cls._PLUGIN_DIR).next()[1]
+        plugin_folders = os.walk(cls._plugin_dir()).next()[1]
         wrap = textwrap.TextWrapper(initial_indent="  ",
                                     subsequent_indent="  ",
                                     break_long_words=False).fill
@@ -637,7 +654,7 @@ class EnginePluginManager(object):
     def install_plugin(cls, plugin_name):
         """ Install a single plugin by name into the current environment"""
 
-        plugin_dir = os.path.join(cls._PLUGIN_DIR, plugin_name)
+        plugin_dir = os.path.join(cls._plugin_dir(), plugin_name)
         wrap = textwrap.TextWrapper(initial_indent="  ",
                                     subsequent_indent="  ",
                                     break_long_words=False).fill
