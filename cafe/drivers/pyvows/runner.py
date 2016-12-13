@@ -105,5 +105,6 @@ def print_mug(base_dir):
     print(brew)
     print("-" * len(brew))
 
+
 if __name__ == '__main__':
     entry_point()

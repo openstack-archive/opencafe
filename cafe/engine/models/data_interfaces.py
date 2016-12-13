@@ -68,6 +68,7 @@ def _get_path_from_env(os_env_var):
             " environment variable.".format(os_env_var))
         raise exception
 
+
 # Standard format to for flat key/value data sources
 CONFIG_KEY = 'CAFE_{section_name}_{key}'
 

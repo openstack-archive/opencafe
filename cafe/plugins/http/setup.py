@@ -29,6 +29,7 @@ class Tox(TestCommand):
         errno = tox.cmdline(self.test_args)
         sys.exit(errno)
 
+
 setup(
     name='cafe_http_plugin',
     version='0.0.1',
