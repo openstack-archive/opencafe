@@ -1,0 +1,10 @@
+Code-Review+2: Daryl Walleck <daryl.walleck@rackspace.com>
+Code-Review+1: Stephen Lowrie <stephen.lowrie@rackspace.com>
+Code-Review+2: Carlos Martinez <carlos.martinez@rackspace.com>
+Workflow+1: Carlos Martinez <carlos.martinez@rackspace.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 04 Jan 2017 21:15:02 +0000
+Reviewed-on: https://review.openstack.org/409952
+Project: openstack/opencafe
+Branch: refs/heads/master
