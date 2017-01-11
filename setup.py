@@ -50,13 +50,13 @@ for dirpath, directories, filenames in os.walk(dir_path):
 
 setup(
     name='opencafe',
-    version='0.3.1',
+    version='0.3.2',
     description='The Common Automation Framework Engine',
     long_description='{0}'.format(open('README.rst').read()),
     author='CafeHub',
     author_email='cloud-cafe@lists.rackspace.com',
     url='http://opencafe.readthedocs.org',
-    install_requires=['six', "setuptools<=30.0.0"],
+    install_requires=['six'],
     packages=find_packages(exclude=('tests*', 'docs')),
     package_data={'cafe': plugins},
     license=open('LICENSE').read(),
