@@ -658,7 +658,7 @@ class _UnittestRunnerCLI(object):
         # wasn't called
         if args.product is None or args.config is None:
             print(argparser.usage)
-            print (
+            print(
                 "cafe-runner: error: You must supply both a product and a "
                 "config to run tests")
             exit(1)
@@ -666,7 +666,7 @@ class _UnittestRunnerCLI(object):
         if (args.result or args.result_directory) and (
                 args.result is None or args.result_directory is None):
             print(argparser.usage)
-            print (
+            print(
                 "cafe-runner: error: You must supply both a --result and a "
                 "--result-directory to print out json or xml formatted "
                 "results.")

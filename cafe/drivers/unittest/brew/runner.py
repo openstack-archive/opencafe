@@ -49,7 +49,7 @@ class BrewRunner(UnittestRunner):
             print("\t\t" + "\n\t\t    ".join(brewfile.files))
             if self.cl_args.verbose >= 2:
                 print("BREWS............:")
-                print "\t" + "\n\t".join(brewfile.brews_to_strings())
+                print("\t" + "\n\t".join(brewfile.brews_to_strings()))
         if repos:
             print("BREWING FROM: ....: {0}".format(repos[0]))
             for repo in repos[1:]:

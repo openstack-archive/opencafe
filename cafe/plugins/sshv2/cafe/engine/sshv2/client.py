@@ -11,7 +11,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from six import StringIO
+from six import StringIO, text_type
 from socks import socket, create_connection
 from uuid import uuid4
 import io
@@ -137,7 +137,7 @@ class SSHClient(BaseSSHClass):
 
         if connect_kwargs.get("pkey") is not None:
             connect_kwargs["pkey"] = RSAKey.from_private_key(
-                io.StringIO(unicode(connect_kwargs["pkey"])))
+                io.StringIO(text_type(connect_kwargs["pkey"])))
 
         proxy_type = proxy_type or self.proxy_type
         proxy_ip = proxy_ip or self.proxy_ip
@@ -207,7 +207,7 @@ class SFTPShell(BaseSSHClass):
         try:
             self.sftp.stat(path)
             ret_val = True
-        except IOError, e:
+        except IOError as e:
             if e[0] != 2:
                 raise
             ret_val = False

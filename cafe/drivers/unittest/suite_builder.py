@@ -96,7 +96,7 @@ class SuiteBuilder(object):
                             exception)
                         error = True
         if self.exit_on_error and error:
-            exit(get_error(exception))
+            exit(1)
 
         return modules
 

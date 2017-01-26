@@ -338,7 +338,7 @@ class BrewFile(object):
                         msg = (
                             "\nSection '{sec}' in runfile '{filename}' is "
                             "missing the '{attr}' option".format(
-                                filename=f, sec=s, attr=attr))
+                                filename=f, sec=section, attr=attr))
                         raise RunFileIncompleteBrewError(msg)
 
         # config files are valid, return aggregate config parser object

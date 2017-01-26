@@ -187,8 +187,8 @@ class BaseHTTPClient(BaseClient):
                     warn('\n')
                     self._log.critical(warning_string)
                     self._log.exception(e)
-        else:
-            raise e
+                else:
+                    raise e
 
     def put(self, url, **kwargs):
         """ HTTP PUT request """

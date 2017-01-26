@@ -60,7 +60,7 @@ def import_repos(repo_list):
             print_exception(
                 "Runner", "import_repos", repo_name, exception)
     if len(repo_list) != len(repos):
-        exit(get_error(exception))
+        exit(1)
     return repos
 
 

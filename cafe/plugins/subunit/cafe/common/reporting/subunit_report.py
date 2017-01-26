@@ -13,6 +13,7 @@
 
 from datetime import datetime
 import os
+import six
 import sys
 import uuid
 
@@ -56,13 +57,13 @@ class SubunitReport(BaseReport):
                         test_result['test_method_name'])
                 kwargs = {
                     "timestamp": datetime.now(pytz.UTC),
-                    "test_id": unicode(test_id)}
+                    "test_id": six.text_type(test_id)}
                 output.status(**kwargs)
                 kwargs["test_status"] = test_result['result']
                 kwargs["file_bytes"] = bytes(test_result.get(
                     'failure_trace') or test_result.get('error_trace') or "0")
                 kwargs["file_name"] = "stdout"
-                kwargs["mime_type"] = unicode("text/plain;charset=utf8")
+                kwargs["mime_type"] = six.text_type("text/plain;charset=utf8")
                 output.status(**kwargs)
 
             output.stopTestRun()
