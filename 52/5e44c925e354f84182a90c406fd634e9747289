@@ -1,0 +1,9 @@
+Code-Review+2: jose-idar <jose.idar@rackspace.com>
+Code-Review+1: Stephen Lowrie <stephen.lowrie@rackspace.com>
+Workflow+1: jose-idar <jose.idar@rackspace.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 26 Jan 2017 20:07:37 +0000
+Reviewed-on: https://review.openstack.org/425853
+Project: openstack/opencafe
+Branch: refs/heads/master
