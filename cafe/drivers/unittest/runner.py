@@ -675,6 +675,10 @@ class _UnittestRunnerCLI(object):
         return args
 
 
+class Struct:
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
+
 class UnittestRunner(object):
 
     def __init__(self):
@@ -720,7 +724,24 @@ class UnittestRunner(object):
     @staticmethod
     def execute_test(runner, test_id, test, results):
         result = runner.run(test)
-        results.update({test_id: result})
+        testsRun = None
+        clean_errors = None
+        clean_failures = None
+        try:
+            testsRun = result.testsRun
+            errors = result.errors
+            clean_errors = []
+            skipped = result.skipped
+            for error in errors:
+                clean_errors.append((None, error[1]))
+            failures = result.failures
+            clean_failures = []
+            for failure in failures:
+                clean_failures.append((None, failure[1]))
+            results.update({test_id: result})
+        except Exception as exc:
+            print('Unhandled exception inside UnittestRunner.execute_test: {0}, \nSaving partial results.'.format(exc.message))
+            results.update({test_id: Struct(**{'testsRun': testsRun, 'errors': clean_errors, 'failures': clean_failures, 'skipped':skipped})})
 
     @staticmethod
     def get_runner(cl_args):
