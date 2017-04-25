@@ -34,3 +34,6 @@ test-reporting-results*
 
 # pyenv versions
 .python-version
+
+# Autoenv file
+.env
