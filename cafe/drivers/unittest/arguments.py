@@ -180,15 +180,15 @@ class ArgumentParser(argparse.ArgumentParser):
     def __init__(self):
         desc = "Open Common Automation Framework Engine"
         usage_string = """
-            cafe-runner <config> <testrepos>... [--failfast]
+            cafe-parallel <config> <testrepos>... [--failfast]
                 [--dry-run] [--data-directory=DATA_DIRECTORY]
                 [--regex-list=REGEX...] [--file] [--parallel=(class|test)]
                 [--result=(json|xml)] [--result-directory=RESULT_DIRECTORY]
                 [--tags=TAG...] [--verbose=VERBOSE] [--exit-on-error]
                 [--workers=NUM]
-            cafe-runner <config> <testrepo>... --list
-            cafe-runner --list
-            cafe-runner --help
+            cafe-parallel <config> <testrepo>... --list
+            cafe-parallel --list
+            cafe-parallel --help
             """
 
         super(ArgumentParser, self).__init__(
