@@ -13,7 +13,7 @@ CAFE core provides models, patterns, and supported libraries for building automa
 
 .. note::
 
-    Questions? Join us on Freenode in the #cafehub channel
+  Questions? Join us on Freenode in the #cafehub channel
 
 
 Relevant Links
@@ -28,13 +28,13 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-    quickstart/index
-    cafe/index
-    getting_started/index
-    contributing/index
-    architecture/index
-    plugin_dev/index
-    faq/index
+   quickstart/index
+   cafe/index
+   getting_started/index
+   contributing/index
+   architecture/index
+   plugin_dev/index
+   faq/index
 
 
 Indices and tables
