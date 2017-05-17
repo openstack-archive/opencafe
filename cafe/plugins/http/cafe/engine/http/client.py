@@ -23,6 +23,8 @@ from cafe.engine.http.config import HTTPPluginConfig
 from requests.packages import urllib3
 from requests.exceptions import (
     ConnectionError, HTTPError, Timeout, TooManyRedirects)
+
+
 urllib3.disable_warnings()
 
 
@@ -60,10 +62,10 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 log.debug(_safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
-                log.info(
+                log.error(
                     'Exception occured while logging signature of calling'
                     'method in http client')
-                log.exception(exception)
+                log.exception()
 
             # Make the request and time it's execution
             response = None
@@ -73,20 +75,11 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 response = func(*args, **kwargs)
                 elapsed = time() - start
             except Exception as exception:
-                log.critical('Call to Requests failed due to exception')
-                log.exception(exception)
+                log.critical('HTTP request failed due to exception')
+                log.exception()
                 raise exception
 
-            # requests lib 1.0.0 renamed body to data in the request object
-            request_body = ''
-            if 'body' in dir(response.request):
-                request_body = response.request.body
-            elif 'data' in dir(response.request):
-                request_body = response.request.data
-            else:
-                log.info(
-                    "Unable to log request body, neither a 'data' nor a "
-                    "'body' object could be found")
+            request_body = response.request.body
 
             # requests lib 1.0.4 removed params from response.request
             request_params = ''
@@ -96,8 +89,9 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             elif '?' in request_url:
                 request_url, request_params = request_url.split('?', 1)
 
+            request_header = '\n{0}\nREQUEST SENT\n{0}\n'.format('-' * 12)
             logline = ''.join([
-                '\n{0}\nREQUEST SENT\n{0}\n'.format('-' * 12),
+                request_header,
                 'request method..: {0}\n'.format(response.request.method),
                 'request url.....: {0}\n'.format(request_url),
                 'request params..: {0}\n'.format(request_params),
@@ -107,11 +101,13 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 log.log(level, _safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
-                log.log(level, '\n{0}\nREQUEST INFO\n{0}\n'.format('-' * 12))
-                log.exception(exception)
+                log.log(level, request_header)
+                log.error("An exception occured durring logging")
+                log.exception()
 
+            response_header = '\n{0}\nRESPONSE RECEIVED\n{0}\n'.format('-' * 17)
             logline = ''.join([
-                '\n{0}\nRESPONSE RECEIVED\n{0}\n'.format('-' * 17),
+                response_header,
                 'response status..: {0}\n'.format(response),
                 'response time....: {0}\n'.format(elapsed),
                 'response headers.: {0}\n'.format(response.headers),
@@ -121,26 +117,9 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 log.log(level, _safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
-                log.log(level, '\n{0}\nRESPONSE INFO\n{0}\n'.format('-' * 13))
-                log.exception(exception)
-            return response
-        return _wrapper
-    return _decorator
-
-
-def _inject_exception(exception_handlers):
-    """Paramaterized decorator takes a list of exception_handler objects"""
-    def _decorator(func):
-        """Accepts a function and returns wrapped version of that function."""
-        def _wrapper(*args, **kwargs):
-            """Wrapper for any function that returns a Requests response.
-            Allows exception handlers to raise custom exceptions based on
-            response object attributes such as status_code.
-            """
-            response = func(*args, **kwargs)
-            if exception_handlers:
-                for handler in exception_handlers:
-                    handler.check_for_errors(response)
+                log.log(level, response_header)
+                log.error("An exception occured durring logging")
+                log.exception()
             return response
         return _wrapper
     return _decorator
@@ -154,14 +133,12 @@ class BaseHTTPClient(BaseClient):
 
     @see: http://docs.python-requests.org/en/latest/api/#configurations
     """
-    _exception_handlers = []
     _log = cclogging.getLogger(__name__)
 
     def __init__(self):
         self.__config = HTTPPluginConfig()
         super(BaseHTTPClient, self).__init__()
 
-    @_inject_exception(_exception_handlers)
     @_log_transaction(log=_log)
     def request(self, method, url, **kwargs):
         """ Performs <method> HTTP request to <url> using the requests lib"""
