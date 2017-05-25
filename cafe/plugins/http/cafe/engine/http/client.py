@@ -62,10 +62,9 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 log.debug(_safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
-                log.error(
+                log.exception(
                     'Exception occured while logging signature of calling'
                     'method in http client')
-                log.exception()
 
             # Make the request and time it's execution
             response = None
@@ -75,8 +74,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 response = func(*args, **kwargs)
                 elapsed = time() - start
             except Exception as exception:
-                log.critical('HTTP request failed due to exception')
-                log.exception()
+                log.exception('HTTP request failed due to exception')
                 raise exception
 
             request_body = response.request.body
@@ -102,10 +100,10 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
                 log.log(level, request_header)
-                log.error("An exception occured durring logging")
-                log.exception()
+                log.exception("An exception occured durring logging")
 
-            response_header = '\n{0}\nRESPONSE RECEIVED\n{0}\n'.format('-' * 17)
+            response_header = '\n{0}\nRESPONSE RECEIVED\n{0}\n'.format(
+                '-' * 17)
             logline = ''.join([
                 response_header,
                 'response status..: {0}\n'.format(response),
@@ -118,8 +116,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
                 log.log(level, response_header)
-                log.error("An exception occured durring logging")
-                log.exception()
+                log.exception("An exception occured durring logging")
             return response
         return _wrapper
     return _decorator
