@@ -199,7 +199,7 @@ def print_exception(file_=None, method=None, value=None, exception=None):
     """
     print("{0}".format("=" * 70), file=sys.stderr)
     if file_:
-        print("{0}:".format(safe_decode((file_)), file=sys.stderr, end=" ")
+        print("{0}:".format(safe_decode(file_)), file=sys.stderr, end=" ")
     if method:
         print("{0}:".format(safe_decode(method)), file=sys.stderr, end=" ")
     if value:
