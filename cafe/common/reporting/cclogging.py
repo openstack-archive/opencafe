@@ -20,7 +20,8 @@ import os
 import warnings
 warnings.simplefilter('once', Warning)
 warnings.showwarning = \
-    lambda msg, category, filename, lineno, *kwargs: sys.stderr.write(str(msg))
+    lambda msg, category, filename, lineno, *kwargs: sys.stderr.write(
+        str(msg))
 
 try:
     from collections import OrderedDict
