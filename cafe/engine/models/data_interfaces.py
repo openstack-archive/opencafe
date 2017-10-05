@@ -140,7 +140,7 @@ class ConfigParserDataSource(DataSource):
     def __init__(self, config_file_path, section_name):
         super(ConfigParserDataSource, self).__init__()
 
-        cafe_env_var = {key: value for key, value in os.environ.iteritems()
+        cafe_env_var = {key: value for key, value in os.environ.items()
                         if key.startswith('CAFE_')}
 
         self._data_source = configparser.SafeConfigParser(
