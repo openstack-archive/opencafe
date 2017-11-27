@@ -57,7 +57,13 @@ class DatasetList(list):
         super(DatasetList, self).append(dataset)
 
     def append_new_dataset(self, name, data_dict, tags=None, decorators=None):
-        """Creates and appends a new Dataset"""
+        """Creates and appends a new Dataset
+
+        When including a `decorators` value (a list), make sure that the
+        functions provided in the list are provided in the order in which
+        they should be executed. When comparing them to typical stacked
+        decorators, order them from bottom to top.
+        """
         self.append(_Dataset(name, data_dict, tags, decorators))
 
     def extend(self, dataset_list):
