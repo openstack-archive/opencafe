@@ -17,6 +17,7 @@ from time import time
 from warnings import warn
 
 from cafe.common.reporting import cclogging
+from cafe.common.decoding import safe_decode
 from cafe.engine.clients.base import BaseClient
 from cafe.engine.http.config import HTTPPluginConfig
 
@@ -29,21 +30,6 @@ urllib3.disable_warnings()
 
 
 def _log_transaction(log, level=cclogging.logging.DEBUG):
-
-    def _safe_decode(text, incoming='utf-8', errors='replace'):
-            """Decodes incoming text/bytes string using `incoming`
-               if they're not already unicode.
-
-            :param incoming: Text's current encoding
-            :param errors: Errors handling policy. See here for valid
-                values http://docs.python.org/2/library/codecs.html
-            :returns: text or a unicode `incoming` encoded
-                        representation of it.
-            """
-            if isinstance(text, six.text_type):
-                return text
-
-            return text.decode(incoming, errors)
 
     """ Paramaterized decorator
     Takes a python Logger object and an optional logging level.
@@ -59,7 +45,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             logline = '{0} {1}'.format(args, kwargs)
 
             try:
-                log.debug(_safe_decode(logline))
+                log.debug(safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
                 log.exception(
@@ -96,7 +82,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 'request headers.: {0}\n'.format(response.request.headers),
                 'request body....: {0}\n'.format(request_body)])
             try:
-                log.log(level, _safe_decode(logline))
+                log.log(level, safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
                 log.log(level, request_header)
@@ -112,7 +98,7 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 'response body....: {0}\n'.format(response.content),
                 '-' * 79])
             try:
-                log.log(level, _safe_decode(logline))
+                log.log(level, safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
                 log.log(level, response_header)

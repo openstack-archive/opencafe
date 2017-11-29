@@ -18,6 +18,7 @@ import argparse
 import os
 import sys
 
+from cafe.common.decoding import safe_decode
 from cafe.common.reporting.cclogging import \
     get_object_namespace, getLogger, setup_new_cchandler, log_info_block
 from cafe.common.reporting.metrics import \
@@ -198,13 +199,13 @@ def print_exception(file_=None, method=None, value=None, exception=None):
     """
     print("{0}".format("=" * 70), file=sys.stderr)
     if file_:
-        print("{0}:".format(file_), file=sys.stderr, end=" ")
+        print("{0}:".format(safe_decode(file_)), file=sys.stderr, end=" ")
     if method:
-        print("{0}:".format(method), file=sys.stderr, end=" ")
+        print("{0}:".format(safe_decode(method)), file=sys.stderr, end=" ")
     if value:
-        print("{0}:".format(value), file=sys.stderr, end=" ")
+        print("{0}:".format(safe_decode(value)), file=sys.stderr, end=" ")
     if exception:
-        print("{0}:".format(exception), file=sys.stderr, end=" ")
+        print("{0}:".format(safe_decode(exception)), file=sys.stderr, end=" ")
     print("\n{0}".format("-" * 70), file=sys.stderr)
     if exception is not None:
         print_exc(file=sys.stderr)
