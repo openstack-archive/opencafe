@@ -26,14 +26,20 @@ class _Dataset(object):
     name should be a string describing the dataset.
     This class should not be accessed directly. Use or extend DatasetList.
     """
-    def __init__(self, name, data_dict, tags=None):
+    def __init__(self, name, data_dict, tags=None, decorators=None):
         self.name = name
         self.data = data_dict
-        self.metadata = {'tags': tags or []}
+        self.metadata = {
+            'tags': tags or [],
+            'decorators': decorators or []
+        }
 
     def apply_test_tags(self, tags):
         self.metadata['tags'] = list(
             set(self.metadata.get('tags')).union(set(tags)))
+
+    def apply_test_decorators(self, decorators):
+        self.metadata['decorators'] += list(decorators)
 
     def __repr__(self):
         return "<name:{0}, data:{1}>".format(self.name, self.data)
@@ -50,9 +56,15 @@ class DatasetList(list):
 
         super(DatasetList, self).append(dataset)
 
-    def append_new_dataset(self, name, data_dict, tags=None):
-        """Creates and appends a new Dataset"""
-        self.append(_Dataset(name, data_dict, tags))
+    def append_new_dataset(self, name, data_dict, tags=None, decorators=None):
+        """Creates and appends a new Dataset
+
+        When including a `decorators` value (a list), make sure that the
+        functions provided in the list are provided in the order in which
+        they should be executed. When comparing them to typical stacked
+        decorators, order them from bottom to top.
+        """
+        self.append(_Dataset(name, data_dict, tags, decorators))
 
     def extend(self, dataset_list):
         if not isinstance(dataset_list, DatasetList):
@@ -66,9 +78,14 @@ class DatasetList(list):
         self.extend(dataset_list)
 
     def apply_test_tags(self, *tags):
-        """Applys tags to all tests in dataset list"""
+        """Applies tags to all tests in dataset list"""
         for dataset in self:
             dataset.apply_test_tags(tags)
+
+    def apply_test_decorators(self, *decorators):
+        """Applies decorators to all tests in dataset list"""
+        for dataset in self:
+            dataset.apply_test_decorators(decorators)
 
     def dataset_names(self):
         """Gets a list of dataset names from dataset list"""

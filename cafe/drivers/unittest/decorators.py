@@ -229,6 +229,10 @@ def DataDrivenFixture(cls):
                 new_test, dataset.metadata.get('tags', []),
                 PARALLEL_TAGS_LIST_ATTR)
 
+            # Apply decorators to the new test
+            for decorator in dataset.metadata.get('decorators', []):
+                new_test = decorator(new_test)
+
             # Add the new test to the decorated TestCase
             setattr(cls, new_test_name, new_test)
     return cls
