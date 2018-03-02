@@ -108,6 +108,24 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
     return _decorator
 
 
+def _inject_exception(exception_handlers):
+    """Paramaterized decorator takes a list of exception_handler objects"""
+    def _decorator(func):
+        """Accepts a function and returns wrapped version of that function."""
+        def _wrapper(*args, **kwargs):
+            """Wrapper for any function that returns a Requests response.
+            Allows exception handlers to raise custom exceptions based on
+            response object attributes such as status_code.
+            """
+            response = func(*args, **kwargs)
+            if exception_handlers:
+                for handler in exception_handlers:
+                    handler.check_for_errors(response)
+            return response
+        return _wrapper
+    return _decorator
+
+
 class BaseHTTPClient(BaseClient):
     """Re-implementation of Requests' api.py that removes many assumptions.
     Adds verbose logging.
@@ -117,12 +135,14 @@ class BaseHTTPClient(BaseClient):
     @see: http://docs.python-requests.org/en/latest/api/#configurations
     """
     
+    _exception_handlers = []
     _log = cclogging.getLogger(__name__)
 
     def __init__(self):
         self.__config = HTTPPluginConfig()
         super(BaseHTTPClient, self).__init__()
 
+    @_inject_exception(_exception_handlers)
     @_log_transaction(log=_log)
     def request(self, method, url, **kwargs):
         """ Performs <method> HTTP request to <url> using the requests lib"""
