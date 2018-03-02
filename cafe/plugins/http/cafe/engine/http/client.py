@@ -17,31 +17,19 @@ from time import time
 from warnings import warn
 
 from cafe.common.reporting import cclogging
+from cafe.common.decoding import safe_decode
 from cafe.engine.clients.base import BaseClient
 from cafe.engine.http.config import HTTPPluginConfig
 
 from requests.packages import urllib3
 from requests.exceptions import (
     ConnectionError, HTTPError, Timeout, TooManyRedirects)
+
+
 urllib3.disable_warnings()
 
 
 def _log_transaction(log, level=cclogging.logging.DEBUG):
-
-    def _safe_decode(text, incoming='utf-8', errors='replace'):
-            """Decodes incoming text/bytes string using `incoming`
-               if they're not already unicode.
-
-            :param incoming: Text's current encoding
-            :param errors: Errors handling policy. See here for valid
-                values http://docs.python.org/2/library/codecs.html
-            :returns: text or a unicode `incoming` encoded
-                        representation of it.
-            """
-            if isinstance(text, six.text_type):
-                return text
-
-            return text.decode(incoming, errors)
 
     """ Paramaterized decorator
     Takes a python Logger object and an optional logging level.
@@ -57,13 +45,12 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             logline = '{0} {1}'.format(args, kwargs)
 
             try:
-                log.debug(_safe_decode(logline))
+                log.debug(safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
-                log.info(
+                log.exception(
                     'Exception occured while logging signature of calling'
                     'method in http client')
-                log.exception(exception)
 
             # Make the request and time it's execution
             response = None
@@ -73,20 +60,10 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
                 response = func(*args, **kwargs)
                 elapsed = time() - start
             except Exception as exception:
-                log.critical('Call to Requests failed due to exception')
-                log.exception(exception)
+                log.exception('HTTP request failed due to exception')
                 raise exception
 
-            # requests lib 1.0.0 renamed body to data in the request object
-            request_body = ''
-            if 'body' in dir(response.request):
-                request_body = response.request.body
-            elif 'data' in dir(response.request):
-                request_body = response.request.data
-            else:
-                log.info(
-                    "Unable to log request body, neither a 'data' nor a "
-                    "'body' object could be found")
+            request_body = response.request.body
 
             # requests lib 1.0.4 removed params from response.request
             request_params = ''
@@ -96,33 +73,36 @@ def _log_transaction(log, level=cclogging.logging.DEBUG):
             elif '?' in request_url:
                 request_url, request_params = request_url.split('?', 1)
 
+            request_header = '\n{0}\nREQUEST SENT\n{0}\n'.format('-' * 12)
             logline = ''.join([
-                '\n{0}\nREQUEST SENT\n{0}\n'.format('-' * 12),
+                request_header,
                 'request method..: {0}\n'.format(response.request.method),
                 'request url.....: {0}\n'.format(request_url),
                 'request params..: {0}\n'.format(request_params),
                 'request headers.: {0}\n'.format(response.request.headers),
                 'request body....: {0}\n'.format(request_body)])
             try:
-                log.log(level, _safe_decode(logline))
+                log.log(level, safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
-                log.log(level, '\n{0}\nREQUEST INFO\n{0}\n'.format('-' * 12))
-                log.exception(exception)
+                log.log(level, request_header)
+                log.exception("An exception occured durring logging")
 
+            response_header = '\n{0}\nRESPONSE RECEIVED\n{0}\n'.format(
+                '-' * 17)
             logline = ''.join([
-                '\n{0}\nRESPONSE RECEIVED\n{0}\n'.format('-' * 17),
+                response_header,
                 'response status..: {0}\n'.format(response),
                 'response time....: {0}\n'.format(elapsed),
                 'response headers.: {0}\n'.format(response.headers),
                 'response body....: {0}\n'.format(response.content),
                 '-' * 79])
             try:
-                log.log(level, _safe_decode(logline))
+                log.log(level, safe_decode(logline))
             except Exception as exception:
                 # Ignore all exceptions that happen in logging, then log them
-                log.log(level, '\n{0}\nRESPONSE INFO\n{0}\n'.format('-' * 13))
-                log.exception(exception)
+                log.log(level, response_header)
+                log.exception("An exception occured durring logging")
             return response
         return _wrapper
     return _decorator
@@ -154,6 +134,7 @@ class BaseHTTPClient(BaseClient):
 
     @see: http://docs.python-requests.org/en/latest/api/#configurations
     """
+    
     _exception_handlers = []
     _log = cclogging.getLogger(__name__)
 

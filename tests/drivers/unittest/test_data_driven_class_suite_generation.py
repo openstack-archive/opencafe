@@ -11,9 +11,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from importlib import import_module
+import os
 import unittest
 
 from cafe.drivers.unittest import decorators
+from cafe.drivers.unittest.datasets import DatasetList
 
 
 class DSLSuiteBuilderTests(unittest.TestCase):
@@ -41,3 +44,22 @@ class DSLSuiteBuilderTests(unittest.TestCase):
             "The following 0 tests were not run\n\t")
 
         self.assertEqual(msg, e.exception.message)
+
+    def test_skipped_fixture_does_not_raise_EmptyDSLError(self):
+        """Ensure a skipped Fixture doesn't generate _FauxDSLFixtures"""
+
+        # Minimal setup required to instantiate a DataDrivenClass
+        os.environ['CAFE_ENGINE_CONFIG_FILE_PATH'] = '/tmp'
+        os.environ['CAFE_TEST_LOG_PATH'] = '/tmp/log'
+
+        # Define a skipped TestClass with an empty DSL
+        @decorators.DataDrivenClass(DatasetList())
+        @unittest.skip('This test is skipped')
+        class MyTestCase(unittest.TestCase):
+            """A dummy test fixture"""
+
+        # Ensure that DSL_EXCEPTION class wanted generated
+        module = import_module(MyTestCase.__module__)
+        self.assertFalse(
+            hasattr(module, 'MyTestCase_DSL_EXCEPTION_0'),
+            'EmptyDSLError should not be raised on skipped tests')

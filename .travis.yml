@@ -1,0 +1,16 @@
+language: python
+python:
+- '2.7'
+- '3.5'
+install:
+- pip install .
+- pip install tox-travis
+- pip install -r test-requires
+script: tox
+deploy:
+  provider: pypi
+  user: cafehub
+  password:
+    secure: h2s4e6yBzTU+vcpOpN7mJt4tJIEG+SG/OxpJxyC1CdtzwICBK2rDe1uRn+EoYv2k9z6HFgOD/1hUw+p8B3CSOGWgZXbrVCrU9vhdxbKn+B76i90NnVVDuvOnXtFaxmH138Cu0ypMvZaRibG72sIWnaFRnBjbSx1b6MOmUHyhuC8=
+  on:
+    tags: true

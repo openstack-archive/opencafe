@@ -150,8 +150,9 @@ def DataDrivenClass(*dataset_lists):
         unittest_driver_config = DriverConfig()
 
         for i, dataset_list in enumerate(dataset_lists):
-            if (not dataset_list and
-               not unittest_driver_config.ignore_empty_datasets):
+            if all([not dataset_list,
+                    not unittest_driver_config.ignore_empty_datasets,
+                    not getattr(cls, '__unittest_skip__', False)]):
                 # The DSL did not generate anything
                 class_name_new = "{class_name}_{exception}_{index}".format(
                     class_name=class_name,
@@ -163,10 +164,7 @@ def DataDrivenClass(*dataset_lists):
                 # Additionally this should surface any tests that did not run
                 # due to the DSL issue.
                 new_cls = DataDrivenFixture(_FauxDSLFixture)
-                new_class = type(
-                    class_name_new,
-                    (new_cls,),
-                    {})
+                new_class = type(class_name_new, (new_cls,), {})
                 dsl_namespace = cclogging.get_object_namespace(
                     dataset_list.__class__)
                 test_ls = [test for test in dir(cls) if test.startswith(
@@ -230,6 +228,10 @@ def DataDrivenFixture(cls):
             new_test = _add_tags(
                 new_test, dataset.metadata.get('tags', []),
                 PARALLEL_TAGS_LIST_ATTR)
+
+            # Apply decorators to the new test
+            for decorator in dataset.metadata.get('decorators', []):
+                new_test = decorator(new_test)
 
             # Add the new test to the decorated TestCase
             setattr(cls, new_test_name, new_test)
