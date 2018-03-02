@@ -117,14 +117,12 @@ class BaseHTTPClient(BaseClient):
     @see: http://docs.python-requests.org/en/latest/api/#configurations
     """
     
-    _exception_handlers = []
     _log = cclogging.getLogger(__name__)
 
     def __init__(self):
         self.__config = HTTPPluginConfig()
         super(BaseHTTPClient, self).__init__()
 
-    @_inject_exception(_exception_handlers)
     @_log_transaction(log=_log)
     def request(self, method, url, **kwargs):
         """ Performs <method> HTTP request to <url> using the requests lib"""
