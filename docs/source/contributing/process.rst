@@ -42,7 +42,7 @@ For a pull request to be accepted, it needs to pass three voting categories: Ver
   a +1 vote from any user as well as a +2 vote from a core reviewer. Votes for
   a review can range from -2 to +2. A rough breakdown of the intent of each rating are:
 
-    * -2 - Request is judged as unacceptable to be merged as is. Reasons for this might include include duplication
+    * -2 - Request is judged as unacceptable to be merged as is. Reasons for this might include duplication
       of effort, serious architectural flaws, addition of unnecessary dependencies,
       non-scalable solutions, or modifications that will break existing functionality.
     * -1 - Request may have minor issues that need to be addressed before the request is approved.
