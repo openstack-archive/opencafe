@@ -54,7 +54,7 @@ def get_object_namespace(obj):
     except:
         pass
 
-    # mro name wasn't availble, generate a unique name
+    # mro name wasn't available, generate a unique name
     # By default, name is set to the memory address of the passed in object
     # since it's guaranteed to work.
 
